@@ -2,7 +2,7 @@ import { storage } from 'wxt/utils/storage';
 import { type OrganismId, type OrganismState } from '../personalities/types';
 
 export type OperatingMode = 'cloud' | 'self-hosted';
-export type DockPosition = 'bottom-right' | 'bottom-left' | 'top-right';
+export type DockPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'custom';
 export type ChattinessLevel = 'quiet' | 'balanced' | 'chatty';
 
 export interface OrganismConfig {
@@ -16,6 +16,10 @@ export interface OrganismConfig {
   selfHostedModel: string;
   dockPosition: DockPosition;
   chattiness: ChattinessLevel;
+  /** Viewport X coordinate as a fraction of window width (0.0 to 1.0) */
+  xFrac: number;
+  /** Viewport Y coordinate as a fraction of window height (0.0 to 1.0) */
+  yFrac: number;
 }
 
 export interface FocusSprint {
@@ -52,6 +56,8 @@ export const configStorage = storage.defineItem<OrganismConfig>('local:config', 
     selfHostedModel: 'llama3',
     dockPosition: 'bottom-right',
     chattiness: 'balanced',
+    xFrac: 0.90,
+    yFrac: 0.82,
   },
 });
 

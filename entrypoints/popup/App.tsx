@@ -406,7 +406,9 @@ export default function App() {
                 key={pos}
                 className={`dock-btn ${config.dockPosition === pos ? 'selected' : ''}`}
                 onClick={async () => {
-                  const next = { ...config, dockPosition: pos };
+                  const xFrac = pos === 'bottom-left' ? 0.04 : 0.90;
+                  const yFrac = pos === 'top-right' ? 0.04 : 0.82;
+                  const next: OrganismConfig = { ...config, dockPosition: pos, xFrac, yFrac };
                   setConfig(next);
                   await configStorage.setValue(next);
                 }}

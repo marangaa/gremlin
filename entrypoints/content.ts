@@ -28,6 +28,8 @@ export default defineContentScript({
           organismId: config.organismId,
           name: config.name,
           dockPosition: config.dockPosition || 'bottom-right',
+          xFrac: config.xFrac,
+          yFrac: config.yFrac,
           initialState: organismState.state,
         });
 
@@ -66,7 +68,11 @@ export default defineContentScript({
 
       if (controller) {
         controller.setOrganism(newConfig.organismId);
-        controller.setDockPosition(newConfig.dockPosition || 'bottom-right');
+        if (newConfig.dockPosition !== 'custom') {
+          controller.setDockPosition(newConfig.dockPosition || 'bottom-right');
+        } else if (newConfig.xFrac !== undefined && newConfig.yFrac !== undefined) {
+          controller.setPositionFraction(newConfig.xFrac, newConfig.yFrac);
+        }
       }
     });
 
