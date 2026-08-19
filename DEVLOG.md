@@ -1,42 +1,24 @@
 # Devlog
 
-## 2026-08-20 — v0.3.0: Dual Cloud & OSS Architecture, Multi-Archetype Sprites & Control Hub
+## 2026-08-20 — v0.3.1: Canvas SpriteEngine Infrastructure & Viewport Root Injection
 
-**Scope:** Completed the overhaul from virtual pet to **Personal AI Organism**. Purged all tamagotchi metrics (happiness, pets, clicking-to-pet), built dual Cloud Managed + Self-Hosted inference architecture, multi-archetype vector sprites, and a futuristic Control Hub.
+**Scope:** Implemented Canvas-based Sprite Animation Engine with multi-archetype frame rendering, gaze tracking, particle systems (sparks, zzz, scan lines), and restored `entrypoints/content.ts` with root `html` Shadow DOM mounting.
 
 ### What was built
 
-- **Complete Purge of Virtual Pet Mechanics:**
-  - Removed `happiness`, `pets`, clicking-to-pet counters, decay intervals, and heart particles.
-  - Replaced with **Focus Sprints**, **Behavioral Divergence Detection**, and **Contextual AI Telemetry**.
-- **Dual Cloud Offering vs. Self-Hosted OSS (`lib/storage/index.ts`, `lib/ai/engine.ts`):**
-  - **Cloud Managed Mode**: Zero setup, connect to cloud gateway / managed inference, opt-in session sync.
-  - **Self-Hosted OSS Mode**: Connect to local Ollama (`http://localhost:11434/v1`), LM Studio, or custom OpenAI-compatible server.
-  - **Strict Privacy Architecture**: Ephemeral local storage for tab dwell buffer; zero storage of raw HTML, form inputs, passwords, or PII.
-- **5 High-Fidelity Character Archetypes (`lib/organism/sprites.ts`, `lib/personalities/types.ts`):**
-  - **Nexus-01** 💠 (Cybernetic AI Core with rotating orbital gyroscopes, telemetry pulses, digital HUD visor)
-  - **Cipher** 🕵️ (Noir Investigator with amber optical scanner lens and silhouette fedora)
-  - **Aero** 🍃 (Ethereal Spirit Wisp with glowing ambient auroras and luminous eyes)
-  - **Kuro** 👾 (Shadow Gremlin with neon horns, cyber fangs, and playful remarks)
-  - **Atlas** ⚙️ (Executive Automaton with segmented pauldrons and sapphire reactor lens)
-- **Top Layer Viewport Presence (`lib/organism/styles.ts`, `lib/organism/controller.ts`):**
-  - Subtle corner docking (`bottom-right`, `bottom-left`, `top-right`).
-  - Edge-peeking animations, floating idle hover, `--pupil-x` cursor gaze tracking.
-  - Glassmorphic Thought Pill with auto-dismiss.
-- **Re-imagined Control Hub (`entrypoints/popup/App.tsx`, `App.css`):**
-  - **Sprint Focus Center**: Objective input, duration presets (15m/25m/45m/60m), countdown timer.
-  - **Archetype Selector Grid**: Visual selection cards for all 5 organism models.
-  - **Telemetry Dashboard**: Daily focus minutes, divergence count, current state badge.
-  - **Observation Timeline**: Real-time activity stream recording divergences, returns, and milestones.
-  - **Infrastructure Settings Drawer**: Operating mode switcher, custom endpoint/model configuration, dock positioning, and chattiness slider (`quiet`, `balanced`, `chatty`).
+- **Canvas SpriteEngine (`lib/organism/spriteEngine.ts`):**
+  - High-performance HTML5 Canvas renderer with `imageSmoothingEnabled = false` for crisp, pixel-perfect rendering across all screen resolutions.
+  - Multi-archetype frame generators for **Nexus-01** (gyroscope rings + HUD), **Cipher** (fedora silhouette + amber monocle), **Aero** (ethereal wisp + sprout), **Kuro** (shadow imp + fangs), and **Atlas** (segmented pauldrons + reactor core).
+  - Dynamic 2D cursor gaze tracking calculating normalized gaze vectors and updating optical pupils.
+  - Real-time particle system supporting ambient sleeping `z` bubbles, victory celebration sparks, and diagnostic scan lines.
+- **Root Overlay Mounting (`entrypoints/content.ts`):**
+  - Re-anchored WXT `createShadowRootUi` to `'html'` / `document.documentElement` with `position: 'overlay'`, ensuring the organism is never clipped by `body { overflow: hidden; }` or CSS layout transformations on third-party sites.
+- **Viewport Draggable Controller (`lib/organism/controller.ts`):**
+  - Viewport coordinate calculation with boundary clamping and storage persistence across pages.
+  - Smart vertical thought-pill orientation flipping (`.pos-above` vs `.pos-below`).
 
 ### Verification
 
-- `pnpm compile` (`tsc --noEmit`): Clean (0 errors).
-- `pnpm build` (`wxt build`): Clean (713.72 kB Chrome MV3 bundle in `.output/chrome-mv3`).
-
----
-
-## 2026-08-20 — v0.2.0: Personal AI Organism Production Architecture
-
-**Scope:** Initial architectural restructuring based on `build.md`.
+- `pnpm compile` (`tsc --noEmit`): 0 errors.
+- `pnpm build` (`wxt build`): Chrome MV3 bundle built in 3.8s in `.output/chrome-mv3`.
+- Git commits: `92528e3`.

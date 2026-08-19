@@ -50,7 +50,7 @@ export const configStorage = storage.defineItem<OrganismConfig>('local:config', 
   defaultValue: {
     mode: 'cloud',
     organismId: 'nexus',
-    name: 'Nexus-01',
+    name: 'Gorg',
     enabled: true,
     selfHostedEndpoint: 'http://localhost:11434/v1',
     selfHostedModel: 'llama3',

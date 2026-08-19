@@ -1,18 +1,5 @@
 import { type OrganismId, type OrganismState, ORGANISM_MODELS } from '../personalities/types';
 
-export interface FrameRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-export interface AnimationClip {
-  fps: number;
-  loop: boolean;
-  frameCount: number;
-}
-
 export class SpriteEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -21,9 +8,8 @@ export class SpriteEngine {
 
   private currentFrame = 0;
   private frameTimer = 0;
-  private animFps = 6;
+  private animFps = 4;
   private totalFrames = 4;
-  private loop = true;
 
   // Particle System
   private particles: Array<{
@@ -59,16 +45,16 @@ export class SpriteEngine {
     this.frameTimer = 0;
 
     if (state === 'sleeping') {
-      this.animFps = 3;
+      this.animFps = 2;
       this.totalFrames = 4;
     } else if (state === 'celebrating' || state === 'shocked') {
-      this.animFps = 10;
+      this.animFps = 6;
       this.totalFrames = 4;
     } else if (state === 'annoyed') {
-      this.animFps = 8;
+      this.animFps = 5;
       this.totalFrames = 4;
     } else {
-      this.animFps = 6;
+      this.animFps = 3;
       this.totalFrames = 4;
     }
   }
@@ -82,12 +68,12 @@ export class SpriteEngine {
     const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.nexus;
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI * 2 * i) / 6;
-      const speed = 1.5 + Math.random() * 2;
+      const speed = 1.2 + Math.random() * 1.5;
       this.particles.push({
         x: 48,
         y: 48,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1,
+        vy: Math.sin(angle) * speed - 0.8,
         alpha: 1,
         size: 3 + Math.random() * 3,
         color: type === 'zzz' ? '#94a3b8' : model.accentColor,
@@ -104,25 +90,25 @@ export class SpriteEngine {
       this.frameTimer -= frameDuration;
       this.currentFrame = (this.currentFrame + 1) % this.totalFrames;
 
-      // Spawn ambient particles
+      // Ambient particles
       if (this.currentState === 'sleeping' && Math.random() < 0.15) {
         this.particles.push({
-          x: 48 + (Math.random() - 0.5) * 16,
-          y: 36,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: -0.8 - Math.random() * 0.6,
+          x: 52 + (Math.random() - 0.5) * 12,
+          y: 32,
+          vx: 0.3 + Math.random() * 0.3,
+          vy: -0.6 - Math.random() * 0.4,
           alpha: 1,
-          size: 10,
+          size: 11,
           color: '#94a3b8',
           char: 'z',
         });
-      } else if (this.currentState === 'celebrating' && Math.random() < 0.3) {
+      } else if (this.currentState === 'celebrating' && Math.random() < 0.25) {
         const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.nexus;
         this.particles.push({
-          x: 48 + (Math.random() - 0.5) * 32,
+          x: 48 + (Math.random() - 0.5) * 28,
           y: 48,
-          vx: (Math.random() - 0.5) * 2,
-          vy: -1.5 - Math.random() * 2,
+          vx: (Math.random() - 0.5) * 1.8,
+          vy: -1.2 - Math.random() * 1.5,
           alpha: 1,
           size: 3,
           color: model.accentColor,
@@ -153,12 +139,12 @@ export class SpriteEngine {
     if (this.currentState === 'hidden') return;
 
     ctx.save();
-    ctx.scale(w / 96, h / 96); // Scale to 96x96 logical coordinate space
+    ctx.scale(w / 96, h / 96); // Scale to 96x96 space
 
-    // 1. Draw Ambient Aura / Glow
-    this.drawAura(ctx);
+    // 1. Draw subtle base shadow / ground aura
+    this.drawBaseShadow(ctx);
 
-    // 2. Draw Sprite Model according to active archetype and frame
+    // 2. Draw Kenney Pixel Character (No bobbing, firmly grounded)
     this.drawCharacter(ctx);
 
     // 3. Draw Particles
@@ -167,363 +153,260 @@ export class SpriteEngine {
     ctx.restore();
   }
 
-  private drawAura(ctx: CanvasRenderingContext2D) {
+  private drawBaseShadow(ctx: CanvasRenderingContext2D) {
     const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.nexus;
-    const pulse = Math.sin((this.currentFrame / this.totalFrames) * Math.PI * 2) * 0.15 + 0.85;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(48, 80, 24, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    const grad = ctx.createRadialGradient(48, 48, 10, 48, 48, 42);
-    grad.addColorStop(0, `${model.accentColor}33`);
+    const grad = ctx.createRadialGradient(48, 52, 10, 48, 52, 38);
+    grad.addColorStop(0, `${model.accentColor}25`);
     grad.addColorStop(1, 'transparent');
-
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(48, 48, 40 * pulse, 0, Math.PI * 2);
+    ctx.arc(48, 52, 36, 0, Math.PI * 2);
     ctx.fill();
   }
 
   private drawCharacter(ctx: CanvasRenderingContext2D) {
-    const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.nexus;
     const f = this.currentFrame;
-    const bob = Math.sin((f / this.totalFrames) * Math.PI * 2) * (this.currentState === 'celebrating' ? 8 : 3);
-
-    ctx.save();
-    ctx.translate(0, bob);
+    const isBlinking = (f === 3 && this.currentState === 'idle') || this.currentState === 'sleeping';
 
     switch (this.organismId) {
       case 'cipher':
-        this.renderCipher(ctx, model.accentColor, f);
+        this.renderKenneyYellowBot(ctx, f, isBlinking);
         break;
       case 'aero':
-        this.renderAero(ctx, model.accentColor, model.secondaryColor, f);
+        this.renderKenneyPinkMomo(ctx, f, isBlinking);
         break;
       case 'kuro':
-        this.renderKuro(ctx, model.accentColor, f);
+        this.renderKenneyRedGremlin(ctx, f, isBlinking);
         break;
       case 'atlas':
-        this.renderAtlas(ctx, model.accentColor, model.secondaryColor, f);
+        this.renderKenneyBlueGhost(ctx, f, isBlinking);
         break;
       case 'nexus':
       default:
-        this.renderNexus(ctx, model.accentColor, model.secondaryColor, f);
+        this.renderKenneyGreenAlien(ctx, f, isBlinking);
         break;
     }
-
-    ctx.restore();
   }
 
-  // --- 1. NEXUS-01 SPRITE ---
-  private renderNexus(
-    ctx: CanvasRenderingContext2D,
-    accent: string,
-    secondary: string,
-    f: number,
-  ) {
-    const angle = (Date.now() / 1000) * 1.5;
+  // --- 1. KENNEY GREEN ALIEN (Gorg) ---
+  private renderKenneyGreenAlien(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+    // Antennae
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(36, 18, 4, 10);
+    ctx.fillRect(56, 18, 4, 10);
 
-    // Outer Gyroscope Rings
-    ctx.save();
-    ctx.translate(48, 48);
-    ctx.rotate(angle);
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([8, 6]);
-    ctx.beginPath();
-    ctx.arc(0, 0, 36, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(34, 14, 8, 8);
+    ctx.fillRect(54, 14, 8, 8);
 
-    ctx.rotate(-angle * 1.8);
-    ctx.strokeStyle = secondary;
-    ctx.setLineDash([12, 8]);
-    ctx.beginPath();
-    ctx.arc(0, 0, 30, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
+    // Body (Round Kenney green alien)
+    ctx.fillStyle = '#22c55e';
+    this.pixelRect(ctx, 28, 24, 40, 44, 8);
 
-    // Core Chassis
-    ctx.fillStyle = '#090d16';
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 2.5;
-    this.roundRect(ctx, 28, 28, 40, 40, 10, true, true);
+    // Belly patch
+    ctx.fillStyle = '#86efac';
+    this.pixelRect(ctx, 36, 46, 24, 18, 4);
 
-    // Visor
-    ctx.fillStyle = '#030712';
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 1;
-    this.roundRect(ctx, 33, 38, 30, 16, 5, true, true);
+    // Feet
+    ctx.fillStyle = '#16a34a';
+    ctx.fillRect(32, 68, 10, 8);
+    ctx.fillRect(54, 68, 10, 8);
 
-    // Optical Eyes / Gaze
-    if (this.currentState === 'sleeping') {
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(37, 46);
-      ctx.lineTo(45, 46);
-      ctx.moveTo(51, 46);
-      ctx.lineTo(59, 46);
-      ctx.stroke();
+    // Eyes & Gaze
+    this.drawKenneyEyes(ctx, 38, 38, 58, 38, isBlinking, '#22c55e');
+
+    // Mouth / Expression
+    ctx.fillStyle = '#14532d';
+    if (this.currentState === 'celebrating') {
+      ctx.fillRect(44, 50, 8, 4);
+    } else if (this.currentState === 'annoyed') {
+      ctx.fillRect(44, 52, 8, 2);
     } else {
-      const pupilShiftX = this.gazeX * 3;
-      const pupilShiftY = this.gazeY * 2;
-
-      ctx.fillStyle = accent;
-      ctx.beginPath();
-      ctx.arc(41, 46, 4, 0, Math.PI * 2);
-      ctx.arc(55, 46, 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      // White Glints
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(41 + pupilShiftX, 46 + pupilShiftY, 2, 0, Math.PI * 2);
-      ctx.arc(55 + pupilShiftX, 46 + pupilShiftY, 2, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(44, 50, 8, 2);
     }
-
-    // Telemetry Pulse Line
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(35, 60);
-    ctx.lineTo(42, 60 + (f % 2 === 0 ? -2 : 2));
-    ctx.lineTo(50, 60 + (f % 2 === 0 ? 2 : -2));
-    ctx.lineTo(61, 60);
-    ctx.stroke();
   }
 
-  // --- 2. CIPHER SPRITE ---
-  private renderCipher(ctx: CanvasRenderingContext2D, accent: string, f: number) {
-    // Cloak / Shadow Body
-    ctx.fillStyle = '#0f172a';
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(48, 64, 24, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+  // --- 2. KENNEY PINK CREATURE (Momo) ---
+  private renderKenneyPinkMomo(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+    // Cute Ears
+    ctx.fillStyle = '#db2777';
+    ctx.fillRect(24, 26, 8, 10);
+    ctx.fillRect(64, 26, 8, 10);
 
-    // Collar
+    // Round Pink Body
+    ctx.fillStyle = '#f472b6';
+    this.pixelRect(ctx, 26, 28, 44, 42, 10);
+
+    // Cheeks
+    ctx.fillStyle = '#fbcfe8';
+    ctx.fillRect(30, 48, 6, 4);
+    ctx.fillRect(60, 48, 6, 4);
+
+    // Feet
+    ctx.fillStyle = '#db2777';
+    ctx.fillRect(32, 70, 10, 6);
+    ctx.fillRect(54, 70, 10, 6);
+
+    // Eyes
+    this.drawKenneyEyes(ctx, 40, 40, 56, 40, isBlinking, '#f472b6');
+
+    // Smile
+    ctx.fillStyle = '#831843';
+    ctx.fillRect(46, 52, 4, 3);
+  }
+
+  // --- 3. KENNEY YELLOW SPIKY / BOT (Bolt) ---
+  private renderKenneyYellowBot(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+    // Antenna
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(46, 16, 4, 10);
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(44, 12, 8, 6);
+
+    // Golden Body
+    ctx.fillStyle = '#fbbf24';
+    this.pixelRect(ctx, 28, 26, 40, 42, 8);
+
+    // Cyber Visor / Eye Bar
     ctx.fillStyle = '#1e293b';
-    ctx.beginPath();
-    ctx.moveTo(34, 64);
-    ctx.lineTo(48, 54);
-    ctx.lineTo(62, 64);
-    ctx.lineTo(48, 76);
-    ctx.closePath();
-    ctx.fill();
+    this.pixelRect(ctx, 32, 34, 32, 14, 4);
 
-    // Head
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath();
-    ctx.arc(48, 44, 16, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // Fedora Hat
-    ctx.fillStyle = '#090d16';
-    ctx.beginPath();
-    ctx.ellipse(48, 38, 26, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#1e293b';
-    this.roundRect(ctx, 32, 22, 32, 16, 4, true, false);
-
-    ctx.fillStyle = accent;
-    ctx.fillRect(32, 34, 32, 3);
-
-    // Glowing Amber Scanner Monocle
-    if (this.currentState === 'sleeping') {
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(38, 44);
-      ctx.lineTo(46, 44);
-      ctx.stroke();
+    // Visor Scanner
+    if (isBlinking) {
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(36, 40, 24, 2);
     } else {
-      ctx.fillStyle = '#090d16';
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(42, 44, 5.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = accent;
-      ctx.beginPath();
-      ctx.arc(42 + this.gazeX * 2, 44 + this.gazeY * 1.5, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  // --- 3. AERO SPRITE ---
-  private renderAero(
-    ctx: CanvasRenderingContext2D,
-    accent: string,
-    secondary: string,
-    f: number,
-  ) {
-    // Ethereal Wisp Body
-    ctx.fillStyle = accent;
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(48, 22);
-    ctx.bezierCurveTo(32, 22, 26, 36, 28, 54);
-    ctx.bezierCurveTo(30, 68, 42, 78, 48, 80);
-    ctx.bezierCurveTo(54, 78, 66, 68, 68, 54);
-    ctx.bezierCurveTo(70, 36, 64, 22, 48, 22);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Sprout Crest
-    ctx.fillStyle = '#34d399';
-    ctx.beginPath();
-    ctx.arc(48, 20 + (f % 2 === 0 ? -1 : 1), 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Luminous Eyes
-    if (this.currentState === 'sleeping') {
-      ctx.strokeStyle = '#090d16';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(40, 48, 4, 0, Math.PI);
-      ctx.arc(56, 48, 4, 0, Math.PI);
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = '#090d16';
-      ctx.beginPath();
-      ctx.ellipse(40, 46, 4.5, 6, 0, 0, Math.PI * 2);
-      ctx.ellipse(56, 46, 4.5, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Sparkle Glints
+      const shiftX = Math.round(this.gazeX * 4);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillRect(44 + shiftX, 37, 8, 8);
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(40 + this.gazeX * 2, 45 + this.gazeY * 2, 2, 0, Math.PI * 2);
-      ctx.arc(56 + this.gazeX * 2, 45 + this.gazeY * 2, 2, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(46 + shiftX, 39, 4, 4);
+    }
+
+    // Feet
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(32, 68, 10, 8);
+    ctx.fillRect(54, 68, 10, 8);
+  }
+
+  // --- 4. KENNEY BLUE GHOST / CYBER (Glitch) ---
+  private renderKenneyBlueGhost(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+    // Ghost Body with wavy skirt
+    ctx.fillStyle = '#38bdf8';
+    this.pixelRect(ctx, 28, 24, 40, 44, 10);
+
+    // Wavy skirt base
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(28, 66, 8, 6);
+    ctx.fillRect(44, 66, 8, 6);
+    ctx.fillRect(60, 66, 8, 6);
+
+    // Goggles
+    ctx.fillStyle = '#0f172a';
+    this.pixelRect(ctx, 32, 36, 32, 14, 4);
+
+    // Goggle Lenses
+    if (isBlinking) {
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(36, 42, 8, 2);
+      ctx.fillRect(52, 42, 8, 2);
+    } else {
+      const shiftX = Math.round(this.gazeX * 2);
+      const shiftY = Math.round(this.gazeY * 2);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(36, 38, 8, 10);
+      ctx.fillRect(52, 38, 8, 10);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(38 + shiftX, 40 + shiftY, 4, 4);
+      ctx.fillRect(54 + shiftX, 40 + shiftY, 4, 4);
     }
   }
 
-  // --- 4. KURO SPRITE ---
-  private renderKuro(ctx: CanvasRenderingContext2D, accent: string, f: number) {
+  // --- 5. KENNEY RED IMP (Kuro) ---
+  private renderKenneyRedGremlin(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
     // Horns
-    ctx.fillStyle = accent;
-    ctx.strokeStyle = '#090d16';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(34, 32);
-    ctx.lineTo(20, 16);
-    ctx.lineTo(28, 36);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(28, 16, 6, 12);
+    ctx.fillRect(62, 16, 6, 12);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(30, 14, 4, 6);
+    ctx.fillRect(62, 14, 4, 6);
 
-    ctx.beginPath();
-    ctx.moveTo(62, 32);
-    ctx.lineTo(76, 16);
-    ctx.lineTo(68, 36);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    // Crimson Body
+    ctx.fillStyle = '#ef4444';
+    this.pixelRect(ctx, 26, 26, 44, 42, 8);
 
-    // Shadow Body
-    ctx.fillStyle = '#090d16';
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.ellipse(48, 54, 26, 22, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    // Feet
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(32, 68, 10, 8);
+    ctx.fillRect(54, 68, 10, 8);
 
-    // Glowing Cat Eyes
-    if (this.currentState === 'sleeping') {
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(32, 48);
-      ctx.lineTo(42, 46);
-      ctx.moveTo(64, 48);
-      ctx.lineTo(54, 46);
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = accent;
-      ctx.beginPath();
-      ctx.moveTo(30, 44);
-      ctx.quadraticCurveTo(40, 40, 44, 48);
-      ctx.quadraticCurveTo(36, 52, 30, 44);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(66, 44);
-      ctx.quadraticCurveTo(56, 40, 52, 48);
-      ctx.quadraticCurveTo(60, 52, 66, 44);
-      ctx.fill();
-
-      // Slit Pupil
-      ctx.fillStyle = '#090d16';
-      ctx.beginPath();
-      ctx.ellipse(37 + this.gazeX * 2, 46, 1.5, 4, 0, 0, Math.PI * 2);
-      ctx.ellipse(59 + this.gazeX * 2, 46, 1.5, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // Expressive Eyes
+    this.drawKenneyEyes(ctx, 38, 38, 58, 38, isBlinking, '#ef4444');
 
     // Fangs
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(42, 58);
-    ctx.lineTo(44, 63);
-    ctx.lineTo(46, 58);
-    ctx.moveTo(50, 58);
-    ctx.lineTo(52, 63);
-    ctx.lineTo(54, 58);
-    ctx.fill();
+    ctx.fillRect(44, 52, 3, 4);
+    ctx.fillRect(50, 52, 3, 4);
   }
 
-  // --- 5. ATLAS SPRITE ---
-  private renderAtlas(
+  private drawKenneyEyes(
     ctx: CanvasRenderingContext2D,
-    accent: string,
-    secondary: string,
-    f: number,
+    leftX: number,
+    leftY: number,
+    rightX: number,
+    rightY: number,
+    isBlinking: boolean,
+    _bg: string,
   ) {
-    // Chassis
-    ctx.fillStyle = '#0f172a';
-    ctx.strokeStyle = secondary;
-    ctx.lineWidth = 2;
-    this.roundRect(ctx, 26, 28, 44, 44, 8, true, true);
-
-    // Shoulder Pauldrons
-    ctx.fillStyle = '#1e293b';
-    this.roundRect(ctx, 18, 40, 8, 18, 3, true, true);
-    this.roundRect(ctx, 70, 40, 8, 18, 3, true, true);
-
-    // Visor
-    ctx.fillStyle = '#030712';
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 1.5;
-    this.roundRect(ctx, 32, 36, 32, 14, 4, true, true);
-
-    // Visor Scan Line
-    if (this.currentState === 'sleeping') {
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(36, 43);
-      ctx.lineTo(60, 43);
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = accent;
-      const scanX = 36 + ((f * 6) % 20);
-      ctx.fillRect(scanX + this.gazeX * 2, 39, 6, 8);
+    if (isBlinking) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(leftX - 4, leftY + 2, 8, 3);
+      ctx.fillRect(rightX - 4, rightY + 2, 8, 3);
+      return;
     }
 
-    // Core Reactor
-    ctx.fillStyle = accent;
-    ctx.beginPath();
-    ctx.arc(48, 58, 5, 0, Math.PI * 2);
-    ctx.fill();
+    const shiftX = Math.round(this.gazeX * 2.5);
+    const shiftY = Math.round(this.gazeY * 2);
+
+    // Eye Whites
+    ctx.fillStyle = '#ffffff';
+    this.pixelRect(ctx, leftX - 6, leftY - 6, 12, 14, 3);
+    this.pixelRect(ctx, rightX - 6, rightY - 6, 12, 14, 3);
+
+    // Pupils
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(leftX - 2 + shiftX, leftY - 2 + shiftY, 6, 6);
+    ctx.fillRect(rightX - 2 + shiftX, rightY - 2 + shiftY, 6, 6);
+
+    // White Glint
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(leftX - 1 + shiftX, leftY - 2 + shiftY, 2, 2);
+    ctx.fillRect(rightX - 1 + shiftX, rightY - 2 + shiftY, 2, 2);
+  }
+
+  private pixelRect(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    r = 0,
+  ) {
+    if (r === 0) {
+      ctx.fillRect(x, y, w, h);
+      return;
+    }
+    ctx.fillRect(x + r, y, w - r * 2, h);
+    ctx.fillRect(x, y + r, w, h - r * 2);
+    ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
   }
 
   private drawParticles(ctx: CanvasRenderingContext2D) {
@@ -536,36 +419,9 @@ export class SpriteEngine {
         ctx.font = `bold ${p.size}px monospace`;
         ctx.fillText(p.char, p.x, p.y);
       } else {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(p.x, p.y, p.size, p.size);
       }
       ctx.restore();
     }
-  }
-
-  private roundRect(
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    r: number,
-    fill = true,
-    stroke = true,
-  ) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
   }
 }

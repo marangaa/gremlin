@@ -11,7 +11,7 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
   runAt: 'document_idle',
   async main(ctx) {
-    // Only mount on top-level window, not within embedded iframes
+    // Only mount on top-level window, never inside iframes
     if (window.self !== window.top) return;
 
     let controller: OrganismController | null = null;
@@ -24,6 +24,21 @@ export default defineContentScript({
       anchor: 'html',
       append: 'last',
       onMount: (_container: HTMLElement, shadow: ShadowRoot, host: HTMLElement) => {
+        // Enforce absolute viewport attachment in light DOM so document scrolling NEVER moves the host
+        host.style.cssText = `
+          position: fixed !important;
+          top: 0px !important;
+          left: 0px !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          pointer-events: none !important;
+          z-index: 2147483647 !important;
+          margin: 0px !important;
+          padding: 0px !important;
+          border: none !important;
+          overflow: visible !important;
+        `;
+
         controller = new OrganismController(shadow, host, {
           organismId: config.organismId,
           name: config.name,
