@@ -8,10 +8,10 @@ import {
   activityStorage,
   type ActivityEntry,
 } from '@/lib/storage';
-import { onMessage, sendMessage } from '@/lib/messaging';
+import { onMessage } from '@/lib/messaging';
 
 export default defineBackground(() => {
-  // Initialize browser event tracking
+  // Initialize browser-level event tracking (zero DOM access)
   eventTracker.init();
 
   // Periodic alarm for checking situation & focus sprint progress
@@ -28,7 +28,7 @@ export default defineBackground(() => {
     void evaluateCurrentState();
   });
 
-  // Handle Typed RPC Messaging
+  // Handle Typed RPC Messaging from UI surfaces
   onMessage('startSprint', async ({ data }) => {
     await sprintStorage.setValue({
       goal: data.goal,
@@ -37,22 +37,21 @@ export default defineBackground(() => {
       status: 'active',
     });
 
-    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
-
-    if (activeTab?.id) {
-      await sendMessage(
-        'triggerReaction',
-        {
-          state: 'peek',
-          message: `Sprint locked: "${data.goal.slice(0, 22)}"`,
-          intensity: 0.8,
-        },
-        activeTab.id,
-      );
-    }
+    const state = await organismStateStorage.getValue();
+    await organismStateStorage.setValue({
+      ...state,
+      state: 'peek',
+      lastRemark: `Sprint locked: "${data.goal.slice(0, 22)}"`,
+      lastRemarkAt: Date.now(),
+    });
+    await logActivity('focus', 'sprint', `Started sprint: "${data.goal}" (${data.targetMinutes}m)`);
   });
 
   onMessage('stopSprint', async () => {
+    const sprint = await sprintStorage.getValue();
+    if (sprint.status === 'active') {
+      await logActivity('milestone', 'sprint', `Ended sprint: "${sprint.goal}"`);
+    }
     await sprintStorage.setValue({
       goal: '',
       targetMinutes: 25,
@@ -135,24 +134,6 @@ async function evaluateCurrentState(force = false): Promise<{
           lastRemarkAt: decision.remark ? Date.now() : organismState.lastRemarkAt,
           lastObservationAt: Date.now(),
         });
-
-        // Broadcast to active tab
-        const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
-        if (activeTab?.id) {
-          try {
-            await sendMessage(
-              'triggerReaction',
-              {
-                state: decision.state,
-                message: decision.remark,
-                intensity: decision.intensity,
-              },
-              activeTab.id,
-            );
-          } catch {
-            // Tab not injectable (e.g. chrome://)
-          }
-        }
 
         return {
           triggered: true,

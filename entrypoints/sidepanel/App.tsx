@@ -8,8 +8,8 @@ import {
   type FocusSprint,
   type OrganismStateData,
   type ActivityEntry,
-  type ChattinessLevel,
   type OperatingMode,
+  type ChattinessLevel,
 } from '@/lib/storage';
 import {
   ORGANISM_MODELS,
@@ -25,13 +25,9 @@ export default function App() {
   const [organismState, setOrganismState] = useState<OrganismStateData | null>(null);
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'hub' | 'activity' | 'settings'>('hub');
+  const [activeTab, setActiveTab] = useState<'monitor' | 'activity' | 'settings'>('monitor');
   const [goalInput, setGoalInput] = useState('');
   const [duration, setDuration] = useState(25);
-  const [pokeLoading, setPokeLoading] = useState(false);
-  const [pokeResult, setPokeResult] = useState<string | null>(null);
-
-  // Settings form states
   const [endpointInput, setEndpointInput] = useState('');
   const [modelInput, setModelInput] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -67,7 +63,7 @@ export default function App() {
   }, []);
 
   if (!config || !sprint || !organismState) {
-    return <div className="loading-screen">Booting Organism Telemetry…</div>;
+    return <div className="sidepanel-loading">Initializing Organism Telemetry…</div>;
   }
 
   const model = ORGANISM_MODELS[config.organismId] || ORGANISM_MODELS.nexus;
@@ -97,36 +93,6 @@ export default function App() {
     await sendMessage('stopSprint', undefined);
   };
 
-  const handleOpenSidePanel = async () => {
-    try {
-      const [currentTab] = await browser.tabs.query({ active: true, currentWindow: true });
-      if (currentTab?.windowId && (browser as any).sidePanel?.open) {
-        await (browser as any).sidePanel.open({ windowId: currentTab.windowId });
-        window.close();
-      }
-    } catch {
-      alert('Click the Side Panel icon in Chrome toolbar to open the companion rail.');
-    }
-  };
-
-  const handlePoke = async () => {
-    setPokeLoading(true);
-    setPokeResult(null);
-    try {
-      const res = await sendMessage('pokeOrganism', undefined);
-      if (res?.message) {
-        setPokeResult(`“${res.message}”`);
-      } else {
-        setPokeResult('Telemetry pulse sent.');
-      }
-    } catch {
-      setPokeResult('Pulse dispatched.');
-    } finally {
-      setPokeLoading(false);
-      setTimeout(() => setPokeResult(null), 4000);
-    }
-  };
-
   const handleSaveSettings = async () => {
     const next: OrganismConfig = {
       ...config,
@@ -136,12 +102,47 @@ export default function App() {
     };
     setConfig(next);
     await configStorage.setValue(next);
-    setActiveTab('hub');
+    setActiveTab('monitor');
   };
 
   const handleClearData = async () => {
-    if (confirm('Clear local telemetry and activity stream?')) {
+    if (confirm('Clear local telemetry and observation history?')) {
       await sendMessage('clearActivityLog', undefined);
+    }
+  };
+
+  // Pop Out Always-on-Top Document Picture-in-Picture Window
+  const handlePopOutPiP = async () => {
+    if ('documentPictureInPicture' in window) {
+      try {
+        const pipWindow = await (window as any).documentPictureInPicture.requestWindow({
+          width: 260,
+          height: 260,
+        });
+
+        // Copy styles to PiP window
+        document.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
+          pipWindow.document.head.appendChild(node.cloneNode(true));
+        });
+
+        const pipRoot = pipWindow.document.createElement('div');
+        pipRoot.id = 'pip-root';
+        pipRoot.className = 'pip-wrapper';
+        pipWindow.document.body.appendChild(pipRoot);
+
+        // Simple render container inside PiP window
+        pipRoot.innerHTML = `
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#090d16; color:#f8fafc; font-family:sans-serif;">
+            <div style="font-size:12px; font-weight:700; color:${model.accentColor}; margin-bottom:8px;">${model.name} • ${organismState.state}</div>
+            <div style="width:110px; height:110px;">${getOrganismSvg(config.organismId)}</div>
+            ${organismState.lastRemark ? `<div style="margin-top:10px; font-size:11px; font-style:italic; text-align:center; padding:4px 8px; background:#1e293b; border-radius:8px;">“${organismState.lastRemark}”</div>` : ''}
+          </div>
+        `;
+      } catch (err) {
+        console.warn('PiP window request cancelled or error:', err);
+      }
+    } else {
+      alert('Document Picture-in-Picture is supported in modern Chrome / Edge.');
     }
   };
 
@@ -152,185 +153,172 @@ export default function App() {
   }
 
   return (
-    <div className="control-hub">
-      {/* Top Status Header */}
-      <header className="hub-header">
-        <div className="organism-identity">
-          <span className="organism-avatar-emoji" style={{ borderColor: model.accentColor }}>
-            {model.emoji}
-          </span>
+    <div className="sidepanel-app">
+      {/* Header */}
+      <header className="sidepanel-header">
+        <div className="identity-block">
+          <span className="avatar-chip">{model.emoji}</span>
           <div>
-            <div className="name-row">
-              <span className="organism-name">{model.name}</span>
-              <span className={`mode-pill ${config.mode}`}>
+            <div className="title-row">
+              <span className="model-name">{model.name}</span>
+              <span className={`badge-mode ${config.mode}`}>
                 {config.mode === 'cloud' ? '☁️ Cloud' : '🖥️ Local'}
               </span>
             </div>
-            <div className="archetype-label">{model.archetype} • {organismState.state}</div>
+            <div className="subtitle">{model.archetype} • {organismState.state}</div>
           </div>
         </div>
 
         <button
-          className={`master-toggle ${config.enabled ? 'active' : ''}`}
+          className={`switch-enabled ${config.enabled ? 'active' : ''}`}
           onClick={handleToggleEnabled}
           title={config.enabled ? 'Put Organism to Sleep' : 'Wake Organism'}
-          role="switch"
-          aria-checked={config.enabled}
         >
-          <span className="toggle-slider" />
+          <span className="switch-thumb" />
         </button>
       </header>
 
-      {/* Organism Stage */}
-      <OrganismDisplay
-        organismId={config.organismId}
-        state={organismState.state}
-        remark={organismState.lastRemark}
-        supportsPiP={false}
-      />
+      {/* Live Organism Stage */}
+      <section className="stage-section">
+        <OrganismDisplay
+          organismId={config.organismId}
+          state={organismState.state}
+          remark={organismState.lastRemark}
+          onPopOutPiP={handlePopOutPiP}
+          supportsPiP={'documentPictureInPicture' in window}
+        />
+      </section>
 
-      {/* Nav Tabs */}
-      <nav className="nav-tabs">
+      {/* Tabs */}
+      <nav className="sidepanel-tabs">
         <button
-          className={`nav-tab ${activeTab === 'hub' ? 'active' : ''}`}
-          onClick={() => setActiveTab('hub')}
+          className={`tab-btn ${activeTab === 'monitor' ? 'active' : ''}`}
+          onClick={() => setActiveTab('monitor')}
         >
-          🎯 Sprint Hub
+          🎯 Focus Hub
         </button>
         <button
-          className={`nav-tab ${activeTab === 'activity' ? 'active' : ''}`}
+          className={`tab-btn ${activeTab === 'activity' ? 'active' : ''}`}
           onClick={() => setActiveTab('activity')}
         >
-          📡 Activity ({activities.length})
+          📡 Stream ({activities.length})
         </button>
         <button
-          className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
           ⚙️ Settings
         </button>
       </nav>
 
-      {/* TAB 1: SPRINT HUB */}
-      {activeTab === 'hub' && (
-        <div className="tab-content">
-          {/* Side Panel Launcher */}
-          <button className="btn-sidepanel-launcher" onClick={handleOpenSidePanel}>
-            <span>🖥️ Open Chrome Side Panel Rail</span>
-          </button>
-
-          {/* Sprint Focus Section */}
-          <section className="sprint-card">
+      {/* TAB 1: MONITOR & SPRINT */}
+      {activeTab === 'monitor' && (
+        <div className="tab-pane">
+          {/* Sprint Card */}
+          <div className="card sprint-card">
             {sprint.status === 'active' ? (
-              <div className="sprint-active-state">
-                <div className="sprint-badge">⚡ ACTIVE SPRINT IN PROGRESS</div>
-                <div className="sprint-goal-title">"{sprint.goal}"</div>
-                <div className="sprint-metrics-row">
-                  <span className="sprint-time-left">⏳ {remainingMinutes}m remaining</span>
-                  <button className="btn-stop-sprint" onClick={handleStopSprint}>
+              <div className="sprint-active">
+                <div className="badge-sprint">⚡ SPRINT ACTIVE</div>
+                <div className="sprint-goal">"{sprint.goal}"</div>
+                <div className="sprint-meta">
+                  <span>⏳ {remainingMinutes}m remaining</span>
+                  <button className="btn-stop" onClick={handleStopSprint}>
                     End Sprint
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="sprint-idle-state">
-                <div className="section-title">SET SPRINT OBJECTIVE</div>
+              <div className="sprint-idle">
+                <div className="card-label">FOCUS SPRINT OBJECTIVE</div>
                 <input
-                  className="sprint-input"
                   type="text"
+                  className="input-goal"
                   placeholder="Define objective..."
                   value={goalInput}
                   onChange={(e) => setGoalInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStartSprint()}
                   maxLength={60}
                 />
-                <div className="duration-selector">
-                  {[15, 25, 45, 60].map((mins) => (
+                <div className="duration-row">
+                  {[15, 25, 45, 60].map((m) => (
                     <button
-                      key={mins}
-                      className={`duration-chip ${duration === mins ? 'selected' : ''}`}
-                      onClick={() => setDuration(mins)}
+                      key={m}
+                      className={`chip-duration ${duration === m ? 'selected' : ''}`}
+                      onClick={() => setDuration(m)}
                     >
-                      {mins}m
+                      {m}m
                     </button>
                   ))}
-                  <button className="btn-start-sprint" onClick={handleStartSprint}>
+                  <button className="btn-lock" onClick={handleStartSprint}>
                     Lock In
                   </button>
                 </div>
               </div>
             )}
-          </section>
+          </div>
 
-          {/* Model Archetype Selector */}
-          <section className="archetypes-section">
-            <div className="section-title">ACTIVE ORGANISM ARCHETYPE</div>
-            <div className="archetype-grid">
+          {/* Archetype Selector */}
+          <div className="archetype-section">
+            <div className="card-label">SELECT ORGANISM ARCHETYPE</div>
+            <div className="archetype-list">
               {(Object.keys(ORGANISM_MODELS) as OrganismId[]).map((id) => {
                 const item = ORGANISM_MODELS[id];
                 const isSelected = config.organismId === id;
                 return (
                   <button
                     key={id}
-                    className={`archetype-card ${isSelected ? 'selected' : ''}`}
+                    className={`archetype-chip ${isSelected ? 'selected' : ''}`}
                     style={isSelected ? { borderColor: item.accentColor } : {}}
                     onClick={() => handleOrganismChange(id)}
                   >
-                    <span className="archetype-emoji">{item.emoji}</span>
-                    <span className="archetype-name">{item.name}</span>
-                    <span className="archetype-role">{item.archetype}</span>
+                    <span className="chip-emoji">{item.emoji}</span>
+                    <div className="chip-texts">
+                      <span className="chip-title">{item.name}</span>
+                      <span className="chip-desc">{item.archetype}</span>
+                    </div>
                   </button>
                 );
               })}
             </div>
-          </section>
+          </div>
 
           {/* Telemetry Metrics */}
-          <section className="telemetry-bar">
-            <div className="telemetry-item">
-              <span className="telemetry-label">Focus Today</span>
-              <span className="telemetry-val">{organismState.focusMinutesToday}m</span>
+          <div className="metrics-row">
+            <div className="metric-box">
+              <span className="metric-lbl">Focus Today</span>
+              <span className="metric-val">{organismState.focusMinutesToday}m</span>
             </div>
-            <div className="telemetry-item">
-              <span className="telemetry-label">Divergences</span>
-              <span className="telemetry-val">{organismState.divergenceCountToday}</span>
+            <div className="metric-box">
+              <span className="metric-lbl">Divergences</span>
+              <span className="metric-val">{organismState.divergenceCountToday}</span>
             </div>
-            <div className="telemetry-item">
-              <span className="telemetry-label">State</span>
-              <span className="telemetry-val" style={{ color: model.accentColor }}>
+            <div className="metric-box">
+              <span className="metric-lbl">State</span>
+              <span className="metric-val" style={{ color: model.accentColor }}>
                 {organismState.state}
               </span>
             </div>
-          </section>
-
-          {/* Quick Action Button */}
-          <div className="action-row">
-            <button className="btn-pulse" onClick={handlePoke} disabled={pokeLoading}>
-              {pokeLoading ? 'Pinging…' : 'Ping Telemetry Pulse 📡'}
-            </button>
           </div>
-
-          {pokeResult && <div className="pulse-banner">{pokeResult}</div>}
         </div>
       )}
 
       {/* TAB 2: ACTIVITY STREAM */}
       {activeTab === 'activity' && (
-        <div className="tab-content">
-          <div className="activity-header-row">
-            <span className="section-title">OBSERVATION TIMELINE</span>
-            <button className="btn-clear-link" onClick={handleClearData}>
+        <div className="tab-pane">
+          <div className="stream-header">
+            <span className="card-label">OBSERVATION TIMELINE</span>
+            <button className="btn-clear" onClick={handleClearData}>
               Clear
             </button>
           </div>
 
           {activities.length === 0 ? (
-            <div className="empty-state">No observations recorded yet. Start browsing or lock in a sprint!</div>
+            <div className="empty-stream">No activity logged yet. Lock in a sprint or browse!</div>
           ) : (
-            <div className="activity-timeline">
+            <div className="stream-list">
               {activities.map((a) => (
-                <div key={a.id} className={`activity-row type-${a.type}`}>
-                  <span className="activity-icon">
+                <div key={a.id} className={`stream-item ${a.type}`}>
+                  <span className="item-icon">
                     {a.type === 'divergence'
                       ? '⚠️'
                       : a.type === 'return'
@@ -339,9 +327,9 @@ export default function App() {
                       ? '🏆'
                       : '⚡'}
                   </span>
-                  <div className="activity-details">
-                    <div className="activity-summary">{a.summary}</div>
-                    <div className="activity-meta">
+                  <div className="item-info">
+                    <div className="item-text">{a.summary}</div>
+                    <div className="item-meta">
                       {a.domain} • {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
@@ -354,37 +342,36 @@ export default function App() {
 
       {/* TAB 3: SETTINGS */}
       {activeTab === 'settings' && (
-        <div className="tab-content settings-view">
-          <div className="section-title">OPERATING INFERENCE MODE</div>
-
-          <div className="mode-switcher">
+        <div className="tab-pane">
+          <div className="card-label">OPERATING MODE</div>
+          <div className="mode-toggle-group">
             <button
-              className={`mode-btn ${config.mode === 'cloud' ? 'selected' : ''}`}
+              className={`mode-card ${config.mode === 'cloud' ? 'selected' : ''}`}
               onClick={async () => {
                 const next = { ...config, mode: 'cloud' as OperatingMode };
                 setConfig(next);
                 await configStorage.setValue(next);
               }}
             >
-              <div className="mode-btn-title">☁️ Cloud Managed</div>
-              <div className="mode-btn-desc">Zero configuration, hosted AI gateway & sync</div>
+              <div className="mode-title">☁️ Cloud Managed</div>
+              <div className="mode-sub">Zero configuration, hosted AI gateway & sync</div>
             </button>
 
             <button
-              className={`mode-btn ${config.mode === 'self-hosted' ? 'selected' : ''}`}
+              className={`mode-card ${config.mode === 'self-hosted' ? 'selected' : ''}`}
               onClick={async () => {
                 const next = { ...config, mode: 'self-hosted' as OperatingMode };
                 setConfig(next);
                 await configStorage.setValue(next);
               }}
             >
-              <div className="mode-btn-title">🖥️ Self-Hosted OSS</div>
-              <div className="mode-btn-desc">Connect to local Ollama / LM Studio or custom proxy</div>
+              <div className="mode-title">🖥️ Self-Hosted OSS</div>
+              <div className="mode-sub">Connect to local Ollama / LM Studio or custom proxy</div>
             </button>
           </div>
 
           {config.mode === 'self-hosted' && (
-            <div className="self-hosted-fields">
+            <div className="settings-fields">
               <label className="field-label">Endpoint URL</label>
               <input
                 type="text"
@@ -411,14 +398,14 @@ export default function App() {
             </div>
           )}
 
-          <div className="section-title" style={{ marginTop: '12px' }}>
+          <div className="card-label" style={{ marginTop: '12px' }}>
             INTERRUPTION FREQUENCY
           </div>
-          <div className="dock-grid">
+          <div className="frequency-group">
             {(['quiet', 'balanced', 'chatty'] as ChattinessLevel[]).map((lvl) => (
               <button
                 key={lvl}
-                className={`dock-btn ${config.chattiness === lvl ? 'selected' : ''}`}
+                className={`freq-btn ${config.chattiness === lvl ? 'selected' : ''}`}
                 onClick={async () => {
                   const next = { ...config, chattiness: lvl };
                   setConfig(next);
@@ -430,11 +417,11 @@ export default function App() {
             ))}
           </div>
 
-          <div className="settings-actions">
-            <button className="btn-danger" onClick={handleClearData}>
+          <div className="settings-foot">
+            <button className="btn-wipe" onClick={handleClearData}>
               Reset History
             </button>
-            <button className="btn-save" onClick={handleSaveSettings}>
+            <button className="btn-apply" onClick={handleSaveSettings}>
               Apply Settings
             </button>
           </div>
@@ -442,4 +429,13 @@ export default function App() {
       )}
     </div>
   );
+}
+
+function getOrganismSvg(id: OrganismId): string {
+  const model = ORGANISM_MODELS[id] || ORGANISM_MODELS.nexus;
+  return /* html */ `
+    <div style="width:100px; height:100px; display:flex; align-items:center; justify-content:center; font-size:48px; filter:drop-shadow(0 8px 16px ${model.accentColor}44);">
+      ${model.emoji}
+    </div>
+  `;
 }

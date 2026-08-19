@@ -6,6 +6,6 @@ export default defineConfig({
   manifest: {
     name: 'Gremlin — AI Browser Organism',
     description: 'A tiny AI organism that lives in your browser, watches what you do, and has opinions.',
-    permissions: ['storage', 'tabs', 'idle', 'alarms'],
+    permissions: ['storage', 'tabs', 'idle', 'alarms', 'sidePanel'],
   },
 });
