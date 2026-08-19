@@ -8,6 +8,7 @@ import {
   type FocusSprint,
   type OrganismStateData,
   type ActivityEntry,
+  type DockPosition,
   type ChattinessLevel,
   type OperatingMode,
 } from '@/lib/storage';
@@ -15,7 +16,6 @@ import {
   ORGANISM_MODELS,
   type OrganismId,
 } from '@/lib/personalities/types';
-import { OrganismDisplay } from '@/lib/organism/OrganismDisplay';
 import { sendMessage } from '@/lib/messaging';
 import './App.css';
 
@@ -97,18 +97,6 @@ export default function App() {
     await sendMessage('stopSprint', undefined);
   };
 
-  const handleOpenSidePanel = async () => {
-    try {
-      const [currentTab] = await browser.tabs.query({ active: true, currentWindow: true });
-      if (currentTab?.windowId && (browser as any).sidePanel?.open) {
-        await (browser as any).sidePanel.open({ windowId: currentTab.windowId });
-        window.close();
-      }
-    } catch {
-      alert('Click the Side Panel icon in Chrome toolbar to open the companion rail.');
-    }
-  };
-
   const handlePoke = async () => {
     setPokeLoading(true);
     setPokeResult(null);
@@ -145,6 +133,7 @@ export default function App() {
     }
   };
 
+  // Remaining sprint timer calculation
   let remainingMinutes = 0;
   if (sprint.status === 'active' && sprint.startedAt > 0) {
     const elapsedMinutes = (Date.now() - sprint.startedAt) / 60000;
@@ -181,14 +170,6 @@ export default function App() {
         </button>
       </header>
 
-      {/* Organism Stage */}
-      <OrganismDisplay
-        organismId={config.organismId}
-        state={organismState.state}
-        remark={organismState.lastRemark}
-        supportsPiP={false}
-      />
-
       {/* Nav Tabs */}
       <nav className="nav-tabs">
         <button
@@ -207,18 +188,13 @@ export default function App() {
           className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
-          ⚙️ Settings
+          ⚙️ Infrastructure
         </button>
       </nav>
 
       {/* TAB 1: SPRINT HUB */}
       {activeTab === 'hub' && (
         <div className="tab-content">
-          {/* Side Panel Launcher */}
-          <button className="btn-sidepanel-launcher" onClick={handleOpenSidePanel}>
-            <span>🖥️ Open Chrome Side Panel Rail</span>
-          </button>
-
           {/* Sprint Focus Section */}
           <section className="sprint-card">
             {sprint.status === 'active' ? (
@@ -238,7 +214,7 @@ export default function App() {
                 <input
                   className="sprint-input"
                   type="text"
-                  placeholder="Define objective..."
+                  placeholder="e.g., Code API endpoints without tab switching"
                   value={goalInput}
                   onChange={(e) => setGoalInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStartSprint()}
@@ -303,6 +279,13 @@ export default function App() {
             </div>
           </section>
 
+          {/* Recent Quote / Telemetry */}
+          {organismState.lastRemark && (
+            <div className="thought-quote-box">
+              <span className="quote-text">“{organismState.lastRemark}”</span>
+            </div>
+          )}
+
           {/* Quick Action Button */}
           <div className="action-row">
             <button className="btn-pulse" onClick={handlePoke} disabled={pokeLoading}>
@@ -352,11 +335,12 @@ export default function App() {
         </div>
       )}
 
-      {/* TAB 3: SETTINGS */}
+      {/* TAB 3: INFRASTRUCTURE & SETTINGS */}
       {activeTab === 'settings' && (
         <div className="tab-content settings-view">
           <div className="section-title">OPERATING INFERENCE MODE</div>
 
+          {/* Mode Switcher */}
           <div className="mode-switcher">
             <button
               className={`mode-btn ${config.mode === 'cloud' ? 'selected' : ''}`}
@@ -383,6 +367,7 @@ export default function App() {
             </button>
           </div>
 
+          {/* Self-Hosted Details */}
           {config.mode === 'self-hosted' && (
             <div className="self-hosted-fields">
               <label className="field-label">Endpoint URL</label>
@@ -401,7 +386,7 @@ export default function App() {
                 placeholder="llama3"
               />
 
-              <label className="field-label">Bearer Token / Key (Optional)</label>
+              <label className="field-label">Bearer / API Key (Optional)</label>
               <input
                 type="password"
                 value={apiKeyInput}
@@ -410,6 +395,28 @@ export default function App() {
               />
             </div>
           )}
+
+          {/* Dock Position & Behavior */}
+          <div className="section-title" style={{ marginTop: '12px' }}>
+            VIEWPORT DOCK POSITION
+          </div>
+          <div className="dock-grid">
+            {(['bottom-right', 'bottom-left', 'top-right'] as DockPosition[]).map((pos) => (
+              <button
+                key={pos}
+                className={`dock-btn ${config.dockPosition === pos ? 'selected' : ''}`}
+                onClick={async () => {
+                  const xFrac = pos === 'bottom-left' ? 0.04 : 0.90;
+                  const yFrac = pos === 'top-right' ? 0.04 : 0.82;
+                  const next: OrganismConfig = { ...config, dockPosition: pos, xFrac, yFrac };
+                  setConfig(next);
+                  await configStorage.setValue(next);
+                }}
+              >
+                {pos.replace('-', ' ')}
+              </button>
+            ))}
+          </div>
 
           <div className="section-title" style={{ marginTop: '12px' }}>
             INTERRUPTION FREQUENCY
@@ -432,7 +439,7 @@ export default function App() {
 
           <div className="settings-actions">
             <button className="btn-danger" onClick={handleClearData}>
-              Reset History
+              Reset Telemetry History
             </button>
             <button className="btn-save" onClick={handleSaveSettings}>
               Apply Settings
