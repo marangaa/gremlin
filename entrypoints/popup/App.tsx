@@ -9,7 +9,6 @@ import {
   type OrganismStateData,
   type ActivityEntry,
   type DockPosition,
-  type ChattinessLevel,
   type OperatingMode,
 } from '@/lib/storage';
 import {
@@ -20,6 +19,8 @@ import { CHARACTER_SKINS } from '@/lib/personalities/skins';
 import { sendMessage } from '@/lib/messaging';
 import { soundSynth } from '@/lib/audio/soundEngine';
 import './App.css';
+
+const ALL_COMPANIONS: OrganismId[] = ['nexus', 'cipher', 'aero', 'kuro', 'atlas'];
 
 export default function App() {
   const [config, setConfig] = useState<OrganismConfig | null>(null);
@@ -36,7 +37,6 @@ export default function App() {
   // Settings form states
   const [endpointInput, setEndpointInput] = useState('');
   const [modelInput, setModelInput] = useState('');
-  const [apiKeyInput, setApiKeyInput] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -46,7 +46,6 @@ export default function App() {
         setConfig(c);
         setEndpointInput(c.selfHostedEndpoint);
         setModelInput(c.selfHostedModel);
-        setApiKeyInput(c.selfHostedApiKey || '');
         soundSynth.setVolume(c.volume ?? 0.6);
         soundSynth.setMuted(!c.soundEnabled);
       }
@@ -71,7 +70,7 @@ export default function App() {
   }, []);
 
   if (!config || !sprint || !organismState) {
-    return <div className="loading-screen">Waking your companion…</div>;
+    return <div className="loading-screen">Starting Gremlin…</div>;
   }
 
   const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.nexus;
@@ -81,7 +80,7 @@ export default function App() {
     const next = { ...config, organismId: id, name: ORGANISM_MODELS[id].name };
     setConfig(next);
     await configStorage.setValue(next);
-    soundSynth.playAnimalese('Hello!', id);
+    soundSynth.playAnimalese('Hi', id);
   };
 
   const handleToggleEnabled = async () => {
@@ -98,27 +97,14 @@ export default function App() {
     if (next.soundEnabled) soundSynth.playChime('poke');
   };
 
-  const handleToggleEffects = async () => {
-    const next = { ...config, effectsEnabled: !config.effectsEnabled };
-    setConfig(next);
-    await configStorage.setValue(next);
-  };
-
-  const handleVolumeChange = async (vol: number) => {
-    const next = { ...config, volume: vol };
-    setConfig(next);
-    await configStorage.setValue(next);
-    soundSynth.setVolume(vol);
-  };
-
   const handleStartSprint = async () => {
     if (!goalInput.trim()) return;
-    soundSynth.playChime('start');
     await sendMessage('startSprint', {
       goal: goalInput.trim(),
       targetMinutes: duration,
     });
     setGoalInput('');
+    soundSynth.playChime('start');
   };
 
   const handleStopSprint = async () => {
@@ -129,6 +115,7 @@ export default function App() {
     setPokeLoading(true);
     setPokeResult(null);
     soundSynth.playChime('poke');
+
     try {
       const res = await sendMessage('pokeOrganism', undefined);
       if (res?.message) {
@@ -136,12 +123,13 @@ export default function App() {
         soundSynth.playAnimalese(res.message, config.organismId);
       } else {
         setPokeResult(skin.copy.pokedNotice);
+        soundSynth.playAnimalese('Poke!', config.organismId);
       }
     } catch {
-      setPokeResult(skin.copy.pokedNotice);
+      setPokeResult('Poked companion!');
     } finally {
       setPokeLoading(false);
-      setTimeout(() => setPokeResult(null), 4000);
+      setTimeout(() => setPokeResult(null), 3000);
     }
   };
 
@@ -150,379 +138,390 @@ export default function App() {
       ...config,
       selfHostedEndpoint: endpointInput.trim() || 'http://localhost:11434/v1',
       selfHostedModel: modelInput.trim() || 'llama3',
-      selfHostedApiKey: apiKeyInput.trim() || undefined,
     };
     setConfig(next);
     await configStorage.setValue(next);
-    setActiveTab('focus');
   };
 
-  const handleClearData = async () => {
-    if (confirm('Clear today’s activity timeline?')) {
+  const handleClearHistory = async () => {
+    if (confirm('Clear today’s browsing activity log?')) {
       await sendMessage('clearActivityLog', undefined);
     }
   };
 
-  // Remaining sprint timer calculation
-  let remainingMinutes = 0;
-  if (sprint.status === 'active' && sprint.startedAt > 0) {
-    const elapsedMinutes = (Date.now() - sprint.startedAt) / 60000;
-    remainingMinutes = Math.max(0, Math.ceil(sprint.targetMinutes - elapsedMinutes));
-  }
+  // Sprint Progress
+  const isSprintActive = sprint.status === 'active' && sprint.startedAt > 0;
+  const elapsedMinutes = isSprintActive ? (Date.now() - sprint.startedAt) / 60000 : 0;
+  const remainingMinutes = isSprintActive ? Math.max(0, Math.ceil(sprint.targetMinutes - elapsedMinutes)) : 0;
+  const progressPercent = isSprintActive && sprint.targetMinutes > 0
+    ? Math.min(100, Math.max(0, (elapsedMinutes / sprint.targetMinutes) * 100))
+    : 0;
 
   return (
     <div
-      className={`habitat-shell skin-${config.organismId}`}
-      style={
-        {
-          '--skin-bg-app': skin.colors.bgApp,
-          '--skin-bg-gradient': skin.colors.bgAppGradient,
-          '--skin-bg-card': skin.colors.bgCard,
-          '--skin-bg-card-hover': skin.colors.bgCardHover,
-          '--skin-bg-input': skin.colors.bgInput,
-          '--skin-text-primary': skin.colors.textPrimary,
-          '--skin-text-secondary': skin.colors.textSecondary,
-          '--skin-text-dim': skin.colors.textDim,
-          '--skin-accent': skin.colors.accent,
-          '--skin-accent-glow': skin.colors.accentGlow,
-          '--skin-border': skin.colors.border,
-          '--skin-border-active': skin.colors.borderActive,
-          '--skin-font': skin.fontFamily,
-        } as React.CSSProperties
-      }
+      className="popup-container"
+      style={{
+        '--skin-bg-app': skin.colors.bgApp,
+        '--skin-bg-gradient': skin.colors.bgAppGradient,
+        '--skin-accent': skin.colors.accent,
+        '--skin-accent-glow': skin.colors.accentGlow,
+        '--skin-border': skin.colors.border,
+        '--skin-border-active': skin.colors.borderActive,
+        '--skin-text-primary': skin.colors.textPrimary,
+        '--skin-text-secondary': skin.colors.textSecondary,
+        '--skin-font': skin.fontFamily,
+      } as React.CSSProperties}
     >
-      {/* Top Header Card */}
-      <header className="skin-header">
-        <div className="header-character">
-          <div className="avatar-frame">
-            <span className="avatar-emoji">{skin.avatarEmoji}</span>
+      {/* Procedural Grain Noise Backdrop */}
+      <div className="bg-grain-noise" />
+
+      {/* Top Header */}
+      <header className="popup-header">
+        <div className="header-brand">
+          <div className="avatar-chip">
+            <span>{skin.avatarEmoji}</span>
           </div>
-          <div className="title-block">
-            <div className="title-badge-row">
-              <h1 className="skin-hub-title">{skin.hubTitle}</h1>
-              <span className="skin-pill-badge">{skin.badge}</span>
+          <div className="brand-meta">
+            <div className="brand-title-row">
+              <h1 className="brand-name">{skin.name}</h1>
+              <span className="badge-pill">{skin.badge}</span>
             </div>
-            <p className="skin-hub-subtitle">{skin.hubSubtitle}</p>
+            <p className="brand-desc">{skin.tagline}</p>
           </div>
         </div>
 
-        <div className="header-controls">
+        <div className="header-toggles">
           <button
-            className={`btn-sound-switch ${config.soundEnabled ? 'active' : ''}`}
+            className={`btn-sound ${config.soundEnabled ? 'active' : ''}`}
             onClick={handleToggleSound}
-            title={config.soundEnabled ? 'Mute Sounds' : 'Unmute Sounds'}
+            title={config.soundEnabled ? 'Mute sounds' : 'Enable sounds'}
           >
-            {config.soundEnabled ? '🔔' : '🔕'}
+            {config.soundEnabled ? '🔊' : '🔇'}
           </button>
           <button
-            className={`btn-master-power ${config.enabled ? 'active' : ''}`}
+            className={`btn-power ${config.enabled ? 'active' : ''}`}
             onClick={handleToggleEnabled}
-            title={config.enabled ? 'Companion Active (Click to Sleep)' : 'Companion Sleeping (Click to Wake)'}
+            title={config.enabled ? 'Pause companion' : 'Wake companion'}
           >
             <span className="power-thumb" />
           </button>
         </div>
       </header>
 
-      {/* Navigation Tab Bar */}
-      <nav className="skin-tabs">
+      {/* Companion Switcher Strip */}
+      <div className="companion-strip">
+        {ALL_COMPANIONS.map((cid) => {
+          const comp = CHARACTER_SKINS[cid];
+          const isSelected = config.organismId === cid;
+          return (
+            <button
+              key={cid}
+              className={`companion-pill ${isSelected ? 'active' : ''}`}
+              onClick={() => handleOrganismChange(cid)}
+              title={`${comp.name}: ${comp.tagline}`}
+            >
+              <span className="pill-emoji">{comp.avatarEmoji}</span>
+              <span className="pill-name">{comp.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Segmented Navigation Tabs */}
+      <nav className="tab-bar">
         <button
-          className={`skin-tab-btn ${activeTab === 'focus' ? 'active' : ''}`}
+          className={`tab-btn ${activeTab === 'focus' ? 'active' : ''}`}
           onClick={() => setActiveTab('focus')}
         >
           {skin.copy.tabFocus}
         </button>
         <button
-          className={`skin-tab-btn ${activeTab === 'log' ? 'active' : ''}`}
+          className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}
           onClick={() => setActiveTab('log')}
         >
-          {skin.copy.tabLog} ({activities.length})
+          {skin.copy.tabLog}
         </button>
         <button
-          className={`skin-tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
           {skin.copy.tabSettings}
         </button>
       </nav>
 
-      {/* TAB 1: FOCUS HUB */}
-      {activeTab === 'focus' && (
-        <div className="skin-tab-content">
-          {/* Main Focus Card */}
-          <section className="skin-card main-focus-card">
-            {sprint.status === 'active' ? (
-              <div className="active-sprint-container">
-                <div className="sprint-state-tag">{skin.copy.sprintRunningBadge}</div>
-                <div className="sprint-goal-display">"{sprint.goal}"</div>
-                <div className="sprint-progress-bar-wrapper">
-                  <div
-                    className="sprint-progress-bar"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        Math.max(
-                          0,
-                          (((Date.now() - sprint.startedAt) / 60000) / sprint.targetMinutes) * 100,
-                        ),
-                      )}%`,
-                    }}
-                  />
+      {/* Main View Area */}
+      <main className="view-content">
+        {/* ================= FOCUS TAB ================= */}
+        {activeTab === 'focus' && (
+          <section className="section-flow">
+            {/* Active Sprint Banner or Setup */}
+            {isSprintActive ? (
+              <div className="sprint-active-box">
+                <div className="sprint-active-head">
+                  <span className="status-indicator-dot" />
+                  <span className="sprint-goal-title">"{sprint.goal}"</span>
+                  <span className="sprint-time-badge">{remainingMinutes}m left</span>
                 </div>
-                <div className="sprint-action-footer">
-                  <span className="sprint-countdown">⏳ {remainingMinutes}m remaining</span>
-                  <button className="btn-cancel-sprint" onClick={handleStopSprint}>
-                    End Early
+                <div className="progress-bar-track">
+                  <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
+                </div>
+                <div className="sprint-active-footer">
+                  <span className="sprint-time-detail">
+                    {Math.round(elapsedMinutes)} of {sprint.targetMinutes} minutes elapsed
+                  </span>
+                  <button className="btn-stop-sprint" onClick={handleStopSprint}>
+                    Finish Early
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="idle-sprint-container">
-                <label className="skin-section-label">{skin.copy.sprintCardLabel}</label>
-                <input
-                  className="skin-focus-input"
-                  type="text"
-                  placeholder={skin.copy.sprintPlaceholder}
-                  value={goalInput}
-                  onChange={(e) => setGoalInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleStartSprint()}
-                  maxLength={65}
-                />
-                <div className="duration-preset-row">
-                  {[15, 25, 45, 60].map((mins) => (
-                    <button
-                      key={mins}
-                      className={`preset-pill ${duration === mins ? 'selected' : ''}`}
-                      onClick={() => setDuration(mins)}
-                    >
-                      {mins}m
-                    </button>
-                  ))}
-                  <button className="btn-start-focus" onClick={handleStartSprint}>
+              <div className="sprint-setup-box">
+                <label className="section-label">{skin.copy.sprintCardLabel}</label>
+                <div className="input-with-button">
+                  <input
+                    type="text"
+                    className="input-goal"
+                    placeholder={skin.copy.sprintPlaceholder}
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleStartSprint()}
+                    maxLength={80}
+                  />
+                  <button
+                    className="btn-start"
+                    onClick={handleStartSprint}
+                    disabled={!goalInput.trim()}
+                  >
                     {skin.copy.sprintStartBtn}
                   </button>
                 </div>
-              </div>
-            )}
-          </section>
 
-          {/* Companion Character Switcher */}
-          <section className="skin-card">
-            <label className="skin-section-label">SWITCH COMPANION SKIN</label>
-            <div className="skin-companion-grid">
-              {(Object.keys(ORGANISM_MODELS) as OrganismId[]).map((id) => {
-                const item = ORGANISM_MODELS[id];
-                const isSelected = config.organismId === id;
-                return (
-                  <button
-                    key={id}
-                    className={`companion-choice-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => handleOrganismChange(id)}
-                  >
-                    <span className="choice-emoji">{item.emoji}</span>
-                    <span className="choice-name">{item.name}</span>
-                    <span className="choice-role">{item.archetype.split(' ')[1] || item.archetype}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Daily Metrics Dashboard */}
-          <div className="skin-metrics-grid">
-            <div className="metric-cell">
-              <span className="metric-number">{organismState.focusMinutesToday}m</span>
-              <span className="metric-caption">{skin.copy.metricFocusLabel}</span>
-            </div>
-            <div className="metric-cell">
-              <span className="metric-number">{organismState.divergenceCountToday}</span>
-              <span className="metric-caption">{skin.copy.metricDetoursLabel}</span>
-            </div>
-            <div className="metric-cell">
-              <span className="metric-number mood-text">{organismState.state}</span>
-              <span className="metric-caption">{skin.copy.metricMoodLabel}</span>
-            </div>
-          </div>
-
-          {/* Live Thought Bubble */}
-          {organismState.lastRemark && (
-            <div className="skin-thought-bubble">
-              <span className="thought-icon">💭</span>
-              <span className="thought-body">“{organismState.lastRemark}”</span>
-            </div>
-          )}
-
-          {/* Interactive Poke Action */}
-          <button className="btn-skin-poke" onClick={handlePoke} disabled={pokeLoading}>
-            {pokeLoading ? 'Connecting…' : skin.copy.pokeBtn}
-          </button>
-
-          {pokeResult && <div className="skin-poke-banner">{pokeResult}</div>}
-        </div>
-      )}
-
-      {/* TAB 2: ACTIVITY TIMELINE */}
-      {activeTab === 'log' && (
-        <div className="skin-tab-content">
-          <div className="log-header-bar">
-            <label className="skin-section-label">{skin.copy.logTitle}</label>
-            <button className="btn-clear-timeline" onClick={handleClearData}>
-              Clear
-            </button>
-          </div>
-
-          {activities.length === 0 ? (
-            <div className="empty-timeline-state">{skin.copy.emptyLog}</div>
-          ) : (
-            <div className="timeline-scroll-container">
-              {activities.map((a) => (
-                <div key={a.id} className={`timeline-entry-card entry-${a.type}`}>
-                  <span className="entry-symbol">
-                    {a.type === 'divergence'
-                      ? '⚠️'
-                      : a.type === 'return'
-                      ? '🌸'
-                      : a.type === 'milestone'
-                      ? '🏆'
-                      : '⚡'}
-                  </span>
-                  <div className="entry-details">
-                    <div className="entry-summary-text">{a.summary}</div>
-                    <div className="entry-meta-text">
-                      {a.domain} • {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
+                <div className="duration-row">
+                  <span className="duration-label">Duration:</span>
+                  <div className="duration-options">
+                    {[15, 25, 45, 60].map((mins) => (
+                      <button
+                        key={mins}
+                        className={`duration-chip ${duration === mins ? 'selected' : ''}`}
+                        onClick={() => setDuration(mins)}
+                      >
+                        {mins}m
+                      </button>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB 3: SETTINGS */}
-      {activeTab === 'settings' && (
-        <div className="skin-tab-content">
-          <label className="skin-section-label">AUDIO & VISUAL EFFECTS</label>
-
-          <div className="skin-card">
-            <div className="skin-toggle-item">
-              <div>
-                <div className="toggle-heading">{skin.copy.soundTitle}</div>
-                <div className="toggle-subheading">Procedural Web Audio speech chirps & chimes</div>
-              </div>
-              <button
-                className={`switch-control ${config.soundEnabled ? 'active' : ''}`}
-                onClick={handleToggleSound}
-              >
-                <span className="switch-knob" />
-              </button>
-            </div>
-
-            {config.soundEnabled && (
-              <div className="skin-slider-box">
-                <span className="slider-label">Volume: {Math.round(config.volume * 100)}%</span>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="1"
-                  step="0.05"
-                  value={config.volume}
-                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                />
               </div>
             )}
 
-            <div className="skin-toggle-item" style={{ marginTop: '12px' }}>
-              <div>
-                <div className="toggle-heading">{skin.copy.effectsTitle}</div>
-                <div className="toggle-subheading">Full screen distraction reminders during sprints</div>
-              </div>
-              <button
-                className={`switch-control ${config.effectsEnabled ? 'active' : ''}`}
-                onClick={handleToggleEffects}
-              >
-                <span className="switch-knob" />
-              </button>
-            </div>
-          </div>
-
-          <label className="skin-section-label" style={{ marginTop: '8px' }}>
-            INTELLIGENCE PROVIDER
-          </label>
-
-          <div className="skin-card">
-            <div className="provider-grid">
-              <button
-                className={`provider-button ${config.mode === 'cloud' ? 'selected' : ''}`}
-                onClick={async () => {
-                  const next = { ...config, mode: 'cloud' as OperatingMode };
-                  setConfig(next);
-                  await configStorage.setValue(next);
-                }}
-              >
-                ☁️ Cloud Gateway
-              </button>
-              <button
-                className={`provider-button ${config.mode === 'self-hosted' ? 'selected' : ''}`}
-                onClick={async () => {
-                  const next = { ...config, mode: 'self-hosted' as OperatingMode };
-                  setConfig(next);
-                  await configStorage.setValue(next);
-                }}
-              >
-                🖥️ Local Ollama
-              </button>
+            {/* Live Remark / Thought Bubble */}
+            <div className="thought-stream">
+              {pokeResult ? (
+                <div className="thought-bubble poke-alert">{pokeResult}</div>
+              ) : organismState.lastRemark ? (
+                <div className="thought-bubble">“{organismState.lastRemark}”</div>
+              ) : (
+                <div className="thought-bubble-muted">
+                  <span>{skin.tagline}</span>
+                </div>
+              )}
             </div>
 
-            {config.mode === 'self-hosted' && (
-              <div className="local-config-box">
-                <label className="config-hint">Ollama / Custom Endpoint URL</label>
-                <input
-                  type="text"
-                  value={endpointInput}
-                  onChange={(e) => setEndpointInput(e.target.value)}
-                  placeholder="http://localhost:11434/v1"
-                />
-
-                <label className="config-hint">Model Identifier</label>
-                <input
-                  type="text"
-                  value={modelInput}
-                  onChange={(e) => setModelInput(e.target.value)}
-                  placeholder="llama3"
-                />
+            {/* Metrics Row */}
+            <div className="metrics-strip">
+              <div className="metric-cell">
+                <span className="metric-value">{organismState.focusMinutesToday}m</span>
+                <span className="metric-title">{skin.copy.metricFocusLabel}</span>
               </div>
-            )}
-          </div>
+              <div className="metric-cell">
+                <span className="metric-value">{organismState.divergenceCountToday}</span>
+                <span className="metric-title">{skin.copy.metricDetoursLabel}</span>
+              </div>
+              <div className="metric-cell">
+                <span className="metric-value mood-val">{organismState.state}</span>
+                <span className="metric-title">{skin.copy.metricMoodLabel}</span>
+              </div>
+            </div>
 
-          <label className="skin-section-label" style={{ marginTop: '8px' }}>
-            VIEWPORT POSITION
-          </label>
-          <div className="dock-position-row">
-            {(['bottom-right', 'bottom-left', 'top-right'] as DockPosition[]).map((pos) => (
-              <button
-                key={pos}
-                className={`dock-pill ${config.dockPosition === pos ? 'selected' : ''}`}
-                onClick={async () => {
-                  const xFrac = pos === 'bottom-left' ? 0.04 : 0.90;
-                  const yFrac = pos === 'top-right' ? 0.04 : 0.82;
-                  const next: OrganismConfig = { ...config, dockPosition: pos, xFrac, yFrac };
-                  setConfig(next);
-                  await configStorage.setValue(next);
-                }}
-              >
-                {pos.replace('-', ' ')}
-              </button>
-            ))}
-          </div>
-
-          <div className="skin-footer-actions">
-            <button className="btn-apply-settings" onClick={handleSaveSettings}>
-              Apply & Save Settings
+            {/* Quick Interaction */}
+            <button
+              className="btn-poke-companion"
+              onClick={handlePoke}
+              disabled={pokeLoading}
+            >
+              <span>{skin.copy.pokeBtn}</span>
             </button>
-          </div>
-        </div>
-      )}
+          </section>
+        )}
+
+        {/* ================= HISTORY TAB ================= */}
+        {activeTab === 'log' && (
+          <section className="section-flow">
+            <div className="section-header-row">
+              <span className="section-label">{skin.copy.logTitle}</span>
+              {activities.length > 0 && (
+                <button className="btn-text-clear" onClick={handleClearHistory}>
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {activities.length === 0 ? (
+              <div className="empty-state-box">{skin.copy.emptyLog}</div>
+            ) : (
+              <div className="activity-list">
+                {activities.slice(0, 15).map((act) => {
+                  const timeStr = new Date(act.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+                  return (
+                    <div key={act.id} className="activity-row">
+                      <div className="activity-time">{timeStr}</div>
+                      <div className="activity-info">
+                        <div className="activity-domain">{act.domain}</div>
+                        <div className="activity-title-text">{act.summary}</div>
+                      </div>
+                      <span className={`status-tag status-${act.type}`}>
+                        {act.type}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ================= SETTINGS TAB ================= */}
+        {activeTab === 'settings' && (
+          <section className="section-flow">
+            <div className="settings-group">
+              <span className="section-label">EXPERIENCE</span>
+
+              <div className="settings-row">
+                <div>
+                  <div className="settings-name">{skin.copy.soundTitle}</div>
+                  <div className="settings-sub">Procedural Animalese voice chirps</div>
+                </div>
+                <button
+                  className={`switch-pill ${config.soundEnabled ? 'active' : ''}`}
+                  onClick={handleToggleSound}
+                >
+                  <span className="switch-thumb" />
+                </button>
+              </div>
+
+              {config.soundEnabled && (
+                <div className="volume-slider-row">
+                  <span className="volume-label">Volume: {Math.round((config.volume ?? 0.6) * 100)}%</span>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1"
+                    step="0.05"
+                    value={config.volume ?? 0.6}
+                    onChange={async (e) => {
+                      const v = parseFloat(e.target.value);
+                      const next = { ...config, volume: v };
+                      setConfig(next);
+                      await configStorage.setValue(next);
+                      soundSynth.setVolume(v);
+                    }}
+                  />
+                </div>
+              )}
+
+              <div className="settings-row">
+                <div>
+                  <div className="settings-name">{skin.copy.effectsTitle}</div>
+                  <div className="settings-sub">Visual notifications when distracted</div>
+                </div>
+                <button
+                  className={`switch-pill ${config.effectsEnabled ? 'active' : ''}`}
+                  onClick={async () => {
+                    const next = { ...config, effectsEnabled: !config.effectsEnabled };
+                    setConfig(next);
+                    await configStorage.setValue(next);
+                  }}
+                >
+                  <span className="switch-thumb" />
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <span className="section-label">DOCK POSITION</span>
+              <div className="dock-position-options">
+                {(['bottom-right', 'bottom-left', 'top-right'] as DockPosition[]).map((pos) => (
+                  <button
+                    key={pos}
+                    className={`dock-chip ${config.dockPosition === pos ? 'selected' : ''}`}
+                    onClick={async () => {
+                      const next = { ...config, dockPosition: pos };
+                      setConfig(next);
+                      await configStorage.setValue(next);
+                    }}
+                  >
+                    {pos.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-group">
+              <span className="section-label">INTELLIGENCE PROVIDER</span>
+              <div className="provider-options">
+                <button
+                  className={`provider-chip ${config.mode === 'cloud' ? 'selected' : ''}`}
+                  onClick={async () => {
+                    const next: OrganismConfig = { ...config, mode: 'cloud' as OperatingMode };
+                    setConfig(next);
+                    await configStorage.setValue(next);
+                  }}
+                >
+                  ☁️ Managed Cloud
+                </button>
+                <button
+                  className={`provider-chip ${config.mode === 'self-hosted' ? 'selected' : ''}`}
+                  onClick={async () => {
+                    const next: OrganismConfig = { ...config, mode: 'self-hosted' as OperatingMode };
+                    setConfig(next);
+                    await configStorage.setValue(next);
+                  }}
+                >
+                  🖥️ Local Ollama
+                </button>
+              </div>
+
+              {config.mode === 'self-hosted' && (
+                <div className="self-hosted-form">
+                  <label className="field-label">Ollama / Custom API Endpoint</label>
+                  <input
+                    type="text"
+                    className="field-input"
+                    value={endpointInput}
+                    onChange={(e) => setEndpointInput(e.target.value)}
+                    placeholder="http://localhost:11434/v1"
+                  />
+
+                  <label className="field-label">Model Name</label>
+                  <input
+                    type="text"
+                    className="field-input"
+                    value={modelInput}
+                    onChange={(e) => setModelInput(e.target.value)}
+                    placeholder="llama3"
+                  />
+
+                  <button className="btn-save-settings" onClick={handleSaveSettings}>
+                    Save Local Configuration
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+      </main>
     </div>
   );
 }
