@@ -16,17 +16,10 @@ import {
   ORGANISM_MODELS,
   type OrganismId,
 } from '@/lib/personalities/types';
+import { CHARACTER_SKINS } from '@/lib/personalities/skins';
 import { sendMessage } from '@/lib/messaging';
 import { soundSynth } from '@/lib/audio/soundEngine';
 import './App.css';
-
-const HABITAT_TITLES: Record<OrganismId, { title: string; subtitle: string }> = {
-  nexus: { title: "Gorg's Mothership", subtitle: 'Alien Expedition Habitat' },
-  cipher: { title: "Bolt's Workshop", subtitle: 'Builder & Mechanic Bench' },
-  aero: { title: "Momo's Garden", subtitle: 'Mindful Zen Sanctuary' },
-  kuro: { title: "Kuro's Lair", subtitle: 'Mischief & Accountability Den' },
-  atlas: { title: "Glitch's Arcade", subtitle: 'Retro 8-Bit Stage' },
-};
 
 export default function App() {
   const [config, setConfig] = useState<OrganismConfig | null>(null);
@@ -34,7 +27,7 @@ export default function App() {
   const [organismState, setOrganismState] = useState<OrganismStateData | null>(null);
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'habitat' | 'log' | 'settings'>('habitat');
+  const [activeTab, setActiveTab] = useState<'focus' | 'log' | 'settings'>('focus');
   const [goalInput, setGoalInput] = useState('');
   const [duration, setDuration] = useState(25);
   const [pokeLoading, setPokeLoading] = useState(false);
@@ -81,8 +74,8 @@ export default function App() {
     return <div className="loading-screen">Waking your companion…</div>;
   }
 
+  const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.nexus;
   const model = ORGANISM_MODELS[config.organismId] || ORGANISM_MODELS.nexus;
-  const habitat = HABITAT_TITLES[config.organismId] || HABITAT_TITLES.nexus;
 
   const handleOrganismChange = async (id: OrganismId) => {
     const next = { ...config, organismId: id, name: ORGANISM_MODELS[id].name };
@@ -142,10 +135,10 @@ export default function App() {
         setPokeResult(`“${res.message}”`);
         soundSynth.playAnimalese(res.message, config.organismId);
       } else {
-        setPokeResult('Poked!');
+        setPokeResult(skin.copy.pokedNotice);
       }
     } catch {
-      setPokeResult('Poked!');
+      setPokeResult(skin.copy.pokedNotice);
     } finally {
       setPokeLoading(false);
       setTimeout(() => setPokeResult(null), 4000);
@@ -161,11 +154,11 @@ export default function App() {
     };
     setConfig(next);
     await configStorage.setValue(next);
-    setActiveTab('habitat');
+    setActiveTab('focus');
   };
 
   const handleClearData = async () => {
-    if (confirm('Clear today’s session activity history?')) {
+    if (confirm('Clear today’s activity timeline?')) {
       await sendMessage('clearActivityLog', undefined);
     }
   };
@@ -178,186 +171,213 @@ export default function App() {
   }
 
   return (
-    <div className={`habitat-root theme-${config.organismId}`}>
-      {/* Header: Dynamic Habitat Title */}
-      <header className="habitat-header">
-        <div className="header-identity">
-          <span className="character-badge" style={{ borderColor: model.accentColor }}>
-            {model.emoji}
-          </span>
-          <div>
-            <div className="habitat-title-row">
-              <h1 className="habitat-title">{habitat.title}</h1>
+    <div
+      className={`habitat-shell skin-${config.organismId}`}
+      style={
+        {
+          '--skin-bg-app': skin.colors.bgApp,
+          '--skin-bg-gradient': skin.colors.bgAppGradient,
+          '--skin-bg-card': skin.colors.bgCard,
+          '--skin-bg-card-hover': skin.colors.bgCardHover,
+          '--skin-bg-input': skin.colors.bgInput,
+          '--skin-text-primary': skin.colors.textPrimary,
+          '--skin-text-secondary': skin.colors.textSecondary,
+          '--skin-text-dim': skin.colors.textDim,
+          '--skin-accent': skin.colors.accent,
+          '--skin-accent-glow': skin.colors.accentGlow,
+          '--skin-border': skin.colors.border,
+          '--skin-border-active': skin.colors.borderActive,
+          '--skin-font': skin.fontFamily,
+        } as React.CSSProperties
+      }
+    >
+      {/* Top Header Card */}
+      <header className="skin-header">
+        <div className="header-character">
+          <div className="avatar-frame">
+            <span className="avatar-emoji">{skin.avatarEmoji}</span>
+          </div>
+          <div className="title-block">
+            <div className="title-badge-row">
+              <h1 className="skin-hub-title">{skin.hubTitle}</h1>
+              <span className="skin-pill-badge">{skin.badge}</span>
             </div>
-            <p className="habitat-subtitle">{habitat.subtitle}</p>
+            <p className="skin-hub-subtitle">{skin.hubSubtitle}</p>
           </div>
         </div>
 
-        <div className="header-actions">
+        <div className="header-controls">
           <button
-            className={`btn-icon-toggle ${config.soundEnabled ? 'active' : ''}`}
+            className={`btn-sound-switch ${config.soundEnabled ? 'active' : ''}`}
             onClick={handleToggleSound}
-            title={config.soundEnabled ? 'Mute Sounds' : 'Enable Sounds'}
+            title={config.soundEnabled ? 'Mute Sounds' : 'Unmute Sounds'}
           >
             {config.soundEnabled ? '🔔' : '🔕'}
           </button>
           <button
-            className={`master-power-toggle ${config.enabled ? 'active' : ''}`}
+            className={`btn-master-power ${config.enabled ? 'active' : ''}`}
             onClick={handleToggleEnabled}
-            title={config.enabled ? 'Put companion to sleep' : 'Wake companion'}
+            title={config.enabled ? 'Companion Active (Click to Sleep)' : 'Companion Sleeping (Click to Wake)'}
           >
-            <span className="toggle-thumb" />
+            <span className="power-thumb" />
           </button>
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="tab-bar">
+      {/* Navigation Tab Bar */}
+      <nav className="skin-tabs">
         <button
-          className={`tab-btn ${activeTab === 'habitat' ? 'active' : ''}`}
-          onClick={() => setActiveTab('habitat')}
+          className={`skin-tab-btn ${activeTab === 'focus' ? 'active' : ''}`}
+          onClick={() => setActiveTab('focus')}
         >
-          🎯 Focus Hub
+          {skin.copy.tabFocus}
         </button>
         <button
-          className={`tab-btn ${activeTab === 'log' ? 'active' : ''}`}
+          className={`skin-tab-btn ${activeTab === 'log' ? 'active' : ''}`}
           onClick={() => setActiveTab('log')}
         >
-          📖 Story Log ({activities.length})
+          {skin.copy.tabLog} ({activities.length})
         </button>
         <button
-          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          className={`skin-tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
-          ⚙️ Settings
+          {skin.copy.tabSettings}
         </button>
       </nav>
 
-      {/* TAB 1: HABITAT FOCUS HUB */}
-      {activeTab === 'habitat' && (
-        <div className="tab-panel">
-          {/* Active Sprint Section */}
-          <section className="habitat-card focus-card">
+      {/* TAB 1: FOCUS HUB */}
+      {activeTab === 'focus' && (
+        <div className="skin-tab-content">
+          {/* Main Focus Card */}
+          <section className="skin-card main-focus-card">
             {sprint.status === 'active' ? (
-              <div className="sprint-running-view">
-                <div className="sprint-running-badge" style={{ color: model.accentColor }}>
-                  ✨ SPRINT IN PROGRESS
+              <div className="active-sprint-container">
+                <div className="sprint-state-tag">{skin.copy.sprintRunningBadge}</div>
+                <div className="sprint-goal-display">"{sprint.goal}"</div>
+                <div className="sprint-progress-bar-wrapper">
+                  <div
+                    className="sprint-progress-bar"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        Math.max(
+                          0,
+                          (((Date.now() - sprint.startedAt) / 60000) / sprint.targetMinutes) * 100,
+                        ),
+                      )}%`,
+                    }}
+                  />
                 </div>
-                <div className="sprint-active-goal">"{sprint.goal}"</div>
-                <div className="sprint-footer-row">
-                  <span className="sprint-clock">⏳ {remainingMinutes}m remaining</span>
+                <div className="sprint-action-footer">
+                  <span className="sprint-countdown">⏳ {remainingMinutes}m remaining</span>
                   <button className="btn-cancel-sprint" onClick={handleStopSprint}>
-                    End Sprint
+                    End Early
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="sprint-setup-view">
-                <label className="card-label">LOCK IN A FOCUS SPRINT</label>
+              <div className="idle-sprint-container">
+                <label className="skin-section-label">{skin.copy.sprintCardLabel}</label>
                 <input
-                  className="input-focus-goal"
+                  className="skin-focus-input"
                   type="text"
-                  placeholder="What are you working on right now?"
+                  placeholder={skin.copy.sprintPlaceholder}
                   value={goalInput}
                   onChange={(e) => setGoalInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleStartSprint()}
                   maxLength={65}
                 />
-                <div className="presets-row">
+                <div className="duration-preset-row">
                   {[15, 25, 45, 60].map((mins) => (
                     <button
                       key={mins}
-                      className={`preset-chip ${duration === mins ? 'selected' : ''}`}
+                      className={`preset-pill ${duration === mins ? 'selected' : ''}`}
                       onClick={() => setDuration(mins)}
                     >
                       {mins}m
                     </button>
                   ))}
-                  <button className="btn-lock-sprint" onClick={handleStartSprint}>
-                    Start Sprint ✨
+                  <button className="btn-start-focus" onClick={handleStartSprint}>
+                    {skin.copy.sprintStartBtn}
                   </button>
                 </div>
               </div>
             )}
           </section>
 
-          {/* Character Selector */}
-          <section className="habitat-card">
-            <label className="card-label">CHOOSE YOUR COMPANION</label>
-            <div className="character-grid">
+          {/* Companion Character Switcher */}
+          <section className="skin-card">
+            <label className="skin-section-label">SWITCH COMPANION SKIN</label>
+            <div className="skin-companion-grid">
               {(Object.keys(ORGANISM_MODELS) as OrganismId[]).map((id) => {
                 const item = ORGANISM_MODELS[id];
                 const isSelected = config.organismId === id;
                 return (
                   <button
                     key={id}
-                    className={`character-card ${isSelected ? 'selected' : ''}`}
-                    style={isSelected ? { borderColor: item.accentColor } : {}}
+                    className={`companion-choice-card ${isSelected ? 'selected' : ''}`}
                     onClick={() => handleOrganismChange(id)}
                   >
-                    <span className="char-emoji">{item.emoji}</span>
-                    <span className="char-name">{item.name}</span>
-                    <span className="char-role">{item.archetype.split(' ')[1] || item.archetype}</span>
+                    <span className="choice-emoji">{item.emoji}</span>
+                    <span className="choice-name">{item.name}</span>
+                    <span className="choice-role">{item.archetype.split(' ')[1] || item.archetype}</span>
                   </button>
                 );
               })}
             </div>
           </section>
 
-          {/* Daily Progress Counters */}
-          <div className="metrics-row">
-            <div className="metric-box">
-              <span className="metric-val">{organismState.focusMinutesToday}m</span>
-              <span className="metric-lbl">Focus Time</span>
+          {/* Daily Metrics Dashboard */}
+          <div className="skin-metrics-grid">
+            <div className="metric-cell">
+              <span className="metric-number">{organismState.focusMinutesToday}m</span>
+              <span className="metric-caption">{skin.copy.metricFocusLabel}</span>
             </div>
-            <div className="metric-box">
-              <span className="metric-val">{organismState.divergenceCountToday}</span>
-              <span className="metric-lbl">Detours</span>
+            <div className="metric-cell">
+              <span className="metric-number">{organismState.divergenceCountToday}</span>
+              <span className="metric-caption">{skin.copy.metricDetoursLabel}</span>
             </div>
-            <div className="metric-box">
-              <span className="metric-val" style={{ color: model.accentColor, textTransform: 'capitalize' }}>
-                {organismState.state}
-              </span>
-              <span className="metric-lbl">Mood</span>
+            <div className="metric-cell">
+              <span className="metric-number mood-text">{organismState.state}</span>
+              <span className="metric-caption">{skin.copy.metricMoodLabel}</span>
             </div>
           </div>
 
-          {/* Recent Character Thought */}
+          {/* Live Thought Bubble */}
           {organismState.lastRemark && (
-            <div className="thought-quote-bubble">
-              <span className="quote-icon">💭</span>
-              <span className="quote-text">“{organismState.lastRemark}”</span>
+            <div className="skin-thought-bubble">
+              <span className="thought-icon">💭</span>
+              <span className="thought-body">“{organismState.lastRemark}”</span>
             </div>
           )}
 
           {/* Interactive Poke Action */}
-          <button className="btn-poke-companion" onClick={handlePoke} disabled={pokeLoading}>
-            {pokeLoading ? 'Poking…' : `Poke ${model.name} ${model.emoji}`}
+          <button className="btn-skin-poke" onClick={handlePoke} disabled={pokeLoading}>
+            {pokeLoading ? 'Connecting…' : skin.copy.pokeBtn}
           </button>
 
-          {pokeResult && <div className="poke-feedback-pill">{pokeResult}</div>}
+          {pokeResult && <div className="skin-poke-banner">{pokeResult}</div>}
         </div>
       )}
 
-      {/* TAB 2: STORY & ACTIVITY LOG */}
+      {/* TAB 2: ACTIVITY TIMELINE */}
       {activeTab === 'log' && (
-        <div className="tab-panel">
-          <div className="log-top-row">
-            <label className="card-label">TODAY’S ACTIVITY TIMELINE</label>
-            <button className="btn-clear-log" onClick={handleClearData}>
+        <div className="skin-tab-content">
+          <div className="log-header-bar">
+            <label className="skin-section-label">{skin.copy.logTitle}</label>
+            <button className="btn-clear-timeline" onClick={handleClearData}>
               Clear
             </button>
           </div>
 
           {activities.length === 0 ? (
-            <div className="empty-log-state">
-              No activity recorded yet today. Start a focus sprint or explore the web!
-            </div>
+            <div className="empty-timeline-state">{skin.copy.emptyLog}</div>
           ) : (
-            <div className="activity-stream">
+            <div className="timeline-scroll-container">
               {activities.map((a) => (
-                <div key={a.id} className={`activity-card type-${a.type}`}>
-                  <span className="act-icon">
+                <div key={a.id} className={`timeline-entry-card entry-${a.type}`}>
+                  <span className="entry-symbol">
                     {a.type === 'divergence'
                       ? '⚠️'
                       : a.type === 'return'
@@ -366,9 +386,9 @@ export default function App() {
                       ? '🏆'
                       : '⚡'}
                   </span>
-                  <div className="act-content">
-                    <div className="act-summary">{a.summary}</div>
-                    <div className="act-meta">
+                  <div className="entry-details">
+                    <div className="entry-summary-text">{a.summary}</div>
+                    <div className="entry-meta-text">
                       {a.domain} • {new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
@@ -379,28 +399,28 @@ export default function App() {
         </div>
       )}
 
-      {/* TAB 3: SETTINGS & PREFERENCES */}
+      {/* TAB 3: SETTINGS */}
       {activeTab === 'settings' && (
-        <div className="tab-panel">
-          <label className="card-label">AUDIO & SCREEN EFFECTS</label>
+        <div className="skin-tab-content">
+          <label className="skin-section-label">AUDIO & VISUAL EFFECTS</label>
 
-          <div className="habitat-card settings-group">
-            <div className="setting-toggle-row">
+          <div className="skin-card">
+            <div className="skin-toggle-item">
               <div>
-                <div className="setting-title">Character Sound Chirps</div>
-                <div className="setting-desc">Procedural Animalese speech voice & chimes</div>
+                <div className="toggle-heading">{skin.copy.soundTitle}</div>
+                <div className="toggle-subheading">Procedural Web Audio speech chirps & chimes</div>
               </div>
               <button
-                className={`switch-toggle ${config.soundEnabled ? 'active' : ''}`}
+                className={`switch-control ${config.soundEnabled ? 'active' : ''}`}
                 onClick={handleToggleSound}
               >
-                <span className="toggle-thumb" />
+                <span className="switch-knob" />
               </button>
             </div>
 
             {config.soundEnabled && (
-              <div className="volume-slider-row">
-                <span className="volume-label">Volume: {Math.round(config.volume * 100)}%</span>
+              <div className="skin-slider-box">
+                <span className="slider-label">Volume: {Math.round(config.volume * 100)}%</span>
                 <input
                   type="range"
                   min="0.1"
@@ -412,38 +432,38 @@ export default function App() {
               </div>
             )}
 
-            <div className="setting-toggle-row" style={{ marginTop: '10px' }}>
+            <div className="skin-toggle-item" style={{ marginTop: '12px' }}>
               <div>
-                <div className="setting-title">Distraction Screen Effects</div>
-                <div className="setting-desc">Visual attention reminders on distracted tabs</div>
+                <div className="toggle-heading">{skin.copy.effectsTitle}</div>
+                <div className="toggle-subheading">Full screen distraction reminders during sprints</div>
               </div>
               <button
-                className={`switch-toggle ${config.effectsEnabled ? 'active' : ''}`}
+                className={`switch-control ${config.effectsEnabled ? 'active' : ''}`}
                 onClick={handleToggleEffects}
               >
-                <span className="toggle-thumb" />
+                <span className="switch-knob" />
               </button>
             </div>
           </div>
 
-          <label className="card-label" style={{ marginTop: '10px' }}>
-            AI INTELLIGENCE PROVIDER
+          <label className="skin-section-label" style={{ marginTop: '8px' }}>
+            INTELLIGENCE PROVIDER
           </label>
 
-          <div className="habitat-card settings-group">
-            <div className="provider-buttons">
+          <div className="skin-card">
+            <div className="provider-grid">
               <button
-                className={`provider-chip ${config.mode === 'cloud' ? 'selected' : ''}`}
+                className={`provider-button ${config.mode === 'cloud' ? 'selected' : ''}`}
                 onClick={async () => {
                   const next = { ...config, mode: 'cloud' as OperatingMode };
                   setConfig(next);
                   await configStorage.setValue(next);
                 }}
               >
-                ☁️ Cloud Hosted
+                ☁️ Cloud Gateway
               </button>
               <button
-                className={`provider-chip ${config.mode === 'self-hosted' ? 'selected' : ''}`}
+                className={`provider-button ${config.mode === 'self-hosted' ? 'selected' : ''}`}
                 onClick={async () => {
                   const next = { ...config, mode: 'self-hosted' as OperatingMode };
                   setConfig(next);
@@ -455,8 +475,8 @@ export default function App() {
             </div>
 
             {config.mode === 'self-hosted' && (
-              <div className="local-fields">
-                <label className="field-hint">Ollama / Local Endpoint URL</label>
+              <div className="local-config-box">
+                <label className="config-hint">Ollama / Custom Endpoint URL</label>
                 <input
                   type="text"
                   value={endpointInput}
@@ -464,7 +484,7 @@ export default function App() {
                   placeholder="http://localhost:11434/v1"
                 />
 
-                <label className="field-hint">Model Name</label>
+                <label className="config-hint">Model Identifier</label>
                 <input
                   type="text"
                   value={modelInput}
@@ -475,14 +495,14 @@ export default function App() {
             )}
           </div>
 
-          <label className="card-label" style={{ marginTop: '10px' }}>
+          <label className="skin-section-label" style={{ marginTop: '8px' }}>
             VIEWPORT POSITION
           </label>
-          <div className="position-grid">
+          <div className="dock-position-row">
             {(['bottom-right', 'bottom-left', 'top-right'] as DockPosition[]).map((pos) => (
               <button
                 key={pos}
-                className={`pos-btn ${config.dockPosition === pos ? 'selected' : ''}`}
+                className={`dock-pill ${config.dockPosition === pos ? 'selected' : ''}`}
                 onClick={async () => {
                   const xFrac = pos === 'bottom-left' ? 0.04 : 0.90;
                   const yFrac = pos === 'top-right' ? 0.04 : 0.82;
@@ -496,9 +516,9 @@ export default function App() {
             ))}
           </div>
 
-          <div className="settings-footer">
-            <button className="btn-save-settings" onClick={handleSaveSettings}>
-              Apply & Save
+          <div className="skin-footer-actions">
+            <button className="btn-apply-settings" onClick={handleSaveSettings}>
+              Apply & Save Settings
             </button>
           </div>
         </div>
