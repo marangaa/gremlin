@@ -1,24 +1,28 @@
 # Devlog
 
-## 2026-08-20 — v0.3.1: Canvas SpriteEngine Infrastructure & Viewport Root Injection
+## 2026-08-20 — v0.3.2: Fixed Viewport Scroll Isolation, Kenney Pixel Sprites & Motion Grounding
 
-**Scope:** Implemented Canvas-based Sprite Animation Engine with multi-archetype frame rendering, gaze tracking, particle systems (sparks, zzz, scan lines), and restored `entrypoints/content.ts` with root `html` Shadow DOM mounting.
+**Scope:** Resolved page scrolling movement issue by locking light-DOM and shadow-DOM host styling, purged sidebar references, removed vertical sine bobbing/wobbling, and implemented authentic Kenney-style pixel character models.
 
-### What was built
+### What was resolved
 
-- **Canvas SpriteEngine (`lib/organism/spriteEngine.ts`):**
-  - High-performance HTML5 Canvas renderer with `imageSmoothingEnabled = false` for crisp, pixel-perfect rendering across all screen resolutions.
-  - Multi-archetype frame generators for **Nexus-01** (gyroscope rings + HUD), **Cipher** (fedora silhouette + amber monocle), **Aero** (ethereal wisp + sprout), **Kuro** (shadow imp + fangs), and **Atlas** (segmented pauldrons + reactor core).
-  - Dynamic 2D cursor gaze tracking calculating normalized gaze vectors and updating optical pupils.
-  - Real-time particle system supporting ambient sleeping `z` bubbles, victory celebration sparks, and diagnostic scan lines.
-- **Root Overlay Mounting (`entrypoints/content.ts`):**
-  - Re-anchored WXT `createShadowRootUi` to `'html'` / `document.documentElement` with `position: 'overlay'`, ensuring the organism is never clipped by `body { overflow: hidden; }` or CSS layout transformations on third-party sites.
-- **Viewport Draggable Controller (`lib/organism/controller.ts`):**
-  - Viewport coordinate calculation with boundary clamping and storage persistence across pages.
-  - Smart vertical thought-pill orientation flipping (`.pos-above` vs `.pos-below`).
+- **Fixed Viewport Scroll Stability (`entrypoints/content.ts`, `lib/organism/styles.ts`):**
+  - Configured inline `host.style.cssText` on the light DOM container alongside `:host` with `position: fixed !important; inset: 0 !important; pointer-events: none !important; z-index: 2147483647 !important;`.
+  - The organism is now permanently pinned to the browser viewport (window) and never scrolls or shifts when the webpage is scrolled.
+- **Removed Bouncing / Wobbling Animations:**
+  - Removed all `translateY` sine-wave bobbing in CSS (`@keyframes org-float`) and canvas rendering loops.
+  - The organism remains calm, grounded, stationary, and non-distracting while idling.
+- **Purged All Sidebar / Sidepanel References:**
+  - Completely cleaned out `entrypoints/sidepanel` directory and associated manifest permissions.
+- **Authentic Kenney-Style Pixel Characters (`lib/organism/spriteEngine.ts`, `lib/personalities/types.ts`):**
+  - **Gorg** 👽 (Kenney Green Alien with antenna sensors, belly patch, and expressive gaze)
+  - **Bolt** ⚡ (Kenney Cyber Bot with yellow chassis and scanning cyber visor)
+  - **Momo** 🐙 (Kenney Pink Puff with floppy ears, blushing cheeks, and blinking gaze)
+  - **Kuro** 👹 (Kenney Red Imp with crimson horns and cute fangs)
+  - **Glitch** 👾 (Kenney Blue Ghost with pixel shades and wavy skirt)
 
 ### Verification
 
 - `pnpm compile` (`tsc --noEmit`): 0 errors.
-- `pnpm build` (`wxt build`): Chrome MV3 bundle built in 3.8s in `.output/chrome-mv3`.
-- Git commits: `92528e3`.
+- `pnpm build` (`wxt build`): Clean Chrome MV3 build in `.output/chrome-mv3` (711.88 kB).
+- Git commits: `a288762`.

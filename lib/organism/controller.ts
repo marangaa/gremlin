@@ -1,5 +1,7 @@
 import { ORGANISM_SHADOW_CSS } from './styles';
 import { SpriteEngine } from './spriteEngine';
+import { ScreenEffectsManager } from '../effects/screenEffects';
+import { soundSynth } from '../audio/soundEngine';
 import { type OrganismId, type OrganismState } from '../personalities/types';
 import { configStorage, type DockPosition } from '../storage';
 
@@ -15,6 +17,9 @@ export interface ControllerOptions {
   dockPosition: DockPosition;
   xFrac?: number;
   yFrac?: number;
+  soundEnabled?: boolean;
+  volume?: number;
+  effectsEnabled?: boolean;
   initialState?: OrganismState;
 }
 
@@ -23,9 +28,12 @@ export class OrganismController {
   private canvasEl!: HTMLCanvasElement;
   private thoughtPill!: HTMLDivElement;
   private spriteEngine!: SpriteEngine;
+  private screenEffects!: ScreenEffectsManager;
 
   private organismId: OrganismId;
   private state: OrganismState = 'idle';
+  private soundEnabled: boolean = true;
+  private effectsEnabled: boolean = true;
 
   // Viewport Coordinates (in pixels)
   private x: number = 0;
@@ -57,6 +65,11 @@ export class OrganismController {
     this.state = options.initialState || 'idle';
     this.xFrac = options.xFrac ?? 0.90;
     this.yFrac = options.yFrac ?? 0.80;
+    this.soundEnabled = options.soundEnabled ?? true;
+    this.effectsEnabled = options.effectsEnabled ?? true;
+
+    soundSynth.setVolume(options.volume ?? 0.6);
+    soundSynth.setMuted(!this.soundEnabled);
 
     this.calculatePixelCoords();
   }
@@ -64,6 +77,7 @@ export class OrganismController {
   public mount() {
     this.adoptStyles();
     this.renderDOM();
+    this.screenEffects = new ScreenEffectsManager(this.shadowRoot);
     this.bindEvents();
     this.updateTransform();
 
@@ -75,6 +89,7 @@ export class OrganismController {
     this.destroyed = true;
     cancelAnimationFrame(this.rafId);
     if (this.speechTimeoutId) clearTimeout(this.speechTimeoutId);
+    this.screenEffects?.clear();
 
     window.removeEventListener('pointermove', this.onGlobalPointerMove);
     window.removeEventListener('resize', this.onWindowResize);
@@ -87,6 +102,16 @@ export class OrganismController {
     if (this.spriteEngine) {
       this.spriteEngine.setOrganism(id);
     }
+  }
+
+  public setSoundSettings(enabled: boolean, volume: number) {
+    this.soundEnabled = enabled;
+    soundSynth.setMuted(!enabled);
+    soundSynth.setVolume(volume);
+  }
+
+  public setEffectsEnabled(enabled: boolean) {
+    this.effectsEnabled = enabled;
   }
 
   public setPositionFraction(xFrac: number, yFrac: number) {
@@ -111,7 +136,7 @@ export class OrganismController {
     this.updateTransform();
   }
 
-  public setState(nextState: OrganismState) {
+  public setState(nextState: OrganismState, triggerScreenFx = false) {
     if (this.destroyed || this.state === nextState) return;
     this.rootEl.classList.remove(`state-${this.state}`);
     this.state = nextState;
@@ -121,11 +146,17 @@ export class OrganismController {
       this.spriteEngine.setState(nextState);
       if (nextState === 'celebrating') {
         this.spriteEngine.triggerBurst('spark');
+        if (this.soundEnabled) soundSynth.playChime('complete');
       } else if (nextState === 'sleeping') {
         this.spriteEngine.triggerBurst('zzz');
-      } else if (nextState === 'shocked') {
+      } else if (nextState === 'shocked' || nextState === 'annoyed') {
         this.spriteEngine.triggerBurst('exclamation');
+        if (this.soundEnabled) soundSynth.playAlert();
       }
+    }
+
+    if (triggerScreenFx && this.effectsEnabled) {
+      this.screenEffects.triggerEffect(this.organismId);
     }
   }
 
@@ -143,6 +174,11 @@ export class OrganismController {
 
     this.thoughtPill.textContent = message;
     this.thoughtPill.classList.add('is-visible');
+
+    // Synthesize Animalese speech chirps
+    if (this.soundEnabled) {
+      soundSynth.playAnimalese(message, this.organismId);
+    }
 
     this.speechTimeoutId = window.setTimeout(() => {
       this.thoughtPill.classList.remove('is-visible');
@@ -258,7 +294,6 @@ export class OrganismController {
     avatar.removeEventListener('pointercancel', this.onPointerUp);
 
     if (this.hasDragged) {
-      // Save new viewport coordinates to storage
       this.xFrac = this.x / Math.max(1, window.innerWidth);
       this.yFrac = this.y / Math.max(1, window.innerHeight);
 
@@ -271,9 +306,10 @@ export class OrganismController {
         });
       });
     } else {
-      // Click without drag: trigger observation pulse & remark
+      // Click without drag: playful poke
       this.setState('curious');
-      this.showRemark('Observation telemetry active.', 2500);
+      if (this.soundEnabled) soundSynth.playChime('poke');
+      this.showRemark('Observation active.', 2500);
     }
   };
 
@@ -293,7 +329,6 @@ export class OrganismController {
     const dt = Math.min(100, now - this.lastTime);
     this.lastTime = now;
 
-    // Pupil Gaze calculation in viewport space
     if (this.spriteEngine && !this.isDragging) {
       const centerX = this.x + AVATAR_SIZE / 2;
       const centerY = this.y + AVATAR_SIZE / 2;

@@ -20,6 +20,12 @@ export interface OrganismConfig {
   xFrac: number;
   /** Viewport Y coordinate as a fraction of window height (0.0 to 1.0) */
   yFrac: number;
+  /** Procedural Web Audio Sound FX enabled */
+  soundEnabled: boolean;
+  /** Sound FX Volume (0.0 to 1.0) */
+  volume: number;
+  /** Character Screen Distraction Effects enabled */
+  effectsEnabled: boolean;
 }
 
 export interface FocusSprint {
@@ -58,6 +64,9 @@ export const configStorage = storage.defineItem<OrganismConfig>('local:config', 
     chattiness: 'balanced',
     xFrac: 0.90,
     yFrac: 0.82,
+    soundEnabled: true,
+    volume: 0.6,
+    effectsEnabled: true,
   },
 });
 

@@ -6,6 +6,7 @@ export interface ProtocolMap {
     state: OrganismState;
     message?: string;
     intensity?: number;
+    triggerEffect?: boolean;
   }): void;
   startSprint(data: { goal: string; targetMinutes: number }): Promise<void>;
   stopSprint(): Promise<void>;

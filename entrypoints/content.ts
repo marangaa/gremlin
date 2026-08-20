@@ -1,4 +1,5 @@
 import { OrganismController } from '@/lib/organism/controller';
+import { pageExtractor } from '@/lib/events/extractor';
 import {
   configStorage,
   organismStateStorage,
@@ -45,6 +46,9 @@ export default defineContentScript({
           dockPosition: config.dockPosition || 'bottom-right',
           xFrac: config.xFrac,
           yFrac: config.yFrac,
+          soundEnabled: config.soundEnabled,
+          volume: config.volume,
+          effectsEnabled: config.effectsEnabled,
           initialState: organismState.state,
         });
 
@@ -62,10 +66,17 @@ export default defineContentScript({
       ui.mount();
     }
 
+    // Extract page metadata on browser idle
+    pageExtractor.extractOnIdle((snapshot) => {
+      if (snapshot && controller) {
+        // Ready for AI context evaluation
+      }
+    });
+
     // Handle live reactive messaging from background service worker
     onMessage('triggerReaction', ({ data }) => {
       if (!controller) return;
-      controller.setState(data.state);
+      controller.setState(data.state, Boolean(data.triggerEffect));
       if (data.message) {
         controller.showRemark(data.message);
       }
@@ -83,6 +94,9 @@ export default defineContentScript({
 
       if (controller) {
         controller.setOrganism(newConfig.organismId);
+        controller.setSoundSettings(newConfig.soundEnabled, newConfig.volume);
+        controller.setEffectsEnabled(newConfig.effectsEnabled);
+
         if (newConfig.dockPosition !== 'custom') {
           controller.setDockPosition(newConfig.dockPosition || 'bottom-right');
         } else if (newConfig.xFrac !== undefined && newConfig.yFrac !== undefined) {

@@ -10,6 +10,19 @@ import {
 } from '@/lib/storage';
 import { onMessage, sendMessage } from '@/lib/messaging';
 
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+const DEBOUNCE_MS = 350;
+
+function debouncedEvaluate(force = false) {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+  debounceTimer = setTimeout(() => {
+    debounceTimer = null;
+    void evaluateCurrentState(force);
+  }, DEBOUNCE_MS);
+}
+
 export default defineBackground(() => {
   // Initialize browser event tracking
   eventTracker.init();
@@ -23,9 +36,15 @@ export default defineBackground(() => {
     }
   });
 
-  // Evaluate state when tabs update or switch
+  // Evaluate state with debounce when tabs update or switch
   browser.tabs.onActivated.addListener(() => {
-    void evaluateCurrentState();
+    debouncedEvaluate();
+  });
+
+  browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+    if (tab.active && (changeInfo.status === 'complete' || changeInfo.url)) {
+      debouncedEvaluate();
+    }
   });
 
   // Handle Typed RPC Messaging
@@ -120,7 +139,7 @@ async function evaluateCurrentState(force = false): Promise<{
         // Track stats & activity entry
         if (situation.trigger === 'GOAL_DIVERGENCE') {
           organismState.divergenceCountToday += 1;
-          await logActivity('divergence', ctx.currentDomain, `Detour during "${sprint.goal}"`);
+          await logActivity('divergence', ctx.currentDomain, `Detour on ${ctx.currentDomain}`);
         } else if (situation.trigger === 'GOAL_RETURN') {
           await logActivity('return', ctx.currentDomain, 'Returned to focus task');
         } else if (situation.trigger === 'PROLONGED_FOCUS') {
@@ -146,6 +165,7 @@ async function evaluateCurrentState(force = false): Promise<{
                 state: decision.state,
                 message: decision.remark,
                 intensity: decision.intensity,
+                triggerEffect: decision.triggerEffect,
               },
               activeTab.id,
             );
