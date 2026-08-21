@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gremlin-backend",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-20",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "vars": {
+    "BETTER_AUTH_URL": "https://gremlin-backend.rchdmaranga-b12.workers.dev"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".output/**", "dist/**"]
+    },
+    "@gremlin/backend#build": {
+      "cache": false
+    },
+    "@gremlin/shared#build": {
+      "cache": false
+    },
+    "compile": {
+      "dependsOn": ["^compile"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

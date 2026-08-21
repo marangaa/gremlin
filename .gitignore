@@ -1,3 +1,26 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.output
+dist
+.turbo
+.wxt
+stats.html
+stats-*.json
+web-ext.config.ts
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Internal agent notes & devlogs
+DEVLOG.md
+*devlog*
+
 # Logs
 logs
 *.log
@@ -7,12 +30,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-.output
-stats.html
-stats-*.json
-.wxt
-web-ext.config.ts
+# Cloudflare Wrangler & Serverless
+.wrangler
+.dev.vars
 
 # Editor directories and files
 .vscode/*

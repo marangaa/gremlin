@@ -1,33 +1,18 @@
 {
-  "name": "gremlin",
-  "description": "A tiny gremlin that lives in your browser. Pet it.",
+  "name": "gremlin-monorepo",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
   "scripts": {
-    "dev": "wxt",
-    "dev:firefox": "wxt -b firefox",
-    "build": "wxt build",
-    "build:firefox": "wxt build -b firefox",
-    "zip": "wxt zip",
-    "zip:firefox": "wxt zip -b firefox",
-    "compile": "tsc --noEmit",
-    "postinstall": "wxt prepare"
-  },
-  "dependencies": {
-    "@ai-sdk/openai": "^4.0.44",
-    "@webext-core/messaging": "^4.0.0",
-    "ai": "^7.0.69",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "zod": "^4.4.3"
+    "dev": "turbo dev",
+    "dev:ext": "turbo dev --filter=@gremlin/extension",
+    "dev:api": "turbo dev --filter=@gremlin/backend",
+    "dev:web": "turbo dev --filter=@gremlin/web",
+    "build": "turbo build",
+    "build:web": "turbo build --filter=@gremlin/web",
+    "compile": "turbo compile",
+    "deploy:api": "pnpm --filter @gremlin/backend run deploy"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@wxt-dev/module-react": "^1.1.5",
-    "typescript": "^5.9.3",
-    "web-ext": "^10.5.0",
-    "wxt": "^0.21.3"
-  }
+    "turbo": "^2.4.4"
+  },
+  "packageManager": "pnpm@10.14.0"
 }
