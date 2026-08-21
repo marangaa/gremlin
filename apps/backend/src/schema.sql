@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS "account" (
 ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "plan" TEXT NOT NULL DEFAULT 'free';
 
 -- Companion id on sprints for cross-device rendering.
-ALTER TABLE "sprints" ADD COLUMN IF NOT EXISTS "organismId" VARCHAR(32) NOT NULL DEFAULT 'goggins';
+ALTER TABLE "sprints" ADD COLUMN IF NOT EXISTS "organismId" VARCHAR(32) NOT NULL DEFAULT 'Sarge';
 
 -- Issuer backfill for pre-1.7 credential accounts (matches createLocalAccountIssuer).
 UPDATE "account" SET "issuer" = 'local:credential' WHERE "providerId" = 'credential' AND "issuer" IS DISTINCT FROM 'local:credential';
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS "sprints" (
   "endedAt" TIMESTAMP WITH TIME ZONE,
   "status" VARCHAR(32) NOT NULL DEFAULT 'completed',
   "divergenceCount" INTEGER NOT NULL DEFAULT 0,
-  "organismId" VARCHAR(32) NOT NULL DEFAULT 'goggins',
+  "organismId" VARCHAR(32) NOT NULL DEFAULT 'Sarge',
   "remarks" TEXT[] DEFAULT ARRAY[]::TEXT[],
   "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );

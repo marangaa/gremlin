@@ -46,7 +46,7 @@ export class AgentOrchestrator {
     const model = await this.getResolvedModel(cfg);
     return new FocusMonitorAgent({
       model,
-      companionId: companionId || cfg.organismId || 'goggins',
+      companionId: companionId || cfg.organismId || 'Sarge',
       memoryStore: this.memoryStore,
     });
   }
@@ -56,7 +56,7 @@ export class AgentOrchestrator {
     const model = await this.getResolvedModel(cfg);
     return new DiarySynthesizerAgent({
       model,
-      companionId: companionId || cfg.organismId || 'goggins',
+      companionId: companionId || cfg.organismId || 'Sarge',
       memoryStore: this.memoryStore,
     });
   }

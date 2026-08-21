@@ -85,8 +85,8 @@ export type {
 export const configStorage = storage.defineItem<OrganismConfig>('local:organismConfig', {
   fallback: {
     mode: 'self-hosted',
-    organismId: 'goggins',
-    name: 'Goggins',
+    organismId: 'Sarge',
+    name: 'Sarge',
     enabled: true,
     provider: 'google',
     selfHostedEndpoint: 'http://localhost:11434/v1',

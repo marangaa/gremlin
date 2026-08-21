@@ -2,7 +2,7 @@
  * Valid companion organism identifiers with character archetypes.
  */
 export type OrganismId =
-  | 'goggins'
+  | 'Sarge'
   | 'waifu'
   | 'sherlock'
   | 'kuro'

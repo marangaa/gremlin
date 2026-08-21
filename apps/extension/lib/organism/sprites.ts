@@ -1,10 +1,10 @@
 import { ORGANISM_MODELS, type OrganismId } from '../personalities/types';
 
 export function getOrganismSvg(id: OrganismId): string {
-  const model = ORGANISM_MODELS[id] || ORGANISM_MODELS.goggins;
+  const model = ORGANISM_MODELS[id] || ORGANISM_MODELS.Sarge;
 
   switch (id) {
-    case 'goggins':
+    case 'Sarge':
       return getAtlasSvg(model.accentColor, model.secondaryColor);
     case 'waifu':
       return getAeroSvg(model.accentColor, model.secondaryColor);
@@ -187,7 +187,7 @@ function getKuroSvg(accent: string, _secondary: string): string {
   `;
 }
 
-// 5. GOGGINS
+// 5. Sarge
 function getAtlasSvg(accent: string, secondary: string): string {
   return /* html */ `
   <svg class="organism-svg atlas-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">

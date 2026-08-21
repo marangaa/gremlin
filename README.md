@@ -14,7 +14,7 @@ Pick the personality that keeps you honest:
 
 | Companion | Vibe | Typical Reaction |
 | :--- | :--- | :--- |
-| **Goggins** | Unstoppable drill sergeant | *"Who's gonna carry the boats? Stay hard. Zero excuses."* |
+| **Sarge** | Unstoppable drill sergeant | *"Drop and give me twenty focus minutes. Zero excuses."* |
 | **Waifu** | Sweet & clingy cheerleader | *"Anata, why are we doomscrolling? Stay focused for me, okay? 💕"* |
 | **Sherlock** | Victorian detective | *"A curious detour from the case, Watson. The trail grows cold."* |
 | **Kuro** | Sarcastic chaos gremlin | *"Caught in 4K 💀 Bro thought he could sneak 5 minutes of scrolling."* |

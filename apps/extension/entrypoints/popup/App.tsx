@@ -50,12 +50,12 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const ALL_COMPANIONS: OrganismId[] = ['goggins', 'waifu', 'sherlock', 'kuro', 'sensei'];
+const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei'];
 
 const DEFAULT_CONFIG: OrganismConfig = {
   mode: 'self-hosted',
-  organismId: 'goggins',
-  name: 'Goggins',
+  organismId: 'Sarge',
+  name: 'Sarge',
   enabled: true,
   provider: 'google',
   selfHostedEndpoint: 'http://localhost:11434/v1',
@@ -163,7 +163,7 @@ export default function App() {
     };
   }, []);
 
-  const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.goggins;
+  const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.Sarge;
   const currentProviderConfig = SUPPORTED_PROVIDERS[selectedProvider] || SUPPORTED_PROVIDERS.google;
 
   const isConfigured =
@@ -348,6 +348,62 @@ export default function App() {
   const remainingSecs = Math.max(0, targetSecs - elapsedSecs);
   const remainingMins = Math.floor(remainingSecs / 60);
   const remainingSecsDisplay = String(remainingSecs % 60).padStart(2, '0');
+
+  // ================= FIRST-RUN CONSENT (prominent disclosure) =================
+  if (!hasOnboarded) {
+    return (
+      <div className="w-[380px] min-h-[520px] bg-gray-50 p-5 flex flex-col text-gray-900">
+        <h1 className="font-display font-semibold text-xl tracking-tight">Welcome to Gremlin</h1>
+        <p className="mt-1 text-xs text-gray-500">Your pixel focus companion. Before we start, the legal bit — in plain English:</p>
+
+        <div className="mt-4 flex flex-col gap-3 text-[13px] leading-relaxed border border-gray-200 bg-white p-4 rounded-md">
+          <div className="flex gap-2">
+            <Shield size={16} className="shrink-0 mt-0.5 text-gray-700" />
+            <p>
+              <strong>During active sprints only</strong>, Gremlin reads lightweight page context from your
+              current tab: title, headings, a short text excerpt, and the domains you visit.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Sparkles size={16} className="shrink-0 mt-0.5 text-gray-700" />
+            <p>
+              That context is sent to the <strong>AI provider you configure</strong> (your own API key) or to
+              Gremlin Cloud if you sign in, purely to judge whether you're on task. It is never sold or used
+              for ads.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-gray-700" />
+            <p>
+              Goals, notes, and stats are stored <strong>locally on your device</strong>. Nothing is captured
+              while idle or when tracking is disabled.
+            </p>
+          </div>
+          <a
+            href="https://gremlin.dev/privacy"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs underline text-gray-500 hover:text-gray-800"
+          >
+            Read the full privacy policy →
+          </a>
+        </div>
+
+        <button
+          onClick={handleCompleteOnboarding}
+          className="mt-auto w-full py-3 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-700 transition-colors rounded-md cursor-pointer"
+        >
+          I understand — enable my companion
+        </button>
+        <button
+          onClick={() => window.close()}
+          className="w-full py-2 mt-2 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+        >
+          Not now
+        </button>
+      </div>
+    );
+  }
 
   // ================= MAIN INTERFACE =================
   return (

@@ -81,7 +81,7 @@ const FAQS: [string, string][] = [
   ],
   [
     'Can I switch companions whenever I want?',
-    'Yes, anytime! You can switch between Goggins, Waifu, Sherlock, Kuro, and Sensei right inside the extension popup mid-session.',
+    'Yes, anytime! You can switch between Sarge, Waifu, Sherlock, Kuro, and Sensei right inside the extension popup mid-session.',
   ],
   [
     'What if I need help or want to suggest a companion?',

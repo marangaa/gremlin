@@ -53,7 +53,7 @@ const smartPageNoteSchema = z.object({
   snippet: z.string().max(1000).optional(),
   goalId: z.string().optional(),
   goalTitle: z.string().max(200).optional(),
-  companionId: z.enum(['goggins', 'waifu', 'sherlock', 'kuro', 'sensei']),
+  companionId: z.enum(['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei']),
   timestamp: z.number(),
 });
 
@@ -67,7 +67,7 @@ const evaluateSchema = z.object({
   }),
   goals: z.array(decomposedGoalSchema).max(20).optional(),
   notes: z.array(smartPageNoteSchema).max(10).optional(),
-  companionId: z.enum(['goggins', 'waifu', 'sherlock', 'kuro', 'sensei']),
+  companionId: z.enum(['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei']),
   currentTab: breadcrumbSchema,
   timeline: z.array(timelineEntrySchema).max(15).default([]),
   elapsedSprintMinutes: z.number().min(0),
@@ -79,7 +79,7 @@ const evaluateSchema = z.object({
 const startSprintSchema = z.object({
   goal: z.string().max(100).default('Deep Work Sprint'),
   targetMinutes: z.coerce.number().min(1).max(180).default(25),
-  organismId: z.enum(['goggins', 'waifu', 'sherlock', 'kuro', 'sensei']).optional(),
+  organismId: z.enum(['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei']).optional(),
 });
 
 /**
@@ -150,7 +150,7 @@ export const sprintRoutes = new Hono<AppEnv>()
 
     const goal = (body.goal || 'Deep Work Sprint').slice(0, 100);
     const targetMinutes = Math.min(Math.max(1, body.targetMinutes || 25), 180);
-    const organismId = body.organismId || 'goggins';
+    const organismId = body.organismId || 'Sarge';
 
     await pool.query(
       `UPDATE sprints SET status = 'superseded', "endedAt" = NOW()

@@ -34,13 +34,13 @@ import {
 } from 'lucide-react';
 import '../popup/App.css';
 
-const ALL_COMPANIONS: OrganismId[] = ['goggins', 'waifu', 'sherlock', 'kuro', 'sensei'];
+const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei'];
 
 export const SidepanelApp: React.FC = () => {
   const [config, setConfig] = useState<OrganismConfig>({
     mode: 'self-hosted',
-    organismId: 'goggins',
-    name: 'Goggins',
+    organismId: 'Sarge',
+    name: 'Sarge',
     enabled: true,
     provider: 'google',
     selfHostedEndpoint: 'http://localhost:11434/v1',
@@ -144,7 +144,7 @@ export const SidepanelApp: React.FC = () => {
     };
   }, []);
 
-  const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.goggins;
+  const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.Sarge;
 
   const handleToggleSound = async () => {
     const next = { ...config, soundEnabled: !config.soundEnabled };

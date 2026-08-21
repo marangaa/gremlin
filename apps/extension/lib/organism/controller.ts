@@ -156,7 +156,7 @@ export class OrganismController {
     if (this.destroyed || !message) return;
     if (this.speechTimeoutId) clearTimeout(this.speechTimeoutId);
 
-    const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.goggins;
+    const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.Sarge;
 
     // Smart vertical positioning: above vs below
     this.thoughtPill.classList.remove('pos-above', 'pos-below');
@@ -188,7 +188,7 @@ export class OrganismController {
 
   public openNoteSheet() {
     if (this.destroyed || !this.noteHudEl) return;
-    const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.goggins;
+    const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.Sarge;
 
     this.noteHudEl.classList.remove('pos-above', 'pos-below');
     if (this.y < 180) {

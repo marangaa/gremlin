@@ -51,7 +51,7 @@ export class DiarySynthesizerAgent {
     try {
       const goals = await this.memoryStore.getGoals();
       const stats = await this.memoryStore.getFocusActivityStats();
-      const persona = CharacterArchetypePrompts[this.config.companionId] || CharacterArchetypePrompts.goggins;
+      const persona = CharacterArchetypePrompts[this.config.companionId] || CharacterArchetypePrompts.Sarge;
 
       const system = `${persona.system}
 

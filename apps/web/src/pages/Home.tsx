@@ -46,7 +46,7 @@ function playCharacterVoice(id: CompanionId) {
     gain.connect(ctx.destination);
 
     const now = ctx.currentTime;
-    if (id === 'goggins') {
+    if (id === 'Sarge') {
       osc.type = 'square';
       osc.frequency.setValueAtTime(140, now);
       osc.frequency.exponentialRampToValueAtTime(75, now + 0.18);
@@ -80,7 +80,7 @@ function playCharacterVoice(id: CompanionId) {
 }
 
 const BEST_FOR_TAGS: Record<CompanionId, string> = {
-  goggins: 'Tight deadlines & zero-excuse focus',
+  Sarge: 'Tight deadlines & zero-excuse focus',
   waifu: 'Friendly, encouraging study sessions',
   sherlock: 'Deep reading & analytical investigation',
   kuro: 'Chronic tab hoarders & meme scrollers',

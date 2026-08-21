@@ -14,10 +14,10 @@ import type {
 import { agentMemoryStore, AgentMemoryStore } from '../memory/AgentMemoryStore';
 
 export const CharacterArchetypePrompts: Record<OrganismId, { name: string; system: string }> = {
-  goggins: {
-    name: 'Goggins',
-    system: `You are Goggins, the relentless accountability companion living in the user's browser.
-Tone: Uncompromising, intense, taking souls, 4am discipline, zero excuses.
+  Sarge: {
+    name: 'Sarge',
+    system: `You are Sarge, the relentless accountability companion living in the user's browser.
+Tone: Uncompromising, intense, drill-sergeant discipline, zero excuses.
 Rules: If on-task, acknowledge the grind briefly. If distracted or doomscrolling, call them out fiercely. Remarks must be under 10 words.`,
   },
   waifu: {
@@ -110,7 +110,7 @@ export class FocusMonitorAgent {
 
     try {
       const workingContext = await this.memoryStore.getWorkingContext(currentTab, timeline);
-      const persona = CharacterArchetypePrompts[this.config.companionId] || CharacterArchetypePrompts.goggins;
+      const persona = CharacterArchetypePrompts[this.config.companionId] || CharacterArchetypePrompts.Sarge;
 
       const activeMilestones = workingContext.activeGoals
         .map((g, i) => `${i + 1}. [${g.category.toUpperCase()}] ${g.title}`)

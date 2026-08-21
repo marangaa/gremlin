@@ -139,8 +139,18 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
    ```
    This generates the optimized production bundle in `apps/extension/.output/chrome-mv3`.
 2. **Zip the Output:**
-   Compress all files inside `apps/extension/.output/chrome-mv3` into `gremlin-extension.zip`.
-3. **Chrome Web Store Developer Dashboard:**
+   ```bash
+   pnpm --filter @gremlin/extension zip
+   ```
+   Produces `.output/<name>-<version>-chrome.zip` with `manifest.json` at the zip root.
+3. **Automated Submission (WXT native):**
+   WXT ships store automation — run `pnpm --filter @gremlin/extension submit:init` once to generate
+   `.env.submit` (Chrome uses the CWS Publish API OAuth flow), then release new versions with:
+   ```bash
+   pnpm --filter @gremlin/extension submit          # add --dry-run to verify secrets first
+   ```
+   Required env/secrets: `CHROME_EXTENSION_ID`, `CHROME_CLIENT_ID`, `CHROME_CLIENT_SECRET`, `CHROME_REFRESH_TOKEN`.
+4. **Chrome Web Store Developer Dashboard:**
    - Upload `gremlin-extension.zip`.
    - **Permissions Justification:**
      - `storage`: Save local user preferences and focus goals.

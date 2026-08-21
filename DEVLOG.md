@@ -92,3 +92,20 @@ Companions are built with distinct identities, pitch profiles, and voice prompts
 - Content scripts now relay privacy-filtered snapshots (headings, article excerpt, scroll depth, media state, clean URL) to the background via the typed `pageSignal` RPC on idle and SPA navigation. Previously these extractions were computed and discarded, starving both cloud and BYOK evaluations of page context (only domain/title/dwell were visible).
 - Tracker stores signals keyed by domain (15 min TTL, capacity 30) and exposes the fresh signal as `BrowserContext.pageSignal`; the engine builds breadcrumbs from real signals.
 - Added a 45-second minimum interval between AI evaluations (30s alarm ticks and tab-switch debounces no longer trigger redundant LLM calls); manual pokes bypass the throttle, and the observation timestamp persists even when no reaction fires.
+
+---
+
+## 7. Store Readiness Round (2026-08)
+
+### Companion rename: Goggins → Sarge
+- The drill-sergeant persona was a real public figure's name with trademark catchphrases ("carry the boats", "stay hard") — an impersonation/IP risk under CWS policy. Renamed everywhere (shared types, extension personalities/skins/sprites/CSS classes/audio profiles, backend persona prompts, web landing roster) to the original character **Sarge**; catchphrase copy rewritten as original drill-sergeant lines.
+- `sprints.organismId` column default migrated on Neon (`'sarge'`). Pre-release only — no user data carries legacy ids.
+
+### First-run prominent disclosure & consent
+- The popup's `hasOnboarded` flag existed but no gate ever rendered — added a first-run consent screen describing exactly what is captured during sprints (titles/headings/excerpts/domains), where it goes (user-configured provider or Gremlin Cloud), local-only storage of goals/stats, and an affirmative "I understand" action before tracking activates. Satisfies CWS Disclosure Requirements.
+
+### Privacy policy hardened for CWS review
+- `/privacy` now discloses text excerpts + visited domains, names all BYOK providers explicitly, documents cloud-side sprint metadata persistence in Neon, explains `scripting`/`sidePanel`, and includes the mandatory Chrome Web Store **Limited Use** affirmative statement.
+
+### Store submission automation
+- WXT natively automates store uploads (`wxt submit init` → `.env.submit`; `wxt submit --chrome-zip ...` via the CWS Publish API OAuth flow). Wired npm scripts (`submit:init`, `submit`) and documented the required secrets (`CHROME_EXTENSION_ID/CLIENT_ID/CLIENT_SECRET/REFRESH_TOKEN`) in `.env.example` and ARCHITECTURE §6.

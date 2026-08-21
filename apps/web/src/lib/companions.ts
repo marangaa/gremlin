@@ -1,4 +1,4 @@
-export type CompanionId = 'goggins' | 'waifu' | 'sherlock' | 'kuro' | 'sensei';
+export type CompanionId = 'Sarge' | 'waifu' | 'sherlock' | 'kuro' | 'sensei';
 
 export interface Companion {
   id: CompanionId;
@@ -21,8 +21,8 @@ export interface Companion {
  */
 export const COMPANIONS: Companion[] = [
   {
-    id: 'goggins',
-    name: 'Goggins',
+    id: 'Sarge',
+    name: 'Sarge',
     archetype: 'The disciplinarian',
     color: '#FF9350',
     glow: 'rgba(255, 147, 80, 0.16)',
@@ -30,7 +30,7 @@ export const COMPANIONS: Companion[] = [
       idle: ['/sprites/characters/tile_0012.png', '/sprites/characters/tile_0013.png'],
       action: '/sprites/characters/tile_0014.png',
     },
-    remark: "Who's gonna carry the boats? Stay hard. Zero scrolling.",
+    remark: "Deadlines do not wait. Neither do you. Move.",
     lore: 'Relentless accountability. Calls out your excuses before you finish making them.',
     voice: 'Low square-wave bark',
   },

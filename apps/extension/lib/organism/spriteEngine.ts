@@ -3,7 +3,7 @@ import { type OrganismId, type OrganismState, ORGANISM_MODELS } from '../persona
 export class SpriteEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
-  private organismId: OrganismId = 'goggins';
+  private organismId: OrganismId = 'Sarge';
   private currentState: OrganismState = 'idle';
 
   private currentFrame = 0;
@@ -65,7 +65,7 @@ export class SpriteEngine {
   }
 
   public triggerBurst(type: 'spark' | 'zzz' | 'exclamation' | 'heart') {
-    const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.goggins;
+    const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.Sarge;
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI * 2 * i) / 6;
       const speed = 1.2 + Math.random() * 1.5;
@@ -103,7 +103,7 @@ export class SpriteEngine {
           char: 'z',
         });
       } else if (this.currentState === 'celebrating' && Math.random() < 0.25) {
-        const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.goggins;
+        const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.Sarge;
         this.particles.push({
           x: 48 + (Math.random() - 0.5) * 28,
           y: 48,
@@ -155,8 +155,8 @@ export class SpriteEngine {
     const isBlinking = (f === 3 && this.currentState === 'idle') || this.currentState === 'sleeping';
 
     switch (this.organismId) {
-      case 'goggins':
-        this.renderGogginsBot(ctx, f, isBlinking);
+      case 'Sarge':
+        this.renderSargeBot(ctx, f, isBlinking);
         break;
       case 'waifu':
         this.renderWaifuMomo(ctx, f, isBlinking);
@@ -174,8 +174,8 @@ export class SpriteEngine {
     }
   }
 
-  // --- 1. GOGGINS (Blaze Orange Disciplinarian Robot) ---
-  private renderGogginsBot(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+  // --- 1. Sarge (Blaze Orange Disciplinarian Robot) ---
+  private renderSargeBot(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
     // Sweatband / Headband
     ctx.fillStyle = '#ea580c';
     ctx.fillRect(26, 20, 44, 8);

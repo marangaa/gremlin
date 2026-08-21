@@ -34,7 +34,7 @@ export const Sprite: React.FC<SpriteProps> = ({
       const isBlinking = f === 3 && state === 'idle';
 
       switch (id) {
-        case 'goggins': {
+        case 'Sarge': {
           // Sweatband
           ctx.fillStyle = '#ea580c';
           ctx.fillRect(26, 20, 44, 8);

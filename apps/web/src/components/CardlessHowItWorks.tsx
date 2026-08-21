@@ -51,7 +51,7 @@ export const CardlessHowItWorks: React.FC = () => {
 
   const ROAST_OPTIONS: Record<CompanionId, string> = {
     kuro: '“Bro you were studying Roman concrete, why are we looking at kittens?! 💀 Back to Caesar!”',
-    goggins: '“Who\'s gonna write the essay? The keyboard isn\'t gonna type for you! Stay hard!”',
+    Sarge: '“That essay will not write itself. Hands on keyboard. Move!”',
     sherlock: '“A curious detour into kitten reels, Watson. The crime scene remains unsolved.”',
     waifu: '“Anata, why are we looking at memes? Stay focused for me, okay? 💕”',
     sensei: '“Breathe. Close the distraction feed. Return your mind to your goal.”',
@@ -198,7 +198,7 @@ export const CardlessHowItWorks: React.FC = () => {
               </div>
 
               <div className="flex gap-2">
-                {(['kuro', 'goggins', 'sherlock', 'waifu', 'sensei'] as CompanionId[]).map((id) => (
+                {(['kuro', 'Sarge', 'sherlock', 'waifu', 'sensei'] as CompanionId[]).map((id) => (
                   <button
                     key={id}
                     onClick={() => setActiveRoastCompanion(id)}

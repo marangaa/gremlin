@@ -31,7 +31,7 @@ export class SoundSynthesizer {
    * Animalese / Character Speech Babble
    * Generates frequency-modulated formant chirps tailored to each character.
    */
-  public playAnimalese(text: string, organismId: OrganismId = 'goggins') {
+  public playAnimalese(text: string, organismId: OrganismId = 'Sarge') {
     if (this.muted || this.volume <= 0) return;
     const ctx = this.getContext();
     if (!ctx) return;
@@ -52,7 +52,7 @@ export class SoundSynthesizer {
         basePitch = 380;
         waveType = 'square';
         break;
-      case 'goggins':
+      case 'Sarge':
         basePitch = 260;
         waveType = 'square';
         break;
@@ -83,7 +83,7 @@ export class SoundSynthesizer {
 
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(
-        organismId === 'goggins' || organismId === 'sherlock' ? 2400 : 1600,
+        organismId === 'Sarge' || organismId === 'sherlock' ? 2400 : 1600,
         noteStart
       );
 

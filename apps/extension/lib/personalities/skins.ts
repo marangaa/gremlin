@@ -36,12 +36,12 @@ const BASE_NEUTRAL_DARK = {
 };
 
 export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
-  goggins: {
-    id: 'goggins',
-    name: 'Goggins',
-    tagline: 'Who’s gonna carry the boats? Zero excuses.',
-    greeting: 'Stay hard! No scrolling. Lock in and execute.',
-    pokeNotice: 'Goggins stared right through you. "Get back to work!"',
+  Sarge: {
+    id: 'Sarge',
+    name: 'Sarge',
+    tagline: 'Pain is temporary. Quitting is forever.',
+    greeting: 'No surrender. No scrolling. Lock in and execute.',
+    pokeNotice: 'Sarge stared right through you. "Get back to work!"',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(249, 115, 22, 0.4)',

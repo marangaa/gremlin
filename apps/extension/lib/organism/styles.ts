@@ -185,8 +185,8 @@ export const ORGANISM_SHADOW_CSS = /* css */ `
   opacity: 1;
 }
 
-/* ================= 1. GOGGINS: GRAVITY OVERLOAD HUD ================= */
-.goggins-gravity-hud {
+/* ================= 1. Sarge: GRAVITY OVERLOAD HUD ================= */
+.Sarge-gravity-hud {
   position: absolute;
   inset: 0;
   display: flex;
@@ -195,10 +195,10 @@ export const ORGANISM_SHADOW_CSS = /* css */ `
   justify-content: flex-start;
   padding-top: 5vh;
   z-index: 10;
-  animation: goggins-rumble 0.45s ease-in-out;
+  animation: Sarge-rumble 0.45s ease-in-out;
 }
 
-@keyframes goggins-rumble {
+@keyframes Sarge-rumble {
   0%, 100% { transform: translateY(0); }
   20% { transform: translateY(8px) rotateX(4deg); }
   40% { transform: translateY(-4px) rotateX(-2deg); }
@@ -206,7 +206,7 @@ export const ORGANISM_SHADOW_CSS = /* css */ `
   80% { transform: translateY(-2px); }
 }
 
-.goggins-hazard-banner {
+.Sarge-hazard-banner {
   background: #000000;
   border: 3px solid #f97316;
   border-radius: 8px;
