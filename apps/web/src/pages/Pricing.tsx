@@ -7,7 +7,7 @@ import { Reveal } from '../components/Reveal';
 /* Featured tier inverts back to dark: an island of the night mode.    */
 /* ------------------------------------------------------------------ */
 
-const PAPER_LABEL = 'inline-flex items-center gap-1.5 px-2.5 py-1 bg-pop-yellow border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-mono text-[11px] font-bold tracking-wider text-coal -rotate-1';
+const PAPER_LABEL = 'inline-flex items-center gap-1.5 px-2.5 py-1 bg-pop-yellow border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-mono text-[11px] font-bold tracking-wider text-coal';
 const PAPER_GHOST_BTN =
   'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-white font-display font-bold text-sm text-coal tracking-wide shadow-brut-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0 active:translate-y-0 active:shadow-none';
 

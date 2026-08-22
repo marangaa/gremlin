@@ -18,7 +18,7 @@ interface DocLayoutProps {
 export const DocLayout: React.FC<DocLayoutProps> = ({ eyebrow, title, updated, sections }) => (
   <main className="container-site py-16 lg:py-24">
     <Reveal>
-      <div className="eyebrow -rotate-1">{eyebrow}</div>
+      <div className="eyebrow">{eyebrow}</div>
       <h1 className="mt-4 font-display text-4xl sm:text-5xl font-bold tracking-tight">{title}</h1>
       <p className="mt-3 font-mono text-xs text-paper-muted">Last updated {updated}</p>
     </Reveal>

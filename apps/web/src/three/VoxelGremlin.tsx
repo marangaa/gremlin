@@ -147,7 +147,7 @@ export const VoxelGremlin: React.FC = () => {
     const pPos = new Float32Array(P_COUNT * 3);
     const pCol = new Float32Array(P_COUNT * 3);
     const pSpeed = new Float32Array(P_COUNT);
-    const dustColors = [0xa3e635, 0xf2f5f9, 0x6fe3f0].map((c) => new THREE.Color(c));
+    const dustColors = [0x12151a, 0x65a30d, 0x2ec4b6].map((c) => new THREE.Color(c));
     for (let i = 0; i < P_COUNT; i++) {
       pPos[i * 3] = (Math.random() - 0.5) * 22;
       pPos[i * 3 + 1] = (Math.random() - 0.5) * 14;
@@ -161,12 +161,11 @@ export const VoxelGremlin: React.FC = () => {
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
     pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
     const pMat = new THREE.PointsMaterial({
-      size: 0.07,
+      size: 0.06,
       vertexColors: true,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.45,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
     });
     const points = new THREE.Points(pGeo, pMat);
     scene.add(points);
@@ -176,9 +175,9 @@ export const VoxelGremlin: React.FC = () => {
     glowCanvas.width = glowCanvas.height = 256;
     const gctx = glowCanvas.getContext('2d')!;
     const grad = gctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-    grad.addColorStop(0, 'rgba(163, 230, 53, 0.5)');
-    grad.addColorStop(0.5, 'rgba(163, 230, 53, 0.12)');
-    grad.addColorStop(1, 'rgba(163, 230, 53, 0)');
+    grad.addColorStop(0, 'rgba(101, 163, 13, 0.28)');
+    grad.addColorStop(0.5, 'rgba(101, 163, 13, 0.08)');
+    grad.addColorStop(1, 'rgba(101, 163, 13, 0)');
     gctx.fillStyle = grad;
     gctx.fillRect(0, 0, 256, 256);
     const glowTex = new THREE.CanvasTexture(glowCanvas);
@@ -186,7 +185,6 @@ export const VoxelGremlin: React.FC = () => {
       map: glowTex,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
     });
     const glow = new THREE.Mesh(new THREE.PlaneGeometry(11, 11), glowMat);
     glow.rotation.x = -Math.PI / 2;
@@ -247,7 +245,7 @@ export const VoxelGremlin: React.FC = () => {
       creature.position.y = Math.sin(t * 1.1) * 0.2;
       creature.rotation.y = Math.sin(t * 0.32) * 0.42 + mouse.x * 0.35;
       creature.rotation.x = mouse.y * 0.1;
-      glow.material.opacity = 0.75 + Math.sin(t * 1.1) * 0.15;
+      glow.material.opacity = 0.7 + Math.sin(t * 1.1) * 0.12;
 
       if (t > nextBlink) {
         blinkUntil = t + 0.13;

@@ -1,9 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Download, Volume2 } from 'lucide-react';
 import { COMPANIONS, type CompanionId } from '../lib/companions';
 import { Reveal } from '../components/Reveal';
 import { Sprite } from '../components/Sprite';
 import { CardlessHowItWorks } from '../components/CardlessHowItWorks';
+
+const LazyVoxelGremlin = lazy(() =>
+  import('../three/VoxelGremlin').then((m) => ({ default: m.VoxelGremlin })),
+);
 
 /* ------------------------------------------------------------------ */
 /* Typewriter for the live reaction                                    */
@@ -93,41 +97,17 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
   const [selected, setSelected] = useState<CompanionId>('kuro');
   const activeCompanion = COMPANIONS.find((c) => c.id === selected) || COMPANIONS[0]!;
   const { shown, done } = useTypewriter(activeCompanion.remark);
-  const mascotRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const el = mascotRef.current;
-    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const onMove = (e: MouseEvent) => {
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-      const dx = Math.max(-1, Math.min(1, (e.clientX - cx) / r.width));
-      const dy = Math.max(-1, Math.min(1, (e.clientY - cy) / r.height));
-      el.style.transform = `translate(${dx * 16}px, ${dy * 10}px) rotate(${dx * 4}deg)`;
-    };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
-  }, []);
 
   return (
     <main className="relative z-10">
       {/* ================= HERO ================= */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-dots" aria-hidden="true" />
+      <section className="relative">
         <div className="container-site relative pt-28 pb-16 sm:pt-32 lg:pb-24">
           <div className="grid lg:grid-cols-[1.05fr,0.95fr] items-center gap-12">
             {/* Copy */}
             <div>
               <Reveal>
-                <div className="inline-flex items-center gap-2 bg-pop-yellow border-2 border-coal shadow-[3px_3px_0_0_#12151A] px-2.5 py-1 -rotate-2">
-                  <span className="w-2 h-2 bg-coal animate-pulse-dot" />
-                  <span className="font-mono text-[11px] font-bold tracking-wider">Focus companion · Free</span>
-                </div>
-              </Reveal>
-
-              <Reveal delay={80}>
-                <h1 className="mt-6 font-display font-extrabold text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-7xl tracking-tight">
+                <h1 className="font-display font-extrabold text-[2.9rem] leading-[0.95] sm:text-6xl lg:text-7xl tracking-tight">
                   Stop
                   <br />
                   doomscrolling.
@@ -164,34 +144,20 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
               </Reveal>
             </div>
 
-            {/* Console window with voxel gremlin */}
+            {/* Floating voxel gremlin — no bounding box */}
             <Reveal delay={200} className="relative">
-              <div className="absolute -top-4 -right-3 z-10 rotate-6 bg-pop-pink border-2 border-coal shadow-[3px_3px_0_0_#12151A] px-2.5 py-1 font-mono text-[11px] font-bold tracking-wide">
-                It blinks
-              </div>
-              <div className="border-2 border-coal bg-base-deep shadow-[8px_8px_0_0_#12151A]">
-                {/* Window chrome */}
-                <div className="flex items-center justify-between px-3 py-1.5 bg-accent border-b-2 border-coal">
-                  <span className="font-mono text-[10px] font-bold tracking-wider text-coal">
-                    gremlin.exe — companion 001
-                  </span>
-                  <span className="flex gap-1">
-                    <span className="w-2.5 h-2.5 bg-coal" />
-                    <span className="w-2.5 h-2.5 bg-coal" />
-                    <span className="w-2.5 h-2.5 bg-white border border-coal" />
-                  </span>
-                </div>
-                {/* Screen */}
-                <div className="relative h-[340px] sm:h-[420px] flex items-end justify-center overflow-hidden">
-                  <div ref={mascotRef} className="transition-transform duration-100 ease-out will-change-transform pb-2">
-                    <Sprite id={activeCompanion.id} size={200} />
-                  </div>
-                </div>
-                {/* Caption strip */}
-                <div className="border-t-2 border-accent/40 px-3 py-2 font-mono text-[11px] text-ink-muted flex justify-between">
-                  <span>{activeCompanion.name.toLowerCase()} · your companion</span>
-                  <span className="text-accent">● rendering live</span>
-                </div>
+              <div className="relative h-[340px] sm:h-[440px] animate-fade-in">
+                <Suspense
+                  fallback={
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-float-soft drop-shadow-[0_24px_32px_rgba(18,21,26,0.25)]">
+                        <Sprite id="kuro" size={200} />
+                      </div>
+                    </div>
+                  }
+                >
+                  <LazyVoxelGremlin />
+                </Suspense>
               </div>
             </Reveal>
           </div>
@@ -202,7 +168,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
       <section id="companions" className="container-site scroll-mt-24 pt-16 lg:pt-24 pb-16 lg:pb-24">
         <div className="max-w-2xl mb-12">
           <Reveal>
-            <div className="eyebrow -rotate-1">Personalities</div>
+              <div className="eyebrow">Personalities</div>
             <h2 className="mt-4 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
               Pick your accountability style.
             </h2>
@@ -283,7 +249,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
 
             {/* Narrative */}
             <div className="space-y-5 text-center lg:text-left">
-              <span className="inline-block border-2 border-coal bg-white px-3 py-1 font-mono text-xs shadow-brut-sm rotate-1">
+              <span className="inline-block border-2 border-coal bg-white px-3 py-1 font-mono text-xs shadow-brut-sm">
                 Best for: <strong>{BEST_FOR_TAGS[activeCompanion.id]}</strong>
               </span>
               <h3 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight">
@@ -313,7 +279,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
         <div>
           <div className="max-w-2xl mb-12">
             <Reveal>
-              <div className="eyebrow rotate-1">How it works</div>
+              <div className="eyebrow">How it works</div>
               <h2 className="mt-4 font-display text-3xl sm:text-5xl font-extrabold tracking-tight">
                 Three steps to effortless focus.
               </h2>
@@ -327,23 +293,16 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
         </div>
       </section>
 
-      {/* ================= FINAL CTA BAND ================= */}
-      <section className="relative bg-accent overflow-hidden">
-        <div className="absolute top-6 left-8 hidden lg:block -rotate-6 bg-white border-2 border-coal shadow-[3px_3px_0_0_#12151A] px-3 py-1.5 font-mono text-xs font-bold">
-          No blocklists
-        </div>
-        <div className="absolute bottom-6 right-8 hidden lg:block rotate-3 bg-pop-blue text-white border-2 border-coal shadow-[3px_3px_0_0_#12151A] px-3 py-1.5 font-mono text-xs font-bold">
-          100% on-device AI
-        </div>
-
-        <div className="container-site relative py-16 lg:py-24 text-center">
+      {/* ================= FINAL CTA ================= */}
+      <section className="relative">
+        <div className="container-site relative py-20 lg:py-28 text-center">
           <Reveal>
             <h2 className="font-display font-extrabold text-4xl sm:text-6xl tracking-tight text-coal text-wrap-balance">
-              Get more done.
+              Get <span className="mark-lime">more done</span>.
               <br />
-              Scroll less.
+              Scroll <span className="mark-lime">less</span>.
             </h2>
-            <p className="mt-4 text-coal/80 max-w-md mx-auto text-sm sm:text-base leading-relaxed font-semibold">
+            <p className="mt-6 text-paper-muted max-w-md mx-auto text-sm sm:text-base leading-relaxed font-medium">
               Add your desk companion, lock in your goal, and protect your focus.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
@@ -351,7 +310,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
                 href="https://chromewebstore.google.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-7 py-4 bg-coal text-paper border-2 border-coal font-display font-bold text-sm tracking-wide shadow-[4px_4px_0_0_#F5F6F1] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[7px_7px_0_0_#F5F6F1] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
+                className="btn-primary"
               >
                 <Download className="w-4 h-4" />
                 Add to Chrome — Free
@@ -361,6 +320,9 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+            <p className="mt-6 font-mono text-[11px] font-bold tracking-wide text-paper-muted">
+              Free forever tier · Bring your own AI key · Nothing leaves your machine
+            </p>
           </Reveal>
         </div>
       </section>
