@@ -7,7 +7,8 @@ import {
   type AiTelemetryTrace,
   telemetryStorage,
 } from '../storage';
-import { resolveLanguageModel, type SupportedAiProvider } from './providers';
+import { resolveLanguageModel } from './modelFactory';
+import { type SupportedAiProvider } from './providers';
 import { api } from '../api/client';
 import { agentOrchestrator } from './AgentOrchestrator';
 import type { EvaluationResult, OrganismState } from '@gremlin/shared';

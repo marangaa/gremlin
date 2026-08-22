@@ -3,7 +3,7 @@ import { AgentMemoryStore, agentMemoryStore } from './memory/AgentMemoryStore';
 import { GoalDecomposerAgent } from './agents/GoalDecomposerAgent';
 import { FocusMonitorAgent } from './agents/FocusMonitorAgent';
 import { DiarySynthesizerAgent } from './agents/DiarySynthesizerAgent';
-import { resolveLanguageModel } from './providers';
+import { resolveLanguageModel } from './modelFactory';
 import { configStorage, type OrganismConfig } from '../storage';
 import type { OrganismId } from '@gremlin/shared';
 
