@@ -353,10 +353,13 @@ export default function App() {
   if (!hasOnboarded) {
     return (
       <div className="w-[380px] min-h-[520px] bg-base p-5 flex flex-col text-ink">
-        <h1 className="font-display font-semibold text-xl tracking-tight">Welcome to Gremlin</h1>
-        <p className="mt-1 text-xs text-ink-muted">Your pixel focus companion. Before we start, the legal bit — in plain English:</p>
+        <div className="flex items-center gap-2.5">
+          <img src="/icon.png" alt="" className="w-7 h-7 border-2 border-coal shadow-[2px_2px_0_0_#12151A]" />
+          <h1 className="font-display font-semibold text-lg tracking-tight">Welcome to Gremlin</h1>
+        </div>
+        <p className="mt-2 text-xs text-ink-muted leading-relaxed">Your pixel focus companion. Before we start, the legal bit — in plain English:</p>
 
-        <div className="mt-4 flex flex-col gap-3 text-[13px] leading-relaxed border border-paper-line bg-paper-card text-paper-ink p-4 rounded-md shadow-paper">
+        <div className="mt-4 flex flex-col gap-2.5 text-[13px] leading-relaxed border border-paper-line bg-paper-card text-paper-ink p-4 rounded-md shadow-paper">
           <div className="flex gap-2">
             <Shield size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
@@ -391,13 +394,13 @@ export default function App() {
 
         <button
           onClick={handleCompleteOnboarding}
-          className="mt-auto w-full py-3 text-sm font-semibold bg-accent text-base-deep hover:bg-accent-bright transition-colors rounded-md cursor-pointer"
+          className="mt-6 w-full py-2.5 text-sm font-semibold bg-accent text-base-deep hover:bg-accent-bright transition-colors rounded-md cursor-pointer"
         >
           I understand — enable my companion
         </button>
         <button
           onClick={() => window.close()}
-          className="w-full py-2 mt-2 text-xs text-ink-faint hover:text-ink-muted transition-colors cursor-pointer"
+          className="w-full py-1.5 mt-1.5 text-xs text-ink-faint hover:text-ink-muted transition-colors cursor-pointer"
         >
           Not now
         </button>
