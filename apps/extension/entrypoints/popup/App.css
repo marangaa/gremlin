@@ -4,10 +4,15 @@
 
 @layer base {
   body {
-    @apply bg-neo-bg text-black font-sans m-0 p-0 overflow-x-hidden overflow-y-auto selection:bg-neo-pink selection:text-white;
+    @apply bg-base text-ink font-sans m-0 p-0 overflow-x-hidden overflow-y-auto;
   }
-  
-  /* Hide scrollbar */
+
+  ::selection {
+    background-color: #a3e635;
+    color: #070809;
+  }
+
+  /* Hide scrollbar — popup is a fixed console viewport */
   ::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
@@ -16,18 +21,10 @@
 }
 
 @layer utilities {
-  .neo-container {
-    @apply w-[380px] min-h-[520px] bg-neo-bg p-4 flex flex-col gap-4 relative overflow-hidden;
-  }
-
-  .neo-sidepanel {
-    @apply w-full min-h-screen bg-neo-bg p-5 flex flex-col gap-4 relative overflow-hidden;
-  }
-
-  /* Grid dots for that neo-brutalist raw feel */
-  .neo-dots {
-    @apply absolute inset-0 pointer-events-none opacity-20 z-0;
+  /* Phosphor dot grid — faint light dots on the dark shell */
+  .gm-dots {
+    @apply absolute inset-0 pointer-events-none opacity-[0.07] z-0;
     background-size: 16px 16px;
-    background-image: radial-gradient(circle, #000000 1px, transparent 1px);
+    background-image: radial-gradient(circle, #f2f5f9 1px, transparent 1px);
   }
 }

@@ -7,30 +7,50 @@ export default {
   theme: {
     extend: {
       colors: {
-        neo: {
-          bg: '#E5E7EB', // Stark gray background
-          surface: '#FFFFFF',
-          border: '#000000',
-          yellow: '#FFD900',
-          blue: '#4361EE',
-          pink: '#F72585',
-          green: '#2EC4B6',
-          orange: '#FF9F1C',
+        // Shared "Phosphor Console" system — mirrors apps/web/tailwind.config.js
+        base: {
+          DEFAULT: '#0B0D10',
+          deep: '#070809',
+        },
+        surface: {
+          DEFAULT: '#10131A',
+          raised: '#151923',
+        },
+        line: {
+          DEFAULT: '#1F242E',
+          bright: '#2A3140',
+        },
+        ink: {
+          DEFAULT: '#F2F5F9',
+          muted: '#9AA3B2',
+          faint: '#5D6675',
+        },
+        accent: {
+          DEFAULT: '#A3E635',
+          bright: '#BEF264',
+          deep: '#84CC16',
+        },
+        danger: '#FB7185',
+        // Deliberate light blocks inside the dark shell ("paper screen")
+        paper: {
+          DEFAULT: '#F5F6F1',
+          card: '#FFFFFF',
+          line: '#E4E7DE',
+          ink: '#12151A',
+          muted: '#5B6472',
+          faint: '#9AA1AC',
         },
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'sans-serif'],
-        sans: ['"Space Grotesk"', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       boxShadow: {
-        neo: '4px 4px 0px 0px #000000',
-        'neo-sm': '2px 2px 0px 0px #000000',
-        'neo-lg': '8px 8px 0px 0px #000000',
-      },
-      borderWidth: {
-        '2': '2px',
-        '3': '3px',
+        card: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 16px 40px -24px rgba(0,0,0,0.7)',
+        lift: '0 1px 0 0 rgba(255,255,255,0.05) inset, 0 24px 60px -28px rgba(0,0,0,0.8)',
+        glow: '0 0 0 1px rgba(163,230,53,0.25), 0 8px 40px -8px rgba(163,230,53,0.25)',
+        paper: '0 1px 2px rgba(18,21,26,0.06), 0 8px 24px -12px rgba(18,21,26,0.25)',
       },
     },
   },

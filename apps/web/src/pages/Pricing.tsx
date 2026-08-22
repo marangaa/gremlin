@@ -2,6 +2,15 @@ import React from 'react';
 import { Check, KeyRound, Sparkles, Zap, MessageSquare } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 
+/* ------------------------------------------------------------------ */
+/* Paper theme — the deliberate light route on the dark site.          */
+/* Featured tier inverts back to dark: an island of the night mode.    */
+/* ------------------------------------------------------------------ */
+
+const PAPER_LABEL = 'font-mono text-[11px] font-semibold uppercase tracking-wider text-[#4D7C0F]';
+const PAPER_GHOST_BTN =
+  'w-full text-center block px-5 py-3 rounded-xl border border-paper-line bg-transparent font-display font-semibold text-sm text-paper-ink transition-colors hover:bg-paper-card hover:border-[#C9CEBF] active:translate-y-[1px]';
+
 interface Tier {
   name: string;
   price: string;
@@ -9,7 +18,6 @@ interface Tier {
   tag?: string;
   tagColor?: string;
   icon: React.ReactNode;
-  iconColor: string;
   blurb: string;
   features: string[];
   cta: string;
@@ -22,7 +30,6 @@ const TIERS: Tier[] = [
     price: '$0',
     per: 'forever',
     icon: <KeyRound className="w-4 h-4" />,
-    iconColor: 'text-ink-muted',
     blurb: 'Use your own free API key with 100% private, on-device execution.',
     features: [
       'All 5 focus companion personalities',
@@ -39,7 +46,6 @@ const TIERS: Tier[] = [
     per: '/ month',
     tag: 'Most popular',
     icon: <Zap className="w-4 h-4" />,
-    iconColor: 'text-accent',
     blurb: 'Zero setup required. Hosted fast cloud AI and sync across all your devices.',
     features: [
       'Zero setup — no API keys or configuration needed',
@@ -58,7 +64,6 @@ const TIERS: Tier[] = [
     tag: 'Limited to 200',
     tagColor: '#FF7EB0',
     icon: <Sparkles className="w-4 h-4" />,
-    iconColor: 'text-[#FF7EB0]',
     blurb: 'Lifetime Pro access for early backers. One simple payment, focus forever.',
     features: [
       'Lifetime access to all future Pro features & updates',
@@ -91,121 +96,123 @@ const FAQS: [string, string][] = [
 
 export const Pricing: React.FC = () => {
   return (
-    <main className="container-site py-16 lg:py-24">
-      <div className="max-w-2xl">
-        <Reveal>
-          <div className="eyebrow">Pricing</div>
-          <h1 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight text-wrap-balance">
-            Start free. Upgrade when the focus pays for itself.
-          </h1>
-          <p className="mt-4 text-ink-muted leading-relaxed text-base sm:text-lg">
-            The core companion experience is completely free with your own key.
-            Pro exists for anyone who wants zero setup and instant cloud sync across devices.
-          </p>
-        </Reveal>
-      </div>
-
-      <div className="mt-14 grid md:grid-cols-3 gap-6 items-stretch">
-        {TIERS.map((tier, i) => (
-          <Reveal key={tier.name} delay={i * 90} className="h-full">
-            <div
-              className={`relative h-full flex flex-col p-7 rounded-2xl border transition-all duration-300 ${
-                tier.highlight
-                  ? 'border-accent/40 bg-[#12151d] shadow-glow-lg'
-                  : 'border-line bg-[#10121a] shadow-card hover:border-line-bright'
-              }`}
-            >
-              {tier.tag && (
-                <div
-                  className="absolute -top-3 left-6 font-mono text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md border"
-                  style={
-                    tier.highlight
-                      ? { background: '#A3E635', color: '#0B0D10', borderColor: '#A3E635' }
-                      : {
-                          background: '#1a1015',
-                          color: tier.tagColor ?? '#FF7EB0',
-                          borderColor: `${tier.tagColor ?? '#FF7EB0'}55`,
-                        }
-                  }
-                >
-                  {tier.tag}
-                </div>
-              )}
-
-              <div className="flex items-center gap-2.5">
-                <span
-                  className={`inline-flex w-8 h-8 items-center justify-center rounded-lg border ${
-                    tier.highlight ? 'bg-accent/10 border-accent/30' : 'bg-base border-line'
-                  } ${tier.iconColor}`}
-                >
-                  {tier.icon}
-                </span>
-                <span className="font-display font-semibold">{tier.name}</span>
-              </div>
-
-              <div className="mt-5 flex items-baseline gap-2">
-                <span className="font-display text-4xl font-bold tracking-tight">{tier.price}</span>
-                <span className="font-mono text-xs text-ink-faint">{tier.per}</span>
-              </div>
-
-              <p className="mt-3 text-sm text-ink-muted leading-relaxed min-h-[40px]">
-                {tier.blurb}
-              </p>
-
-              <div className="mt-6 pt-6 border-t border-line/60 flex-1 space-y-3">
-                <span className="font-mono text-[11px] uppercase tracking-wider text-ink-faint">
-                  What's included:
-                </span>
-                <ul className="space-y-2.5 text-xs sm:text-sm text-ink-muted">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mt-8 pt-4">
-                <a
-                  href={
-                    tier.highlight
-                      ? '/auth'
-                      : 'https://chromewebstore.google.com'
-                  }
-                  className={`w-full text-center block ${tier.highlight ? 'btn-primary' : 'btn-ghost'}`}
-                >
-                  {tier.cta}
-                </a>
-              </div>
-            </div>
+    <main className="min-h-screen bg-paper text-paper-ink">
+      <div className="container-site py-16 lg:py-24">
+        <div className="max-w-2xl">
+          <Reveal>
+            <div className={PAPER_LABEL}>Pricing</div>
+            <h1 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight text-wrap-balance">
+              Start free. Upgrade when the focus pays for itself.
+            </h1>
+            <p className="mt-4 text-paper-muted leading-relaxed text-base sm:text-lg">
+              The core companion experience is completely free with your own key. Pro exists for
+              anyone who wants zero setup and instant cloud sync across devices.
+            </p>
           </Reveal>
-        ))}
-      </div>
-
-      {/* Frequently Asked Questions */}
-      <section className="mt-24 pt-16 border-t border-line/40">
-        <div className="max-w-xl mb-10">
-          <div className="eyebrow">FAQ</div>
-          <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold tracking-tight">
-            Frequently asked questions.
-          </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {FAQS.map(([q, a], idx) => (
-            <div key={idx} className="p-6 rounded-2xl bg-[#10121a] border border-line-bright space-y-2">
-              <h3 className="font-display font-semibold text-base text-ink flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-accent" />
-                {q}
-              </h3>
-              <p className="text-sm text-ink-muted leading-relaxed">
-                {a}
-              </p>
-            </div>
+        <div className="mt-14 grid md:grid-cols-3 gap-6 items-stretch">
+          {TIERS.map((tier, i) => (
+            <Reveal key={tier.name} delay={i * 90} className="h-full">
+              <div
+                className={`relative h-full flex flex-col p-7 rounded-2xl border transition-all duration-300 ${
+                  tier.highlight
+                    ? 'bg-base-deep text-ink border-accent/40 shadow-glow-lg'
+                    : 'bg-paper-card border-paper-line shadow-paper hover:border-[#C9CEBF]'
+                }`}
+              >
+                {tier.tag && (
+                  <div
+                    className={`absolute -top-3 left-6 font-mono text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
+                      tier.highlight
+                        ? 'bg-accent text-base-deep border-accent'
+                        : 'border bg-paper-card'
+                    }`}
+                    style={
+                      tier.highlight
+                        ? undefined
+                        : { color: tier.tagColor ?? '#FF7EB0', borderColor: `${tier.tagColor ?? '#FF7EB0'}66` }
+                    }
+                  >
+                    {tier.tag}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`inline-flex w-8 h-8 items-center justify-center rounded-lg border ${
+                      tier.highlight ? 'bg-accent/10 border-accent/30 text-accent-bright' : 'bg-paper border-paper-line text-[#4D7C0F]'
+                    }`}
+                  >
+                    {tier.icon}
+                  </span>
+                  <span className="font-display font-semibold">{tier.name}</span>
+                </div>
+
+                <div className="mt-5 flex items-baseline gap-2">
+                  <span className="font-display text-4xl font-bold tracking-tight">{tier.price}</span>
+                  <span className={`font-mono text-xs ${tier.highlight ? 'text-ink-faint' : 'text-paper-faint'}`}>
+                    {tier.per}
+                  </span>
+                </div>
+
+                <p className={`mt-3 text-sm leading-relaxed min-h-[40px] ${tier.highlight ? 'text-ink-muted' : 'text-paper-muted'}`}>
+                  {tier.blurb}
+                </p>
+
+                <div className={`mt-6 pt-6 flex-1 space-y-3 ${tier.highlight ? 'border-t border-line/60' : 'border-t border-paper-line'}`}>
+                  <span className={`font-mono text-[11px] uppercase tracking-wider ${tier.highlight ? 'text-ink-faint' : 'text-paper-faint'}`}>
+                    What's included:
+                  </span>
+                  <ul className={`space-y-2.5 text-xs sm:text-sm ${tier.highlight ? 'text-ink-muted' : 'text-paper-muted'}`}>
+                    {tier.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2.5">
+                        <Check className={`w-4 h-4 shrink-0 mt-0.5 ${tier.highlight ? 'text-accent-bright' : 'text-[#65A30D]'}`} />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-8 pt-4">
+                  <a
+                    href={tier.highlight ? '/auth' : 'https://chromewebstore.google.com'}
+                    className={
+                      tier.highlight
+                        ? 'w-full text-center block px-5 py-3 rounded-xl bg-accent font-display font-semibold text-sm text-base-deep transition-colors hover:bg-accent-bright active:translate-y-[1px]'
+                        : PAPER_GHOST_BTN
+                    }
+                  >
+                    {tier.cta}
+                  </a>
+                </div>
+              </div>
+            </Reveal>
           ))}
         </div>
-      </section>
+
+        {/* Frequently Asked Questions */}
+        <section className="mt-24 pt-16 border-t border-paper-line">
+          <div className="max-w-xl mb-10">
+            <div className={PAPER_LABEL}>FAQ</div>
+            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold tracking-tight">
+              Frequently asked questions.
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {FAQS.map(([q, a], idx) => (
+              <div key={idx} className="p-6 rounded-2xl bg-paper-card border border-paper-line shadow-paper space-y-2">
+                <h3 className="font-display font-semibold text-base text-paper-ink flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#65A30D]" />
+                  {q}
+                </h3>
+                <p className="text-sm text-paper-muted leading-relaxed">{a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </main>
   );
 };

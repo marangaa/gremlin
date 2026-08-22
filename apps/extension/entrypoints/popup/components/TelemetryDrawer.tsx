@@ -17,12 +17,12 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps & { accentColor?: st
   const latest = traces[0];
 
   return (
-    <div className="bg-white border border-gray-200 p-3">
+    <div className="bg-surface border border-line p-3">
       {/* Header Toggle */}
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between font-mono text-xs text-gray-900 hover:opacity-70 cursor-pointer transition-opacity"
+        className="w-full flex items-center justify-between font-mono text-xs text-ink hover:opacity-70 cursor-pointer transition-opacity"
       >
         <div className="flex items-center gap-2">
           <Terminal size={14} />
@@ -30,7 +30,7 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps & { accentColor?: st
             Telemetry Traces
           </span>
           {latest && (
-            <span className="font-mono font-bold text-[10px] text-white px-1 border border-gray-200" style={{ backgroundColor: accentColor }}>
+            <span className="font-mono font-bold text-[10px] text-white px-1 border border-line" style={{ backgroundColor: accentColor }}>
               {latest.latencyMs}ms
             </span>
           )}
@@ -40,9 +40,9 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps & { accentColor?: st
 
       {/* Expanded Traces View */}
       {isOpen && (
-        <div className="space-y-3 pt-3 mt-3 border-t border-gray-200 text-xs">
+        <div className="space-y-3 pt-3 mt-3 border-t border-line text-xs">
           {traces.length === 0 ? (
-            <div className="text-center py-4 text-gray-500 font-mono font-bold text-xs bg-gray-50 border border-dashed border-gray-300">
+            <div className="text-center py-4 text-ink-muted font-mono font-bold text-xs bg-base border border-dashed border-line-bright">
               No traces recorded yet.
             </div>
           ) : (
@@ -52,11 +52,11 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps & { accentColor?: st
                 return (
                   <div
                     key={t.id}
-                    className="p-3 bg-white border border-gray-200 space-y-2 font-mono text-gray-900 transition-colors hover:bg-gray-50"
+                    className="p-3 bg-surface border border-line space-y-2 font-mono text-ink transition-colors hover:bg-base"
                   >
                     {/* Top row: Model + Latency + Tokens */}
-                    <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 border-b border-gray-300 pb-1">
-                      <span className="text-gray-900 bg-gray-100 px-1 border border-gray-300">{t.model || t.provider}</span>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-ink-muted border-b border-line-bright pb-1">
+                      <span className="text-ink bg-surface-raised px-1 border border-line-bright">{t.model || t.provider}</span>
                       <div className="flex items-center gap-2">
                         <span className="flex items-center gap-1">
                           <Clock size={10} /> {t.latencyMs}ms
@@ -67,23 +67,23 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps & { accentColor?: st
 
                     {/* Context row */}
                     <div className="text-sm font-bold truncate">
-                      <span className="text-gray-400 text-[10px]">Domain: </span> {t.activeDomain || 'browser'}
+                      <span className="text-ink-faint text-[10px]">Domain: </span> {t.activeDomain || 'browser'}
                     </div>
 
                     {/* Decision tag */}
                     <div className="flex items-center gap-2 mt-1">
                       <span
-                        className="px-2 py-0.5 border border-gray-200 text-[10px] font-semibold text-white"
+                        className="px-2 py-0.5 border border-line text-[10px] font-semibold text-white"
                         style={{ backgroundColor: isDivergent ? '#EF4444' : accentColor }}
                       >
                         {t.status}
                       </span>
-                      <span className="text-gray-500 text-[10px] font-bold">Mood: {t.mood}</span>
+                      <span className="text-ink-muted text-[10px] font-bold">Mood: {t.mood}</span>
                     </div>
 
                     {/* Reasoning trace */}
                     {t.reasoning && (
-                      <div className="bg-gray-100 p-2 border-l border-gray-200 text-xs font-bold leading-relaxed mt-2 italic text-gray-700">
+                      <div className="bg-surface-raised p-2 border-l border-line text-xs font-bold leading-relaxed mt-2 italic text-ink-muted">
                         🧠 {t.reasoning}
                       </div>
                     )}

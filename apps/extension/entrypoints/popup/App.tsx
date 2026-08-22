@@ -352,20 +352,20 @@ export default function App() {
   // ================= FIRST-RUN CONSENT (prominent disclosure) =================
   if (!hasOnboarded) {
     return (
-      <div className="w-[380px] min-h-[520px] bg-gray-50 p-5 flex flex-col text-gray-900">
+      <div className="w-[380px] min-h-[520px] bg-base p-5 flex flex-col text-ink">
         <h1 className="font-display font-semibold text-xl tracking-tight">Welcome to Gremlin</h1>
-        <p className="mt-1 text-xs text-gray-500">Your pixel focus companion. Before we start, the legal bit — in plain English:</p>
+        <p className="mt-1 text-xs text-ink-muted">Your pixel focus companion. Before we start, the legal bit — in plain English:</p>
 
-        <div className="mt-4 flex flex-col gap-3 text-[13px] leading-relaxed border border-gray-200 bg-white p-4 rounded-md">
+        <div className="mt-4 flex flex-col gap-3 text-[13px] leading-relaxed border border-paper-line bg-paper-card text-paper-ink p-4 rounded-md shadow-paper">
           <div className="flex gap-2">
-            <Shield size={16} className="shrink-0 mt-0.5 text-gray-700" />
+            <Shield size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
               <strong>During active sprints only</strong>, Gremlin reads lightweight page context from your
               current tab: title, headings, a short text excerpt, and the domains you visit.
             </p>
           </div>
           <div className="flex gap-2">
-            <Sparkles size={16} className="shrink-0 mt-0.5 text-gray-700" />
+            <Sparkles size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
               That context is sent to the <strong>AI provider you configure</strong> (your own API key) or to
               Gremlin Cloud if you sign in, purely to judge whether you're on task. It is never sold or used
@@ -373,7 +373,7 @@ export default function App() {
             </p>
           </div>
           <div className="flex gap-2">
-            <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-gray-700" />
+            <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
               Goals, notes, and stats are stored <strong>locally on your device</strong>. Nothing is captured
               while idle or when tracking is disabled.
@@ -383,7 +383,7 @@ export default function App() {
             href="https://gremlin.fasihi.xyz/privacy"
             target="_blank"
             rel="noreferrer"
-            className="text-xs underline text-gray-500 hover:text-gray-800"
+            className="text-xs underline text-paper-muted hover:text-paper-ink"
           >
             Read the full privacy policy →
           </a>
@@ -391,13 +391,13 @@ export default function App() {
 
         <button
           onClick={handleCompleteOnboarding}
-          className="mt-auto w-full py-3 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-700 transition-colors rounded-md cursor-pointer"
+          className="mt-auto w-full py-3 text-sm font-semibold bg-accent text-base-deep hover:bg-accent-bright transition-colors rounded-md cursor-pointer"
         >
           I understand — enable my companion
         </button>
         <button
           onClick={() => window.close()}
-          className="w-full py-2 mt-2 text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+          className="w-full py-2 mt-2 text-xs text-ink-faint hover:text-ink-muted transition-colors cursor-pointer"
         >
           Not now
         </button>
@@ -408,28 +408,28 @@ export default function App() {
   // ================= MAIN INTERFACE =================
   return (
     <div
-      className="w-[380px] min-h-[520px] bg-gray-50 p-4 flex flex-col gap-4 relative overflow-hidden text-gray-900"
+      className="w-[380px] min-h-[520px] bg-base p-4 flex flex-col gap-4 relative overflow-hidden text-ink"
       style={{
         '--skin-accent': skin.colors.step9,
         '--skin-accent-hover': skin.colors.step10,
       } as React.CSSProperties}
     >
-      <div className="absolute inset-0 pointer-events-none opacity-[0.15] z-0" style={{ backgroundSize: '16px 16px', backgroundImage: 'radial-gradient(circle, var(--skin-accent) 1px, transparent 1px)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.10] z-0" style={{ backgroundSize: '16px 16px', backgroundImage: 'radial-gradient(circle, var(--skin-accent) 1px, transparent 1px)' }} />
 
       {/* Top Header - Cardless, clean lines */}
-      <header className="flex items-center justify-between pb-3 border-b border-gray-200 z-10">
+      <header className="flex items-center justify-between pb-3 border-b border-line z-10">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 border border-gray-200 flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--skin-accent)' }}>
+          <div className="w-12 h-12 border border-line flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--skin-accent)' }}>
             <AnimatedSprite id={config.organismId} size={36} state={organismState.state} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-display font-semibold text-lg tracking-tight text-gray-900">
+              <span className="font-display font-semibold text-lg tracking-tight text-ink">
                 {skin.name}
               </span>
-              <span className="w-2.5 h-2.5 border border-gray-200 rounded-full animate-pulse" style={{ backgroundColor: 'var(--skin-accent)' }} />
+              <span className="w-2.5 h-2.5 border border-line rounded-full animate-pulse" style={{ backgroundColor: 'var(--skin-accent)' }} />
             </div>
-            <span className="font-mono text-[10px] font-bold text-gray-700 block truncate max-w-[170px]">
+            <span className="font-mono text-[10px] font-bold text-ink-muted block truncate max-w-[170px]">
               "{organismState.lastRemark || skin.tagline}"
             </span>
           </div>
@@ -437,14 +437,14 @@ export default function App() {
 
         <div className="flex items-center gap-2">
           <button
-            className="w-8 h-8 bg-white border border-gray-200 flex items-center justify-center hover:bg-black hover:text-white transition-colors cursor-pointer"
+            className="w-8 h-8 bg-surface border border-line flex items-center justify-center hover:bg-surface-raised transition-colors cursor-pointer"
             onClick={handleOpenSidePanel}
             title="Open Daily Diary Sidepanel (Ctrl+Shift+E)"
           >
             <BookOpen size={16} />
           </button>
           <button
-            className={`w-8 h-8 flex items-center justify-center border border-gray-200 transition-colors cursor-pointer ${config.soundEnabled ? 'text-white' : 'bg-gray-100 text-gray-400'} `}
+            className={`w-8 h-8 flex items-center justify-center border border-line transition-colors cursor-pointer ${config.soundEnabled ? 'text-white' : 'bg-surface-raised text-ink-faint'} `}
             style={config.soundEnabled ? { backgroundColor: 'var(--skin-accent)' } : {}}
             onClick={handleToggleSound}
             title={config.soundEnabled ? 'Mute audio' : 'Enable audio'}
@@ -452,30 +452,30 @@ export default function App() {
             {config.soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
           <button
-            className={`w-10 h-6 rounded-full border border-gray-200 relative cursor-pointer transition-colors ${config.enabled ? '' : 'bg-gray-200'}`}
+            className={`w-10 h-6 rounded-full border border-line relative cursor-pointer transition-colors ${config.enabled ? '' : 'bg-surface-raised'}`}
             style={config.enabled ? { backgroundColor: 'var(--skin-accent)' } : {}}
             onClick={handleToggleEnabled}
             title={config.enabled ? 'Sleep' : 'Wake'}
           >
-            <span className={`absolute top-[1px] w-4 h-4 rounded-full bg-white border border-gray-200 transition-transform ${config.enabled ? 'left-[17px]' : 'left-[1px]'}`} />
+            <span className={`absolute top-[1px] w-4 h-4 rounded-full bg-surface border border-line transition-transform ${config.enabled ? 'left-[17px]' : 'left-[1px]'}`} />
           </button>
         </div>
       </header>
 
       {/* Companion Switcher Strip - Flat Grid */}
-      <div className="grid grid-cols-5 gap-1.5 z-10 pb-2 border-b border-gray-200">
+      <div className="grid grid-cols-5 gap-1.5 z-10 pb-2 border-b border-line">
         {ALL_COMPANIONS.map((cid) => {
           const comp = CHARACTER_SKINS[cid];
           const isSelected = config.organismId === cid;
           return (
             <button
               key={cid}
-              className={`flex flex-col items-center gap-1 border border-gray-200 py-1 cursor-pointer transition-colors ${isSelected ? 'text-white' : 'bg-white hover:bg-gray-100'} `}
+              className={`flex flex-col items-center gap-1 border border-line py-1 cursor-pointer transition-colors ${isSelected ? 'text-white' : 'bg-surface hover:bg-surface-raised'} `}
               style={isSelected ? { backgroundColor: 'var(--skin-accent)' } : {}}
               onClick={() => handleOrganismChange(cid)}
             >
               <AnimatedSprite id={cid} size={20} state="idle" />
-              <span className={`font-mono text-[9px] font-bold ${isSelected ? 'text-white' : 'text-gray-500'}`}>{comp.name}</span>
+              <span className={`font-mono text-[9px] font-bold ${isSelected ? 'text-white' : 'text-ink-muted'}`}>{comp.name}</span>
             </button>
           );
         })}
@@ -484,7 +484,7 @@ export default function App() {
       {/* 3 Navigation Tabs - Streamlined */}
       <nav className="grid grid-cols-3 gap-1.5 z-10 font-display font-semibold text-sm">
         <button
-          className={`flex items-center justify-center gap-1 border border-gray-200 py-1.5 cursor-pointer transition-colors ${activeTab === 'focus' ? 'text-white' : 'bg-white text-gray-900 hover:bg-gray-100'} `}
+          className={`flex items-center justify-center gap-1 border border-line py-1.5 cursor-pointer transition-colors ${activeTab === 'focus' ? 'text-white' : 'bg-surface text-ink hover:bg-surface-raised'} `}
           style={activeTab === 'focus' ? { backgroundColor: 'var(--skin-accent)' } : {}}
           onClick={() => setActiveTab('focus')}
         >
@@ -492,7 +492,7 @@ export default function App() {
           <span>FOCUS</span>
         </button>
         <button
-          className={`flex items-center justify-center gap-1 border border-gray-200 py-1.5 cursor-pointer transition-colors ${activeTab === 'preferences' ? 'text-white' : 'bg-white text-gray-900 hover:bg-gray-100'} `}
+          className={`flex items-center justify-center gap-1 border border-line py-1.5 cursor-pointer transition-colors ${activeTab === 'preferences' ? 'text-white' : 'bg-surface text-ink hover:bg-surface-raised'} `}
           style={activeTab === 'preferences' ? { backgroundColor: 'var(--skin-accent)' } : {}}
           onClick={() => setActiveTab('preferences')}
         >
@@ -500,7 +500,7 @@ export default function App() {
           <span>Preferences</span>
         </button>
         <button
-          className={`flex items-center justify-center gap-1 border border-gray-200 py-1.5 cursor-pointer transition-colors ${activeTab === 'settings' ? 'text-white' : 'bg-white text-gray-900 hover:bg-gray-100'} `}
+          className={`flex items-center justify-center gap-1 border border-line py-1.5 cursor-pointer transition-colors ${activeTab === 'settings' ? 'text-white' : 'bg-surface text-ink hover:bg-surface-raised'} `}
           style={activeTab === 'settings' ? { backgroundColor: 'var(--skin-accent)' } : {}}
           onClick={() => setActiveTab('settings')}
         >
@@ -515,11 +515,11 @@ export default function App() {
         {activeTab === 'focus' && (
           <div className="flex-1 flex flex-col gap-4">
             {!isConfigured && (
-              <div className="bg-black text-white p-2 flex items-center justify-between font-mono font-bold text-[10px]">
-                <span className="">⚠️ Agent unconfigured</span>
+              <div className="bg-base-deep border border-line text-danger p-2 flex items-center justify-between font-mono font-bold text-[10px]">
+                <span className="">⚠ Agent unconfigured</span>
                 <button
                   onClick={() => setActiveTab('settings')}
-                  className="border border-white px-2 py-0.5 hover:bg-white hover:text-black transition-colors"
+                  className="border border-line-bright px-2 py-0.5 hover:bg-surface-raised transition-colors"
                 >
                   FIX NOW →
                 </button>
@@ -537,7 +537,7 @@ export default function App() {
                       type="button"
                       onClick={handleDecomposeCurrentGoal}
                       disabled={!goalInput.trim() || isDecomposing}
-                      className="font-mono text-[10px] font-bold text-white px-2 py-1 border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer hover:opacity-90"
+                      className="font-mono text-[10px] font-bold text-white px-2 py-1 border border-line disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer hover:opacity-90"
                       style={{ backgroundColor: 'var(--skin-accent)' }}
                     >
                       <Sparkles size={12} />
@@ -546,14 +546,14 @@ export default function App() {
                   </div>
                   <input
                     type="text"
-                    className="w-full bg-gray-50 border border-gray-200 p-3 text-gray-900 font-mono text-sm placeholder:text-gray-400 focus:outline-none focus:bg-white transition-colors"
+                    className="w-full bg-base border border-line p-3 text-ink font-mono text-sm placeholder:text-ink-faint focus:outline-none focus:bg-surface transition-colors"
                     placeholder="e.g. Finish landing page refactor..."
                     value={goalInput}
                     onChange={(e) => setGoalInput(e.target.value)}
                   />
                 </div>
 
-                <div className="flex items-center justify-between border-y-2 border-gray-200 py-2">
+                <div className="flex items-center justify-between border-y-2 border-line py-2">
                   <span className="font-display font-semibold text-xs">DURATION:</span>
                   <div className="flex gap-2">
                     {[15, 25, 45, 'flow' as const].map((d) => (
@@ -561,7 +561,7 @@ export default function App() {
                         key={String(d)}
                         type="button"
                         onClick={() => setDuration(d)}
-                        className={`px-3 py-1 border border-gray-200 font-mono font-bold text-[11px] transition-colors cursor-pointer ${ duration === d ? 'text-white' : 'bg-white text-gray-900 hover:bg-gray-100' } `}
+                        className={`px-3 py-1 border border-line font-mono font-bold text-[11px] transition-colors cursor-pointer ${ duration === d ? 'text-white' : 'bg-surface text-ink hover:bg-surface-raised' } `}
                         style={duration === d ? { backgroundColor: 'var(--skin-accent)' } : {}}
                       >
                         {d === 'flow' ? '∞' : `${d}m`}
@@ -572,7 +572,7 @@ export default function App() {
 
                 <button
                   onClick={handleStartSprint}
-                  className="w-full border border-gray-200 p-4 flex justify-center items-center gap-2 font-display font-semibold text-lg text-white hover:opacity-90 transition-opacity cursor-pointer"
+                  className="w-full border border-line p-4 flex justify-center items-center gap-2 font-display font-semibold text-lg text-white hover:opacity-90 transition-opacity cursor-pointer"
                   style={{ backgroundColor: 'var(--skin-accent)' }}
                 >
                   <Play size={20} fill="currentColor" />
@@ -595,28 +595,28 @@ export default function App() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col gap-4">
-                <div className="border border-gray-200 p-5 text-center space-y-3 relative overflow-hidden" style={{ backgroundColor: 'var(--skin-accent)' }}>
+                <div className="border border-line p-5 text-center space-y-3 relative overflow-hidden" style={{ backgroundColor: 'var(--skin-accent)' }}>
                   <div className="absolute top-2 right-2 text-white animate-pulse">
-                    <div className="w-3 h-3 rounded-full bg-white border border-gray-200" />
+                    <div className="w-3 h-3 rounded-full bg-surface border border-line" />
                   </div>
-                  <span className="font-display font-semibold text-xs bg-black text-white px-3 py-1 inline-block border border-gray-200">
+                  <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-accent bg-base-deep px-3 py-1 inline-block border border-line">
                     🎯 {sprint.goal || 'FOCUS SPRINT'}
                   </span>
 
-                  <div className="font-display font-semibold text-5xl tracking-tighter text-gray-900 py-2">
+                  <div className="font-display font-semibold text-5xl tracking-tighter text-ink py-2">
                     {sprint.targetMinutes === 0
                       ? `${Math.floor(elapsedSecs / 60)}m ${String(elapsedSecs % 60).padStart(2, '0')}s`
                       : `${remainingMins}:${remainingSecsDisplay}`}
                   </div>
 
-                  <div className="font-mono text-[11px] font-bold bg-white border border-gray-200 p-2 inline-block max-w-[90%] text-gray-900">
+                  <div className="font-mono text-[11px] font-bold bg-surface border border-line p-2 inline-block max-w-[90%] text-ink">
                     “{organismState.lastRemark || skin.greeting}”
                   </div>
 
                   <div className="pt-2 flex justify-center">
                     <button
                       onClick={handleStopSprint}
-                      className="bg-black text-white border border-gray-200 px-4 py-2 font-display font-semibold text-sm flex items-center hover:opacity-90 transition-opacity cursor-pointer"
+                      className="bg-accent text-base-deep border border-line px-4 py-2 font-display font-semibold text-sm flex items-center hover:opacity-90 transition-opacity cursor-pointer"
                     >
                       <Square size={16} fill="currentColor" className="mr-2" /> Finish sprint
                     </button>
@@ -644,7 +644,7 @@ export default function App() {
         {/* ================= 2. PREFERENCES TAB ================= */}
         {activeTab === 'preferences' && (
           <div className="flex-1 flex flex-col gap-6 pt-2">
-            <div className="text-white border border-gray-200 p-4 flex items-center justify-between" style={{ backgroundColor: 'var(--skin-accent)' }}>
+            <div className="text-white border border-line p-4 flex items-center justify-between" style={{ backgroundColor: 'var(--skin-accent)' }}>
               <div className="space-y-1">
                 <span className="font-display font-semibold text-lg block">
                   Daily Diary
@@ -655,17 +655,17 @@ export default function App() {
               </div>
               <button
                 onClick={handleOpenSidePanel}
-                className="bg-white border border-gray-200 text-gray-900 font-display font-semibold px-4 py-2 hover:bg-black hover:text-white transition-colors cursor-pointer"
+                className="bg-surface border border-line text-ink font-display font-semibold px-4 py-2 hover:bg-surface-raised transition-colors cursor-pointer"
               >
                 OPEN
               </button>
             </div>
 
             <div className="space-y-4">
-              <span className="font-display font-semibold text-sm border-b border-gray-200 pb-1 block">
+              <span className="font-display font-semibold text-sm border-b border-line pb-1 block">
                 Audio Engine
               </span>
-              <div className="flex items-center justify-between font-mono font-bold text-xs text-gray-900">
+              <div className="flex items-center justify-between font-mono font-bold text-xs text-ink">
                 <span>Companions Chime & Speak</span>
                 <input
                   type="checkbox"
@@ -676,12 +676,12 @@ export default function App() {
                     await configStorage.setValue(next);
                     soundSynth.setMuted(!e.target.checked);
                   }}
-                  className="w-5 h-5 accent-black border border-gray-200 cursor-pointer"
+                  className="w-5 h-5 accent-[#A3E635] border border-line cursor-pointer"
                 />
               </div>
               {config.soundEnabled && (
                 <div className="flex items-center justify-between gap-3 pt-2">
-                  <span className="font-mono font-bold text-[10px] text-gray-500">VOL: {Math.round(config.volume * 100)}%</span>
+                  <span className="font-mono font-bold text-[10px] text-ink-muted">VOL: {Math.round(config.volume * 100)}%</span>
                   <input
                     type="range"
                     min="0"
@@ -695,17 +695,17 @@ export default function App() {
                       await configStorage.setValue(next);
                       soundSynth.setVolume(vol);
                     }}
-                    className="flex-1 cursor-pointer accent-black h-2 bg-gray-200 border border-gray-200 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-full"
+                    className="flex-1 cursor-pointer accent-[#A3E635] h-2 bg-surface-raised border border-line rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:rounded-full"
                   />
                 </div>
               )}
             </div>
 
             <div className="space-y-4">
-              <span className="font-display font-semibold text-sm border-b border-gray-200 pb-1 block">
+              <span className="font-display font-semibold text-sm border-b border-line pb-1 block">
                 Visual FX
               </span>
-              <div className="flex items-center justify-between font-mono font-bold text-xs text-gray-900">
+              <div className="flex items-center justify-between font-mono font-bold text-xs text-ink">
                 <span>Distraction Screen Glitch</span>
                 <input
                   type="checkbox"
@@ -715,11 +715,11 @@ export default function App() {
                     setConfig(next);
                     await configStorage.setValue(next);
                   }}
-                  className="w-5 h-5 accent-black border border-gray-200 cursor-pointer"
+                  className="w-5 h-5 accent-[#A3E635] border border-line cursor-pointer"
                 />
               </div>
               <button
-                className="w-full bg-black text-white border border-gray-200 py-2 font-display font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer mt-2"
+                className="w-full bg-accent text-base-deep border border-line py-2 font-display font-semibold text-sm hover:opacity-90 transition-opacity cursor-pointer mt-2"
                 onClick={() => handlePreviewEffect(config.organismId)}
               >
                 Test effect
@@ -732,7 +732,7 @@ export default function App() {
         {activeTab === 'settings' && (
           <div className="flex-1 flex flex-col gap-4 pt-2">
             <div className="space-y-3">
-              <span className="font-display font-semibold text-sm border-b border-gray-200 pb-1 block">
+              <span className="font-display font-semibold text-sm border-b border-line pb-1 block">
                 AI Provider
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -741,7 +741,7 @@ export default function App() {
                     key={p}
                     type="button"
                     onClick={() => handleProviderSelect(p)}
-                    className={`p-2 border border-gray-200 text-center font-display font-semibold text-xs cursor-pointer transition-colors ${ selectedProvider === p ? 'text-white' : 'bg-white text-gray-900 hover:bg-gray-100' } `}
+                    className={`p-2 border border-line text-center font-display font-semibold text-xs cursor-pointer transition-colors ${ selectedProvider === p ? 'text-white' : 'bg-surface text-ink hover:bg-surface-raised' } `}
                     style={selectedProvider === p ? { backgroundColor: 'var(--skin-accent)' } : {}}
                   >
                     {SUPPORTED_PROVIDERS[p].name}
@@ -753,38 +753,38 @@ export default function App() {
             <div className="space-y-3 pt-2">
               {currentProviderConfig.requiresKey && (
                 <div className="space-y-1">
-                  <span className="font-mono font-bold text-[10px] text-gray-500">API Key</span>
+                  <span className="font-mono font-bold text-[10px] text-ink-muted">API Key</span>
                   <input
                     type="password"
                     placeholder={currentProviderConfig.placeholderKey}
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 p-2 font-mono text-xs focus:outline-none focus:bg-white transition-colors"
+                    className="w-full bg-base border border-line p-2 font-mono text-xs focus:outline-none focus:bg-surface transition-colors"
                   />
                 </div>
               )}
 
               {selectedProvider === 'ollama' && (
                 <div className="space-y-1">
-                  <span className="font-mono font-bold text-[10px] text-gray-500">Endpoint</span>
+                  <span className="font-mono font-bold text-[10px] text-ink-muted">Endpoint</span>
                   <input
                     type="text"
                     placeholder="http://localhost:11434/v1"
                     value={endpointInput}
                     onChange={(e) => setEndpointInput(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 p-2 font-mono text-xs focus:outline-none focus:bg-white transition-colors"
+                    className="w-full bg-base border border-line p-2 font-mono text-xs focus:outline-none focus:bg-surface transition-colors"
                   />
                 </div>
               )}
 
               <div className="space-y-1">
-                <span className="font-mono font-bold text-[10px] text-gray-500">Model ID</span>
+                <span className="font-mono font-bold text-[10px] text-ink-muted">Model ID</span>
                 <input
                   type="text"
                   placeholder={currentProviderConfig.defaultModel}
                   value={modelInput}
                   onChange={(e) => setModelInput(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 p-2 font-mono text-xs focus:outline-none focus:bg-white transition-colors"
+                  className="w-full bg-base border border-line p-2 font-mono text-xs focus:outline-none focus:bg-surface transition-colors"
                 />
               </div>
 
@@ -793,14 +793,14 @@ export default function App() {
                   type="button"
                   onClick={handleTestConnection}
                   disabled={testStatus?.loading}
-                  className="flex-1 bg-white border border-gray-200 py-2 font-display font-semibold text-xs hover:bg-black hover:text-white transition-colors cursor-pointer"
+                  className="flex-1 bg-surface border border-line py-2 font-display font-semibold text-xs hover:bg-surface-raised transition-colors cursor-pointer"
                 >
                   {testStatus?.loading ? 'TESTING…' : 'TEST'}
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveSettings}
-                  className="flex-[2] border border-gray-200 py-2 font-display font-semibold text-xs text-white hover:opacity-90 transition-opacity cursor-pointer"
+                  className="flex-[2] border border-line py-2 font-display font-semibold text-xs text-white hover:opacity-90 transition-opacity cursor-pointer"
                   style={{ backgroundColor: 'var(--skin-accent)' }}
                 >
                   {saveFeedback ? 'SAVED ✓' : 'SAVE SETTINGS'}
@@ -809,7 +809,7 @@ export default function App() {
 
               {testStatus && (
                 <div
-                  className={`p-3 border border-gray-200 font-mono font-bold text-xs ${ testStatus.ok ? 'bg-green-400 text-gray-900' : 'bg-red-500 text-white' } `}
+                  className={`p-3 border border-line font-mono font-bold text-xs ${ testStatus.ok ? 'bg-green-400 text-ink' : 'bg-red-500 text-white' } `}
                 >
                   {testStatus.message || (testStatus.ok ? 'SUCCESS!' : 'FAILED')}
                 </div>

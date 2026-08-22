@@ -37,10 +37,10 @@ export const GoalStack: React.FC<GoalStackProps> = ({
   const completedGoals = goals.filter((g) => g.completed);
 
   return (
-    <div className="flex flex-col h-full bg-white p-2">
+    <div className="flex flex-col h-full bg-surface p-2">
       {/* Header with Add Milestone toggle */}
-      <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-2">
-        <span className="font-display font-semibold text-xs text-gray-900">
+      <div className="flex items-center justify-between pb-2 border-b border-line mb-2">
+        <span className="font-display font-semibold text-xs text-ink">
           Milestones ({activeGoals.length})
         </span>
         <button
@@ -58,7 +58,7 @@ export const GoalStack: React.FC<GoalStackProps> = ({
         <form onSubmit={handleManualAdd} className="flex gap-2 mb-2">
           <input
             type="text"
-            className="flex-1 bg-gray-50 border border-gray-300 p-2 text-gray-900 font-mono text-xs placeholder:text-gray-400 focus:outline-none focus:bg-white transition-colors"
+            className="flex-1 bg-base border border-line-bright p-2 text-ink font-mono text-xs placeholder:text-ink-faint focus:outline-none focus:bg-surface transition-colors"
             placeholder="e.g. Write unit tests..."
             value={manualTitle}
             onChange={(e) => setManualTitle(e.target.value)}
@@ -72,7 +72,7 @@ export const GoalStack: React.FC<GoalStackProps> = ({
 
       {/* Goal Items Checklist */}
       {goals.length === 0 ? (
-        <div className="py-6 text-center text-xs text-gray-500 font-mono font-bold flex-1 flex items-center justify-center">
+        <div className="py-6 text-center text-xs text-ink-muted font-mono font-bold flex-1 flex items-center justify-center">
           No sub-goals yet.
         </div>
       ) : (
@@ -81,22 +81,22 @@ export const GoalStack: React.FC<GoalStackProps> = ({
           {activeGoals.map((g) => (
             <div
               key={g.id}
-              className={`p-2 border flex items-center justify-between gap-2 transition-colors group ${ g.isActive ? 'border-transparent text-white' : 'border-transparent bg-white hover:bg-gray-50' } `}
+              className={`p-2 border flex items-center justify-between gap-2 transition-colors group ${ g.isActive ? 'border-transparent text-white' : 'border-transparent bg-surface hover:bg-base' } `}
               style={g.isActive ? { backgroundColor: accentColor } : {}}
             >
               <div
                 className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                 onClick={() => onToggleGoal(g.id, true)}
               >
-                <div className={`w-4 h-4 border border-current transition-colors shrink-0 ${g.isActive ? 'bg-white' : 'bg-transparent group-hover:bg-black/5'} `} />
+                <div className={`w-4 h-4 border border-current transition-colors shrink-0 ${g.isActive ? 'bg-surface' : 'bg-transparent group-hover:bg-surface-raised'} `} />
                 <div className="flex-1 min-w-0">
-                  <span className={`text-xs font-mono font-bold block truncate ${g.isActive ? 'text-white' : 'text-gray-900'}`}>
+                  <span className={`text-xs font-mono font-bold block truncate ${g.isActive ? 'text-white' : 'text-ink'}`}>
                     {g.title}
                   </span>
                 </div>
               </div>
               <button
-                className={`opacity-0 group-hover:opacity-100 hover:text-gray-900 transition-all cursor-pointer ${g.isActive ? 'text-white/80' : 'text-gray-400'}`}
+                className={`opacity-0 group-hover:opacity-100 hover:text-ink transition-all cursor-pointer ${g.isActive ? 'text-white/80' : 'text-ink-faint'}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteGoal(g.id);
@@ -111,21 +111,21 @@ export const GoalStack: React.FC<GoalStackProps> = ({
           {completedGoals.map((g) => (
             <div
               key={g.id}
-              className="p-2 flex items-center justify-between gap-2 opacity-50 transition-opacity hover:opacity-100 group border-b border-gray-100"
+              className="p-2 flex items-center justify-between gap-2 opacity-50 transition-opacity hover:opacity-100 group border-b border-line"
             >
               <div
                 className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                 onClick={() => onToggleGoal(g.id, false)}
               >
-                <CheckCircle2 size={16} className="text-gray-900 shrink-0" />
+                <CheckCircle2 size={16} className="text-ink shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs text-gray-500 font-mono font-bold line-through block truncate">
+                  <span className="text-xs text-ink-muted font-mono font-bold line-through block truncate">
                     {g.title}
                   </span>
                 </div>
               </div>
               <button
-                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-black transition-colors cursor-pointer"
+                className="opacity-0 group-hover:opacity-100 text-ink-faint hover:text-black transition-colors cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteGoal(g.id);

@@ -36,6 +36,16 @@ export default {
         },
         'accent-bright': '#BEF264',
         'accent-deep': '#84CC16',
+        danger: '#FB7185',
+        // Deliberate light blocks inside the dark site ("paper" color-block story)
+        paper: {
+          DEFAULT: '#F5F6F1',
+          card: '#FFFFFF',
+          line: '#E4E7DE',
+          ink: '#12151A',
+          muted: '#5B6472',
+          faint: '#9AA1AC',
+        },
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],

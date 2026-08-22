@@ -181,7 +181,7 @@ export const SidepanelApp: React.FC = () => {
 
   return (
     <div
-      className="w-full min-h-screen bg-gray-50 p-5 flex flex-col gap-5 relative overflow-x-hidden text-gray-900"
+      className="w-full min-h-screen bg-base p-5 flex flex-col gap-5 relative overflow-x-hidden text-ink"
       style={{
         '--skin-accent': skin.colors.step9,
         '--skin-accent-hover': skin.colors.step10,
@@ -190,21 +190,21 @@ export const SidepanelApp: React.FC = () => {
       <div className="absolute inset-0 pointer-events-none opacity-[0.15] z-0" style={{ backgroundSize: '16px 16px', backgroundImage: 'radial-gradient(circle, var(--skin-accent) 1px, transparent 1px)' }} />
 
       {/* Editorial Diary Header */}
-      <header className="flex items-center justify-between pb-4 border-b border-gray-200 z-10 relative">
+      <header className="flex items-center justify-between pb-4 border-b border-line z-10 relative">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 border border-gray-200 flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--skin-accent)' }}>
+          <div className="w-12 h-12 border border-line flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--skin-accent)' }}>
             <AnimatedSprite id={config.organismId} size={36} state={organismState.state} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-display font-semibold text-xl tracking-tighter text-gray-900">
+              <span className="font-display font-semibold text-xl tracking-tighter text-ink">
                 Focus Diary
               </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 border border-gray-200 text-white" style={{ backgroundColor: 'var(--skin-accent)' }}>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 border border-line text-white" style={{ backgroundColor: 'var(--skin-accent)' }}>
                 {skin.name}
               </span>
             </div>
-            <span className="text-xs font-mono font-bold text-gray-700 bg-gray-100 px-1 mt-1 inline-block border border-gray-200">
+            <span className="text-xs font-mono font-bold text-ink-muted bg-surface-raised px-1 mt-1 inline-block border border-line">
               {diary.date} · Auto-Journal
             </span>
           </div>
@@ -213,7 +213,7 @@ export const SidepanelApp: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleToggleSound}
-            className={`w-10 h-10 border border-gray-200 flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer ${config.soundEnabled ? 'text-white' : 'bg-gray-100 text-gray-400'} `}
+            className={`w-10 h-10 border border-line flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer ${config.soundEnabled ? 'text-white' : 'bg-surface-raised text-ink-faint'} `}
             style={config.soundEnabled ? { backgroundColor: 'var(--skin-accent)' } : {}}
             title={config.soundEnabled ? 'Mute' : 'Unmute'}
           >
@@ -221,7 +221,7 @@ export const SidepanelApp: React.FC = () => {
           </button>
           <button
             onClick={() => setIsTelemetryOpen(!isTelemetryOpen)}
-            className="w-10 h-10 border border-gray-200 flex items-center justify-center bg-white text-gray-900 hover:bg-black hover:text-white transition-colors cursor-pointer"
+            className="w-10 h-10 border border-line flex items-center justify-center bg-surface text-ink hover:bg-surface-raised transition-colors cursor-pointer"
             title="Inspect AI Reasoning Telemetry"
           >
             <Terminal size={18} />
@@ -230,18 +230,18 @@ export const SidepanelApp: React.FC = () => {
       </header>
 
       {/* Quick In-Page Note Taking Cardless Bar */}
-      <form onSubmit={handleSavePageNote} className="space-y-2 pt-1 z-10 relative bg-white border border-gray-200 p-4">
+      <form onSubmit={handleSavePageNote} className="space-y-2 pt-1 z-10 relative bg-surface border border-line p-4">
         <div className="flex items-center justify-between text-xs font-display font-semibold">
-          <span className="text-white border border-gray-200 px-2 py-1 flex items-center gap-1.5 truncate max-w-[70%]" style={{ backgroundColor: 'var(--skin-accent)' }}>
+          <span className="text-white border border-line px-2 py-1 flex items-center gap-1.5 truncate max-w-[70%]" style={{ backgroundColor: 'var(--skin-accent)' }}>
             <Globe size={12} className="shrink-0" />
             <span className="truncate">{activeTabInfo.domain || 'Active Page'}</span>
           </span>
-          <span className="text-gray-500 font-mono font-bold">Enter ↵ to save</span>
+          <span className="text-ink-muted font-mono font-bold">Enter ↵ to save</span>
         </div>
         <div className="flex gap-2">
           <input
             type="text"
-            className="flex-1 bg-gray-50 border border-gray-200 p-3 text-gray-900 font-mono text-sm placeholder:text-gray-400 focus:outline-none focus:bg-white transition-colors"
+            className="flex-1 bg-base border border-line p-3 text-ink font-mono text-sm placeholder:text-ink-faint focus:outline-none focus:bg-surface transition-colors"
             placeholder={`Annotate thoughts about ${activeTabInfo.domain || 'this page'}…`}
             value={newNoteText}
             onChange={(e) => setNewNoteText(e.target.value)}
@@ -249,7 +249,7 @@ export const SidepanelApp: React.FC = () => {
           <button
             type="submit"
             disabled={!newNoteText.trim()}
-            className="bg-black text-white font-display font-semibold border border-gray-200 px-4 py-3 text-sm hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 flex items-center gap-2"
+            className="bg-accent text-base-deep font-display font-semibold border border-line px-4 py-3 text-sm hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 flex items-center gap-2"
           >
             <Plus size={16} />
             <span>NOTE</span>
