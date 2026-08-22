@@ -61,12 +61,18 @@ graph TD
 ### Key Directories & Files
 * `entrypoints/content.ts`: Mounts the Shadow DOM container, handles SPA `wxt:locationchange` events, manages the active `OrganismController`, and relays privacy-filtered page snapshots to the service worker.
 * `entrypoints/background.ts`: Service worker tracking tab switches (`tabs.onActivated`, `tabs.onUpdated`), running debounced + throttled evaluation alarms (45s minimum interval between LLM calls; manual pokes bypass), and handling typed RPC messages including inbound `pageSignal` deliveries.
-* `entrypoints/popup/App.tsx`: Retro handheld console interface for goal entry, companion selection carousel, BYOK model configuration, and audio toggles.
+* `entrypoints/popup/App.tsx`: Paper-shell console interface ("paper moments" of the Phosphor Console palette) with three icon-only tabs (Focus / Preferences / Model):
+  - **Startup is a single batched read:** all persisted state is hydrated via one WXT `storage.getItems([...])` call (one underlying `browser.storage.local.get`) instead of per-item `getValue()` round trips; `storage.watch()` subscriptions keep it live afterwards.
+  - **Focus tab:** sprint goal input + AI decompose, duration pills (∞ flow supported), and a rethought active-sprint mission card — tabular-nums countdown, linear progress bar (indeterminate drift bar in flow mode), speech-bubble remark with tail, today's focus/detour stat chips, and full-width Finish action. A 1 Hz interval tick re-renders the clock only while a sprint is active.
+  - **Model tab:** AI provider picker as selectable descriptor rows (name + one-line blurb + radio indicator) plus popular-model quick-pick chips for the chosen provider.
+  - Companion switcher strip, sound/enable toggles, and the first-run consent screen share the same paper palette (`bg-paper`, white cards, `paper-line` borders) with each character's skin color reserved for accents.
 * `lib/organism/controller.ts`: Coordinates coordinate math, drag physics, sprite render loops, and thought pill speech bubbles.
 * `lib/organism/spriteEngine.ts`: Standalone, procedural Canvas2D pixel animator supporting idle, peek, surprised, annoyed, sleeping, and celebrating states.
 * `lib/audio/soundEngine.ts`: Pure Web Audio API procedural synthesizer for Animalese speech chirps, alert beeps, and start/finish chimes with zero external audio assets.
 * `lib/events/tracker.ts` & `extractor.ts`: The extractor captures page titles, meta tags, headings, article snippets, scroll depth, and HTML5 media state using `requestIdleCallback`; content scripts push snapshots to the background via the typed `pageSignal` RPC. The tracker keys signals by domain (TTL 15 min, capacity 30) and exposes the fresh signal for the current domain inside `BrowserContext.pageSignal`, where it feeds real page context (headings/excerpt/media/scroll) into both cloud and BYOK AI evaluation breadcrumbs.
 * `lib/storage/index.ts`: All persisted state defined via `storage.defineItem` with `fallback` defaults; imports flow through WXT's canonical `#imports`.
+* `lib/ai/providers.ts`: Pure provider catalog (names, default/popular models, key requirements, endpoints) with zero SDK imports — safe to pull into lightweight surfaces like the popup. `resolveLanguageModel` lives in `lib/ai/modelFactory.ts`, which owns the `@ai-sdk/*` imports; only the background-side engine/orchestrator (and the popup's dynamically imported test-connection path) touch it. This keeps the popup bundle ~31 KB instead of dragging every provider SDK into it.
+* `entrypoints/sidepanel/SidepanelApp.tsx`: Focus Diary sidepanel sharing the paper shell. The AI telemetry drawer is fully lazy: its chunk is `React.lazy`-split and both the trace array read and its `telemetryStorage.watch()` subscription are deferred until the drawer is first opened, so panel startup never deserializes telemetry history.
 * Unit tests live beside sources (`*.test.ts`) and run on the `WxtVitest()` plugin with `fakeBrowser` (`pnpm --filter @gremlin/extension test`).
 
 ---
@@ -102,15 +108,17 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
 
 ### Tech Stack
 * **Framework:** React 19 + Vite 6 + Tailwind CSS v4.
-* **3D Mascot:** Three.js procedural voxel turntable for companion 001 ("Kuro").
+* **3D Mascot:** `src/three/VoxelGremlin.tsx` — a procedural voxel gremlin (no model files) that floats free in the hero on a transparent canvas: it bobs, sways toward the cursor, and blinks via instanced-mesh eye scaling. It is **route-split behind `React.lazy`** so Three.js ships as its own chunk (`VoxelGremlin-*.js`) and never blocks first paint; the 2D pixel `Sprite` renders as the Suspense fallback. Dust particles use normal blending and a coal/lime/teal palette tuned for the light paper background.
+* **Uniform Backdrop:** One global fixed backdrop (`CleanGridBackground.tsx`) — faint blueprint grid fading toward the bottom plus a soft lime top spotlight. The old dark-theme vignette is gone, so every section and page shares the same paper color end-to-end.
 * **Interactive Simulations:**
   - `InteractiveComparisonSim.tsx`: Live interactive simulation contrasting rigid domain blockers vs Gremlin context-aware AI.
   - `InteractiveBento.tsx`: Mouse-spotlight interactive cards highlighting local privacy, procedural audio, and multi-device synchronization.
 * **Pages:**
-  - `/`: Clean, high-converting landing page with scannable micro-copy.
+  - `/`: Landing page — floating 3D hero, companion roster with voice previews, three-step walkthrough, and a closing CTA that uses lime marker-highlights on the headline instead of a full-bleed color band (keeps the accent in the system's buttons/highlights).
   - `/pricing`: Tier breakdown (Free BYOK, $5/mo Pro, $49 Founder Pass) and FAQ.
   - `/auth`: Sign in / sign up portal for Gremlin Cloud.
   - `/privacy` & `/terms`: Full compliance and security disclosures for Chrome Web Store review.
+* **Shared Chrome:** Floating pill navbar and a paper-brut footer (`bg-paper`, hard-shadow brand sticker, mono uppercase column heads, dashed bottom bar with back-to-top). Section eyebrows are straight-aligned label chips — no rotation — across Home, Pricing, and doc pages.
 
 ---
 
