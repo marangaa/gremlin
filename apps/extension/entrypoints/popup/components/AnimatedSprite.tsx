@@ -8,6 +8,8 @@ export interface AnimatedSpriteProps {
   size?: number;
   className?: string;
   onClick?: () => void;
+  /** When false, draws a single frame instead of running an animation loop. */
+  animated?: boolean;
 }
 
 export const AnimatedSprite: React.FC<AnimatedSpriteProps> = ({
@@ -16,6 +18,7 @@ export const AnimatedSprite: React.FC<AnimatedSpriteProps> = ({
   size = 32,
   className = '',
   onClick,
+  animated = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<SpriteEngine | null>(null);
@@ -26,6 +29,12 @@ export const AnimatedSprite: React.FC<AnimatedSpriteProps> = ({
     engine.setOrganism(id);
     engine.setState(state);
     engineRef.current = engine;
+
+    if (!animated) {
+      engine.update(16);
+      engine.render();
+      return;
+    }
 
     let rafId: number;
     let lastTime = performance.now();
@@ -44,7 +53,7 @@ export const AnimatedSprite: React.FC<AnimatedSpriteProps> = ({
       cancelAnimationFrame(rafId);
       engineRef.current = null;
     };
-  }, [id, state]);
+  }, [id, state, animated]);
 
   return (
     <div

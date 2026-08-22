@@ -19,10 +19,6 @@ export const Footer: React.FC<FooterProps> = ({ navigate }) => {
                 className="w-9 h-9 border-2 border-coal shadow-[2px_2px_0_0_#12151A]"
               />
               <span className="font-display font-bold text-lg tracking-tight text-coal">Gremlin</span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 -rotate-2 bg-pop-yellow border-2 border-coal shadow-[2px_2px_0_0_#12151A] font-mono text-[10px] font-bold text-coal">
-                <span className="w-1.5 h-1.5 bg-coal animate-pulse-dot" />
-                v0.4
-              </span>
             </div>
             <p className="text-sm text-paper-muted leading-relaxed font-medium">
               A pixel desk companion that keeps you focused without frustrating site blacklists.

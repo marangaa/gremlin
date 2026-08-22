@@ -82,6 +82,8 @@ graph TD
 
 ## 3. Backend & Cloud Architecture (`apps/backend`)
 
+> **Status (v1 launch): DORMANT.** The extension ships BYOK-only — cloud sign-in is hidden from the UI (`userSessionStorage` stays defined for schema stability, but nothing reads it). All server-side infrastructure remains deployed and intact for reintroduction: Better Auth routes, `/api/sprint/*` sync endpoints, plan tiers on `user.additionalFields`, and the extension's `config.mode === 'cloud'` evaluation branch in `lib/ai/engine.ts`. To re-enable: surface an auth row in the Model tab (`authClient.getSession()` → flip mode), restore the popup session watch, and ship billing.
+
 ### Tech Stack
 * **Framework:** [Hono v4](https://hono.dev) deployed on **Cloudflare Workers**.
 * **Database:** [Neon Serverless Postgres](https://neon.tech) via `@neondatabase/serverless` (single memoized pool shared by Better Auth and sprint persistence).

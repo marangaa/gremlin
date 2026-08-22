@@ -4,13 +4,11 @@ import {
   configStorage,
   sprintStorage,
   organismStateStorage,
-  userSessionStorage,
   onboardedStorage,
   goalsStorage,
   type OrganismConfig,
   type FocusSprint,
   type OrganismStateData,
-  type UserSession,
   type DecomposedGoal,
 } from '@/lib/storage';
 import {
@@ -96,7 +94,6 @@ export default function App() {
   const [config, setConfig] = useState<OrganismConfig>(DEFAULT_CONFIG);
   const [sprint, setSprint] = useState<FocusSprint>(DEFAULT_SPRINT);
   const [organismState, setOrganismState] = useState<OrganismStateData>(DEFAULT_ORGANISM_STATE);
-  const [session, setSession] = useState<UserSession>({ plan: 'free', isLoggedIn: false });
   const [hasOnboarded, setHasOnboarded] = useState<boolean>(true);
 
   const [goals, setGoals] = useState<DecomposedGoal[]>([]);
@@ -122,11 +119,10 @@ export default function App() {
       configStorage,
       sprintStorage,
       organismStateStorage,
-      userSessionStorage,
       onboardedStorage,
       goalsStorage,
-    ]).then(([c, s, st, u, o, g]) => {
-      if (!alive || !c || !s || !st || !u || !o || !g) return;
+    ]).then(([c, s, st, o, g]) => {
+      if (!alive || !c || !s || !st || !o || !g) return;
       const cfg = c.value as OrganismConfig;
       setConfig(cfg);
       setSelectedProvider(cfg.provider || 'google');
@@ -137,7 +133,6 @@ export default function App() {
       soundSynth.setMuted(!cfg.soundEnabled);
       setSprint(s.value as FocusSprint);
       setOrganismState(st.value as OrganismStateData);
-      setSession(u.value as UserSession);
       setHasOnboarded(o.value as boolean);
       setGoals(g.value as DecomposedGoal[]);
     });
@@ -145,7 +140,6 @@ export default function App() {
     const unwatchConfig = configStorage.watch((c: OrganismConfig | null) => c && setConfig(c));
     const unwatchSprint = sprintStorage.watch((s: FocusSprint | null) => s && setSprint(s));
     const unwatchState = organismStateStorage.watch((st: OrganismStateData | null) => st && setOrganismState(st));
-    const unwatchSession = userSessionStorage.watch((u: UserSession | null) => u && setSession(u));
     const unwatchOnboard = onboardedStorage.watch((o: boolean | null) => o !== null && setHasOnboarded(o));
     const unwatchGoals = goalsStorage.watch((g: DecomposedGoal[] | null) => g && setGoals(g));
 
@@ -154,7 +148,6 @@ export default function App() {
       unwatchConfig();
       unwatchSprint();
       unwatchState();
-      unwatchSession();
       unwatchOnboard();
       unwatchGoals();
     };
@@ -171,8 +164,7 @@ export default function App() {
 
   const isConfigured =
     Boolean(config.selfHostedApiKey?.trim()) ||
-    (config.provider === 'ollama' && Boolean(config.selfHostedEndpoint?.trim())) ||
-    (config.mode === 'cloud' && session.isLoggedIn);
+    (config.provider === 'ollama' && Boolean(config.selfHostedEndpoint?.trim()));
 
   const handleOrganismChange = async (id: OrganismId) => {
     const next = { ...config, organismId: id, name: ORGANISM_MODELS[id].name };
@@ -455,7 +447,7 @@ export default function App() {
               onClick={() => handleOrganismChange(cid)}
               title={comp.name}
             >
-              <AnimatedSprite id={cid} size={22} state="idle" />
+              <AnimatedSprite id={cid} size={22} state="idle" animated={isSelected} />
               <span className="font-mono text-[9px] font-bold text-paper-muted">{comp.name}</span>
               <span
                 className="w-6 h-[3px] transition-colors"
