@@ -352,7 +352,7 @@ export default function App() {
   // ================= FIRST-RUN CONSENT (prominent disclosure) =================
   if (!hasOnboarded) {
     return (
-      <div className="w-[380px] min-h-[520px] bg-base p-5 flex flex-col text-ink">
+      <div className="w-[380px] bg-base p-5 pb-4 flex flex-col text-ink">
         <div className="flex items-center gap-2.5">
           <span className="w-6 h-6 shrink-0 bg-accent border-2 border-coal shadow-[2px_2px_0_0_#12151A]" />
           <h1 className="font-display font-semibold text-lg tracking-tight">Welcome to Gremlin</h1>
