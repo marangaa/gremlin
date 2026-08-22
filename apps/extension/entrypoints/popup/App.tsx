@@ -354,7 +354,7 @@ export default function App() {
     return (
       <div className="w-[380px] min-h-[520px] bg-base p-5 flex flex-col text-ink">
         <div className="flex items-center gap-2.5">
-          <img src="/icon.png" alt="" className="w-7 h-7 border-2 border-coal shadow-[2px_2px_0_0_#12151A]" />
+          <span className="w-6 h-6 shrink-0 bg-accent border-2 border-coal shadow-[2px_2px_0_0_#12151A]" />
           <h1 className="font-display font-semibold text-lg tracking-tight">Welcome to Gremlin</h1>
         </div>
         <p className="mt-2 text-xs text-ink-muted leading-relaxed">Your pixel focus companion. Before we start, the legal bit — in plain English:</p>
