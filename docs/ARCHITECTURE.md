@@ -158,4 +158,4 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
      - `alarms`: Periodic background check for active focus sprints.
      - `scripting`: Inject content scripts on open tabs upon install.
    - **Single Purpose Description:** "AI-powered desk companion that coaches your focus during sprints without rigid website blacklists."
-   - **Privacy Policy:** Link to `https://gremlin.dev/privacy`.
+   - **Privacy Policy:** Live at `https://gremlin.fasihi.xyz/privacy` (SPA rewrite via apps/web/vercel.json).

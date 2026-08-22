@@ -380,7 +380,7 @@ export default function App() {
             </p>
           </div>
           <a
-            href="https://gremlin.dev/privacy"
+            href="https://gremlin.fasihi.xyz/privacy"
             target="_blank"
             rel="noreferrer"
             className="text-xs underline text-gray-500 hover:text-gray-800"

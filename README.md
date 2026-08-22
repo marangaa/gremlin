@@ -2,6 +2,8 @@
 
 > **A retro pixel desk companion that lives in your browser and roasts you when you start doomscrolling.**
 
+🌐 **Website:** [gremlin.fasihi.xyz](https://gremlin.fasihi.xyz) · 🐙 **Source:** [github.com/marangaa/gremlin](https://github.com/marangaa/gremlin)
+
 Traditional site blockers are clumsy. They ban whole domains with blunt regexes, break your flow when you're just trying to read a documentation page on Reddit or watch a coding walkthrough on YouTube, and make you feel like you're fighting your own computer.
 
 **Gremlin works differently.** Instead of a rigid blacklist, an AI companion sits in the corner of your screen. It watches your browsing trajectory over a rolling timeline to understand *what you're actually doing*. If you're solving a bug on StackOverflow, it leaves you in peace. If you drift into 45 minutes of meme rabbit holes while on an active sprint, it steps in.

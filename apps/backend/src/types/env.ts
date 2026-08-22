@@ -8,7 +8,7 @@ export interface Bindings {
   DATABASE_URL: string;
   /** Secret key used by Better Auth to sign session cookies and tokens. */
   BETTER_AUTH_SECRET: string;
-  /** Canonical base URL of the backend API (e.g., https://api.gremlin.dev). */
+  /** Canonical base URL of the backend API (e.g., https://gremlin-backend.rchdmaranga-b12.workers.dev). */
   BETTER_AUTH_URL?: string;
   /** Google Gemini API Key for server-side AI agent evaluation. */
   GOOGLE_GENERATIVE_AI_API_KEY?: string;
@@ -27,7 +27,7 @@ export interface Bindings {
   ALLOWED_EXTENSION_IDS?: string;
   /**
    * Comma-separated additional allowed origins (exact scheme://host[:port]).
-   * Example: "https://app.gremlin.dev,https://staging.gremlin.dev"
+   * Example: "https://gremlin.fasihi.xyz,https://staging.gremlin.fasihi.xyz"
    */
   ALLOWED_ORIGINS?: string;
   /** Runtime environment marker ("production" locks down permissive dev defaults). */

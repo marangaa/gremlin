@@ -72,5 +72,6 @@ The use of information received from Chrome Web Store users will adhere to the [
 
 ## 8. Contact
 If you have any questions about this Privacy Policy, contact us at:
-- **Email:** support@gremlin.dev
-- **Repository:** https://github.com/your-username/gremlin
+- **Email:** rchdmaranga@gmail.com
+- **X (Twitter):** https://x.com/rmarangaa
+- **Repository:** https://github.com/marangaa/gremlin

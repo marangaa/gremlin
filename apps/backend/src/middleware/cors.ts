@@ -4,6 +4,9 @@ import type { AppEnv } from '../types/env';
 
 const INTERNAL_SCHEME = 'chrome-extension://';
 
+// Fail-closed fallback: a non-matching ACAO value makes browsers reject the response.
+const SITE_ORIGIN = 'https://gremlin.fasihi.xyz';
+
 /**
  * Parses a comma-separated environment variable into trimmed, non-empty entries.
  */
@@ -20,7 +23,7 @@ function parseList(value?: string): string[] {
  *
  * - Extension IDs from ALLOWED_EXTENSION_IDS become `chrome-extension://<id>` entries.
  * - Extra web origins come from ALLOWED_ORIGINS verbatim.
- * - Canonical production origins (gremlin.dev + subdomains) are always allowed.
+ * - Canonical production origins are always allowed.
  * - Localhost dev origins and the permissive chrome-extension:// wildcard are only
  *   included outside production so local development keeps working unconfigured.
  */
@@ -28,8 +31,7 @@ export function buildAllowedOrigins(env: Partial<AppEnv['Bindings']>): string[] 
   const isProduction = env.NODE_ENV === 'production';
 
   const origins = new Set<string>([
-    'https://gremlin.dev',
-    'https://*.gremlin.dev',
+    SITE_ORIGIN,
   ]);
 
   for (const id of parseList(env.ALLOWED_EXTENSION_IDS)) {
@@ -53,7 +55,7 @@ export function buildAllowedOrigins(env: Partial<AppEnv['Bindings']>): string[] 
 /**
  * Validates whether an incoming HTTP Origin is an authorized client.
  *
- * Supports exact matches, `*` wildcards, and host wildcards (`https://*.gremlin.dev`).
+ * Supports exact matches, `*` wildcards, and host wildcards.
  *
  * @param origin - The Origin header from the incoming request.
  * @param env - Worker bindings providing configured allowlists.
@@ -92,12 +94,11 @@ export function isAllowedOrigin(
 export const dynamicCors = createMiddleware<AppEnv>(async (c, next) => {
   const handler = cors({
     origin: (origin) => {
-      if (!origin) return 'https://gremlin.dev';
+      if (!origin) return SITE_ORIGIN;
       if (isAllowedOrigin(origin, c.env)) {
         return origin;
       }
-      // Fail closed: echo a non-matching origin so the browser rejects the response.
-      return 'https://gremlin.dev';
+      return SITE_ORIGIN;
     },
     allowHeaders: ['Content-Type', 'Authorization', 'x-requested-with', 'Cookie'],
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

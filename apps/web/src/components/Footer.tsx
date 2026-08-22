@@ -92,7 +92,7 @@ export const Footer: React.FC<FooterProps> = ({ navigate }) => {
                 </li>
                 <li>
                   <a
-                    href="https://github.com/your-username/gremlin"
+                    href="https://github.com/marangaa/gremlin"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-ink-muted hover:text-ink transition-colors"
