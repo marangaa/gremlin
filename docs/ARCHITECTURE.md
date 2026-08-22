@@ -58,6 +58,7 @@ graph TD
    - On install or extension reload, `browser.runtime.onInstalled` in `background.ts` queries all open HTTP/HTTPS tabs and executes `browser.scripting.executeScript` to inject `/content-scripts/content.js` dynamically.
 6. **Zero-Leak Lifecycle Invalidation:**
    - Content scripts listen to `ctx.onInvalidated()`. When the extension is uninstalled or disabled in Chrome, all `requestAnimationFrame` loops, audio contexts, storage watchers, messaging listeners, and injected DOM nodes are purged immediately.
+   - Because WXT detects invalidation lazily (the `runtime.id` check lives inside the `ctx.isInvalid` getter) and its active events only cover reload/update, each content script runs a `ctx.setInterval` heartbeat so uninstalls also trip full teardown through the framework's abort signal.
 
 ### Key Directories & Files
 * `entrypoints/content.ts`: Mounts the Shadow DOM container, handles SPA `wxt:locationchange` events, manages the active `OrganismController`, and relays privacy-filtered page snapshots to the service worker.

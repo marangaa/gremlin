@@ -162,18 +162,13 @@ export default defineContentScript({
 
     await start();
 
-    // ORPHAN WATCHDOG — WXT's invalidation covers extension reload/update (a
-    // newer script announces itself) and a one-time runtime check at startup,
-    // but Chrome never notifies orphaned content scripts on UNINSTALL, so the
-    // companion used to linger until refresh. A raw interval (which survives
-    // orphaning, unlike ctx.setInterval) probes chrome.runtime.id; once dead,
-    // we trip WXT's own teardown so every ctx-registered listener unwinds.
-    const orphanWatchdog = window.setInterval(() => {
-      const chromeGlobal = (globalThis as { chrome?: { runtime?: { id?: string } } }).chrome;
-      if (chromeGlobal?.runtime?.id == null) {
-        window.clearInterval(orphanWatchdog);
-        ctx.notifyInvalidated();
-      }
-    }, 2_500);
+    // ORPHAN HEARTBEAT — WXT detects invalidation lazily: the runtime.id check
+    // lives inside the ctx.isInvalid/isValid getters, and its active events
+    // only cover reload/update (a newer script announces itself). On UNINSTALL
+    // Chrome never notifies the orphaned script, so without a reader nothing
+    // tears down. This heartbeat makes ctx.setInterval read isValid each tick,
+    // which trips the getter, notifies the context, and unwinds everything
+    // through the framework's own abort signal — no hand-rolled probes.
+    ctx.setInterval(() => {}, 2_500);
   },
 });
