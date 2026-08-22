@@ -7,9 +7,9 @@ import { Reveal } from '../components/Reveal';
 /* Featured tier inverts back to dark: an island of the night mode.    */
 /* ------------------------------------------------------------------ */
 
-const PAPER_LABEL = 'font-mono text-[11px] font-semibold uppercase tracking-wider text-[#4D7C0F]';
+const PAPER_LABEL = 'inline-flex items-center gap-1.5 px-2.5 py-1 bg-pop-yellow border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-mono text-[11px] font-bold tracking-wider text-coal -rotate-1';
 const PAPER_GHOST_BTN =
-  'w-full text-center block px-5 py-3 rounded-xl border border-paper-line bg-transparent font-display font-semibold text-sm text-paper-ink transition-colors hover:bg-paper-card hover:border-[#C9CEBF] active:translate-y-[1px]';
+  'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-white font-display font-bold text-sm text-coal tracking-wide shadow-brut-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0 active:translate-y-0 active:shadow-none';
 
 interface Tier {
   name: string;
@@ -115,23 +115,23 @@ export const Pricing: React.FC = () => {
           {TIERS.map((tier, i) => (
             <Reveal key={tier.name} delay={i * 90} className="h-full">
               <div
-                className={`relative h-full flex flex-col p-7 rounded-2xl border transition-all duration-300 ${
+                className={`relative h-full flex flex-col p-7 rounded-none border-2 transition-all duration-200 ${
                   tier.highlight
-                    ? 'bg-base-deep text-ink border-accent/40 shadow-glow-lg'
-                    : 'bg-paper-card border-paper-line shadow-paper hover:border-[#C9CEBF]'
+                    ? 'bg-base-deep text-ink border-coal shadow-[8px_8px_0_0_#65A30D]'
+                    : 'bg-white border-coal shadow-brut hover:-translate-y-1 hover:shadow-brut-lg'
                 }`}
               >
                 {tier.tag && (
                   <div
-                    className={`absolute -top-3 left-6 font-mono text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
+                    className={`absolute -top-3 left-6 -rotate-3 font-mono text-[10px] font-bold tracking-wider px-2.5 py-1 border-2 ${
                       tier.highlight
-                        ? 'bg-accent text-base-deep border-accent'
-                        : 'border bg-paper-card'
+                        ? 'bg-accent text-base-deep border-coal shadow-[3px_3px_0_0_#F5F6F1]'
+                        : 'bg-white border-coal shadow-brut-sm'
                     }`}
                     style={
                       tier.highlight
                         ? undefined
-                        : { color: tier.tagColor ?? '#FF7EB0', borderColor: `${tier.tagColor ?? '#FF7EB0'}66` }
+                        : { color: tier.tagColor ?? '#FF7EB0', borderColor: '#12151A' }
                     }
                   >
                     {tier.tag}
@@ -140,8 +140,8 @@ export const Pricing: React.FC = () => {
 
                 <div className="flex items-center gap-2.5">
                   <span
-                    className={`inline-flex w-8 h-8 items-center justify-center rounded-lg border ${
-                      tier.highlight ? 'bg-accent/10 border-accent/30 text-accent-bright' : 'bg-paper border-paper-line text-[#4D7C0F]'
+                    className={`inline-flex w-8 h-8 items-center justify-center border-2 ${
+                      tier.highlight ? 'bg-accent/10 border-accent/30 text-accent-bright' : 'bg-paper border-coal text-[#4D7C0F]'
                     }`}
                   >
                     {tier.icon}
@@ -161,7 +161,7 @@ export const Pricing: React.FC = () => {
                 </p>
 
                 <div className={`mt-6 pt-6 flex-1 space-y-3 ${tier.highlight ? 'border-t border-line/60' : 'border-t border-paper-line'}`}>
-                  <span className={`font-mono text-[11px] uppercase tracking-wider ${tier.highlight ? 'text-ink-faint' : 'text-paper-faint'}`}>
+                  <span className={`font-mono text-[11px] tracking-wider ${tier.highlight ? 'text-ink-faint' : 'text-paper-faint'}`}>
                     What's included:
                   </span>
                   <ul className={`space-y-2.5 text-xs sm:text-sm ${tier.highlight ? 'text-ink-muted' : 'text-paper-muted'}`}>
@@ -192,7 +192,7 @@ export const Pricing: React.FC = () => {
         </div>
 
         {/* Frequently Asked Questions */}
-        <section className="mt-24 pt-16 border-t border-paper-line">
+        <section className="mt-24 pt-16 border-t-2 border-dashed border-coal/30">
           <div className="max-w-xl mb-10">
             <div className={PAPER_LABEL}>FAQ</div>
             <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold tracking-tight">
@@ -202,7 +202,7 @@ export const Pricing: React.FC = () => {
 
           <div className="grid md:grid-cols-2 gap-6">
             {FAQS.map(([q, a], idx) => (
-              <div key={idx} className="p-6 rounded-2xl bg-paper-card border border-paper-line shadow-paper space-y-2">
+              <div key={idx} className="p-6 rounded-none bg-white border-2 border-coal shadow-brut-sm space-y-2">
                 <h3 className="font-display font-semibold text-base text-paper-ink flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-[#65A30D]" />
                   {q}

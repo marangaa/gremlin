@@ -46,6 +46,14 @@ export default {
           muted: '#5B6472',
           faint: '#9AA1AC',
         },
+        coal: '#12151A',
+        pop: {
+          pink: '#FF7EB0',
+          blue: '#4361EE',
+          yellow: '#FFD900',
+          teal: '#2EC4B6',
+          orange: '#FF9F1C',
+        },
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -53,11 +61,12 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       boxShadow: {
-        card: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 16px 40px -24px rgba(0,0,0,0.7)',
-        lift: '0 1px 0 0 rgba(255,255,255,0.05) inset, 0 24px 60px -28px rgba(0,0,0,0.8)',
+        brut: '4px 4px 0 0 #12151A',
+        'brut-sm': '3px 3px 0 0 #12151A',
+        'brut-lg': '8px 8px 0 0 #12151A',
+        'brut-accent': '4px 4px 0 0 #65A30D',
         glow: '0 0 0 1px rgba(163,230,53,0.25), 0 8px 40px -8px rgba(163,230,53,0.25)',
         'glow-lg': '0 0 0 1px rgba(163,230,53,0.3), 0 16px 80px -12px rgba(163,230,53,0.35)',
-        pill: '0 12px 36px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 20px -4px rgba(163, 230, 53, 0.15)',
       },
       keyframes: {
         'fade-up': {
@@ -79,6 +88,10 @@ export default {
         'caret-blink': {
           '0%, 45%': { opacity: '1' },
           '50%, 100%': { opacity: '0' },
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
         },
         'fade-in': {
           from: { opacity: '0' },
@@ -110,6 +123,7 @@ export default {
         'pulse-dot': 'pulse-dot 2s ease-in-out infinite',
         'caret-blink': 'caret-blink 1s step-end infinite',
         'fade-in': 'fade-in 0.4s ease both',
+        marquee: 'marquee 30s linear infinite',
         'gas-drift-1': 'gas-drift-1 18s ease-in-out infinite',
         'gas-drift-2': 'gas-drift-2 24s ease-in-out infinite',
         'gas-drift-3': 'gas-drift-3 20s ease-in-out infinite',

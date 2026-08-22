@@ -12,10 +12,10 @@ import { DocLayout, type DocSection } from '../components/DocLayout';
 
 /* ---------- shared bits ---------- */
 
-const cardCls = 'rounded-xl border border-line-bright bg-[#10121a] p-5';
+const cardCls = 'border-2 border-coal bg-white p-5 shadow-brut-sm';
 
 const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-accent">
+  <div className="font-mono text-[11px] font-semibold tracking-wider text-accent">
     {children}
   </div>
 );
@@ -24,8 +24,8 @@ const YesRow: React.FC<{ title: string; body: string }> = ({ title, body }) => (
   <li className="flex gap-2.5">
     <Check size={15} className="mt-0.5 shrink-0 text-accent-bright" />
     <span className="text-sm leading-relaxed">
-      <strong className="font-medium text-ink">{title}:</strong>{' '}
-      <span className="text-ink-muted">{body}</span>
+      <strong className="font-medium text-coal">{title}:</strong>{' '}
+      <span className="text-paper-muted">{body}</span>
     </span>
   </li>
 );
@@ -33,7 +33,7 @@ const YesRow: React.FC<{ title: string; body: string }> = ({ title, body }) => (
 const NoRow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <li className="flex gap-2.5">
     <X size={15} className="mt-0.5 shrink-0 text-red-400" />
-    <span className="text-sm leading-relaxed text-ink-muted">{children}</span>
+    <span className="text-sm leading-relaxed text-paper-muted">{children}</span>
   </li>
 );
 
@@ -53,8 +53,8 @@ const sections: DocSection[] = [
         ].map(({ icon: Icon, label, sub }) => (
           <div key={label} className={`${cardCls} flex flex-col items-center gap-1 py-4 text-center`}>
             <Icon size={18} className="text-accent" />
-            <div className="font-display text-sm font-semibold text-ink">{label}</div>
-            <div className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">{sub}</div>
+            <div className="font-display text-sm font-semibold text-coal">{label}</div>
+            <div className="font-mono text-[10px] tracking-wider text-paper-faint">{sub}</div>
           </div>
         ))}
       </div>
@@ -78,7 +78,7 @@ const sections: DocSection[] = [
     body: (
       <>
         <p>
-          Gremlin only evaluates context <strong className="text-ink">while a focus sprint is actively
+          Gremlin only evaluates context <strong className="text-coal">while a focus sprint is actively
           running</strong>. Nothing is read while you are idle or when tracking is disabled.
         </p>
         <ul className="list-none space-y-2.5 pl-0">
@@ -124,7 +124,7 @@ const sections: DocSection[] = [
               <HardDrive size={14} className="text-accent" />
               <Label>100% Local BYOK Mode</Label>
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            <p className="mt-2 text-sm leading-relaxed text-paper-muted">
               All AI reasoning happens directly on your device inside your browser, using the API key
               you supply. Page context is transmitted only to the provider <em>you</em> choose — Google
               (Gemini), OpenAI, Anthropic, Groq, or a local Ollama instance — and never to Gremlin
@@ -136,7 +136,7 @@ const sections: DocSection[] = [
               <Cloud size={14} className="text-accent" />
               <Label>Gremlin Cloud Pro</Label>
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            <p className="mt-2 text-sm leading-relaxed text-paper-muted">
               Active tab context is evaluated transiently over an encrypted HTTPS connection on our
               Cloudflare Workers backend to deliver companion remarks; excerpts are not permanently
               stored. Your account email and sprint metadata (goal title, duration, timestamps,
@@ -145,7 +145,7 @@ const sections: DocSection[] = [
             </p>
           </div>
         </div>
-        <p className="text-sm leading-relaxed text-ink-muted">
+        <p className="text-sm leading-relaxed text-paper-muted">
           In both modes, data is transmitted exclusively over modern encrypted connections
           (HTTPS/WSS), is used solely to provide the focus-coaching feature described above, and is
           never used for advertising or credit-worthiness decisions. We do not allow humans to read
@@ -158,12 +158,12 @@ const sections: DocSection[] = [
     id: 'limited-use',
     title: 'Chrome Web Store Limited Use disclosure',
     body: (
-      <div className="not-prose rounded-xl border border-accent/40 bg-[#10121a] p-5">
+      <div className="not-prose rounded-none border-2 border-coal bg-base-deep p-5 shadow-brut">
         <div className="flex items-center gap-2">
           <Lock size={14} className="text-accent" />
           <Label>Limited use commitment</Label>
         </div>
-        <p className="mt-2 text-[15px] leading-[1.75] text-ink">
+        <p className="mt-2 text-[15px] leading-[1.75] text-coal">
           The use of information received from Chrome Web Store users will adhere to the{' '}
           <a
             href="https://developer.chrome.com/docs/webstore/program-policies/limited-use"
@@ -193,7 +193,7 @@ const sections: DocSection[] = [
         ].map(([perm, why]) => (
           <div key={perm} className={`${cardCls} px-4 py-3`}>
             <code className="font-mono text-xs font-semibold text-accent">{perm}</code>
-            <p className="mt-1 text-xs leading-relaxed text-ink-muted">{why}</p>
+            <p className="mt-1 text-xs leading-relaxed text-paper-muted">{why}</p>
           </div>
         ))}
       </div>
@@ -214,7 +214,7 @@ const sections: DocSection[] = [
             body="delete your account and associated sprint history at any time through the extension profile settings, or by contacting us directly."
           />
         </ul>
-        <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+        <p className="mt-3 text-sm leading-relaxed text-paper-muted">
           Transient page excerpts used during evaluation exist only for the seconds it takes your
           companion to respond, then they are gone.
         </p>

@@ -60,20 +60,20 @@ export const CardlessHowItWorks: React.FC = () => {
   return (
     <div className="space-y-16 sm:space-y-24">
       {/* Step Navigation Runway */}
-      <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-8 pb-4 border-b border-line/40 overflow-x-auto">
+      <div className="flex items-center justify-start gap-3 pb-6 overflow-x-auto">
         {STEPS.map((s, idx) => {
           const isActive = activeStep === idx;
           return (
             <button
               key={s.num}
               onClick={() => setActiveStep(idx)}
-              className={`flex items-center gap-3 pb-3 border-b-2 font-mono text-xs transition-all cursor-pointer shrink-0 ${
+              className={`flex items-center gap-2 px-3 py-2 border-2 font-mono text-xs font-bold transition-all cursor-pointer shrink-0 ${
                 isActive
-                  ? 'border-accent text-accent font-bold scale-105'
-                  : 'border-transparent text-ink-muted hover:text-ink hover:border-line-bright'
+                  ? 'bg-accent border-coal shadow-brut-sm -translate-y-0.5 text-coal font-bold'
+                  : 'bg-white border-paper-line text-paper-muted hover:border-coal hover:text-coal'
               }`}
             >
-              <span className={`px-2 py-0.5 rounded-md ${isActive ? 'bg-accent/15 text-accent' : 'bg-surface text-ink-faint'}`}>
+              <span className={`px-2 py-0.5 ${isActive ? 'bg-coal text-accent' : 'bg-paper border border-paper-line text-paper-muted'}`}>
                 {s.num}
               </span>
               <span className="font-display font-semibold sm:text-sm">
@@ -89,23 +89,23 @@ export const CardlessHowItWorks: React.FC = () => {
         {/* Left: Unboxed Editorial Typography */}
         <div className="space-y-6">
           <div className="space-y-2">
-            <span className="font-mono text-xs font-bold uppercase tracking-widest text-accent flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse-dot" />
+            <span className="font-mono text-xs font-bold tracking-widest text-[#4D7C0F] flex items-center gap-2">
+              <span className="w-2 h-2 bg-accent border border-coal animate-pulse-dot" />
               {STEPS[activeStep]!.tag}
             </span>
-            <h3 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-ink">
+            <h3 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-coal">
               {STEPS[activeStep]!.headline}
             </h3>
           </div>
 
-          <p className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-xl">
+          <p className="text-base sm:text-lg text-paper-muted leading-relaxed max-w-xl">
             {STEPS[activeStep]!.description}
           </p>
 
           <div className="flex items-center gap-3 pt-2">
             <button
               onClick={() => setActiveStep((prev) => (prev + 1) % 3)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-surface hover:bg-surface-raised font-mono text-xs text-ink transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 border-2 border-coal bg-white font-mono text-xs font-bold shadow-brut-sm transition-all hover:-translate-y-0.5 hover:shadow-brut cursor-pointer"
             >
               Next Step: {STEPS[(activeStep + 1) % 3]!.num} →
             </button>
@@ -118,7 +118,7 @@ export const CardlessHowItWorks: React.FC = () => {
           {activeStep === 0 && (
             <div className="space-y-4 animate-fade-in">
               <div className="space-y-2">
-                <span className="font-mono text-xs text-ink-faint uppercase tracking-wider block">
+                <span className="font-mono text-xs text-paper-faint tracking-wider block">
                   Click a real-world focus intent:
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -126,10 +126,10 @@ export const CardlessHowItWorks: React.FC = () => {
                     <button
                       key={opt.label}
                       onClick={() => setSelectedGoal(opt.goal)}
-                      className={`px-3.5 py-1.5 rounded-full font-mono text-xs transition-all cursor-pointer ${
+                      className={`px-3.5 py-1.5 font-mono text-xs transition-all cursor-pointer ${
                         selectedGoal === opt.goal
-                          ? 'bg-accent text-base-deep font-bold shadow-glow'
-                          : 'bg-surface/60 text-ink-muted border border-line hover:border-line-bright hover:text-ink'
+                          ? 'bg-accent border-2 border-coal text-coal font-bold shadow-brut-sm'
+                          : 'bg-white border-2 border-paper-line text-paper-muted hover:border-coal hover:text-coal'
                       }`}
                     >
                       {opt.label}
@@ -138,12 +138,12 @@ export const CardlessHowItWorks: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-line/40 space-y-2">
-                <div className="font-mono text-xs text-accent flex items-center gap-1.5">
+              <div className="pt-3 border-t border-paper-line space-y-2">
+                <div className="font-mono text-xs text-[#4D7C0F] flex items-center gap-1.5">
                   <Target className="w-4 h-4" />
                   Companion Goal Registered:
                 </div>
-                <div className="font-display text-xl font-bold text-ink">
+                <div className="font-display text-xl font-bold text-coal">
                   “{selectedGoal}”
                 </div>
               </div>
@@ -153,7 +153,7 @@ export const CardlessHowItWorks: React.FC = () => {
           {/* Step 2 Interactive: Verified Research Feeds */}
           {activeStep === 1 && (
             <div className="space-y-3 animate-fade-in">
-              <div className="font-mono text-xs text-ink-faint uppercase tracking-wider">
+              <div className="font-mono text-xs text-paper-faint tracking-wider">
                 Live Topic Recognition Stream:
               </div>
 
@@ -176,13 +176,13 @@ export const CardlessHowItWorks: React.FC = () => {
               ].map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-surface/50 border border-line/60 font-mono text-xs"
+                  className="flex items-center justify-between gap-3 p-3 bg-white border-2 border-coal shadow-brut-sm font-mono text-xs"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <Check className="w-4 h-4 text-accent shrink-0" />
-                    <span className="text-ink truncate">{item.site}</span>
+                    <Check className="w-4 h-4 text-[#65A30D] shrink-0" />
+                    <span className="text-coal truncate">{item.site}</span>
                   </div>
-                  <span className="text-[11px] text-accent shrink-0 hidden sm:inline">
+                  <span className="text-[11px] text-[#65A30D] shrink-0 hidden sm:inline">
                     {item.status}
                   </span>
                 </div>
@@ -193,7 +193,7 @@ export const CardlessHowItWorks: React.FC = () => {
           {/* Step 3 Interactive: Live Roast Preview */}
           {activeStep === 2 && (
             <div className="space-y-4 animate-fade-in">
-              <div className="font-mono text-xs text-ink-faint uppercase tracking-wider">
+              <div className="font-mono text-xs text-paper-faint tracking-wider">
                 Pick companion to test wake-up roast:
               </div>
 
@@ -202,10 +202,10 @@ export const CardlessHowItWorks: React.FC = () => {
                   <button
                     key={id}
                     onClick={() => setActiveRoastCompanion(id)}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                    className={`p-2 border-2 transition-all cursor-pointer ${
                       activeRoastCompanion === id
-                        ? 'border-accent/40 bg-accent/15 scale-105'
-                        : 'border-line bg-surface/50 hover:bg-surface'
+                        ? 'border-coal bg-accent shadow-brut-sm -translate-y-0.5'
+                        : 'border-paper-line bg-white hover:border-coal'
                     }`}
                   >
                     <Sprite id={id} size={28} />
@@ -214,12 +214,12 @@ export const CardlessHowItWorks: React.FC = () => {
               </div>
 
               {/* Floating Speech Cloud */}
-              <div className="p-4 rounded-2xl bg-surface/80 border border-line-bright space-y-2 shadow-lift">
-                <div className="flex items-center gap-2 font-mono text-xs text-accent font-bold uppercase">
+              <div className="relative p-4 bg-white border-2 border-coal space-y-2 shadow-brut">
+                <div className="flex items-center gap-2 font-mono text-xs text-[#4D7C0F] font-bold">
                   <MessageSquareQuote className="w-3.5 h-3.5" />
                   Wake-Up Remark:
                 </div>
-                <p className="font-mono text-sm text-ink italic leading-relaxed m-0">
+                <p className="font-mono text-sm text-coal italic leading-relaxed m-0">
                   {ROAST_OPTIONS[activeRoastCompanion]}
                 </p>
               </div>

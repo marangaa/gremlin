@@ -47,7 +47,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-base text-ink relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col justify-between bg-paper text-coal relative overflow-x-hidden">
       {/* Clean, Minimalist Linear/Vercel-style Blueprint Grid Background */}
       <CleanGridBackground />
 
@@ -76,7 +76,7 @@ const NotFound: React.FC<{ navigate: (path: string) => void }> = ({ navigate }) 
     <h1 className="mt-4 font-display text-4xl font-bold tracking-tight">
       This tab has been judged.
     </h1>
-    <p className="mt-4 text-ink-muted max-w-sm mx-auto leading-relaxed">
+    <p className="mt-4 text-paper-muted max-w-sm mx-auto leading-relaxed">
       It leads nowhere productive. Even the gremlin won’t follow you here.
     </p>
     <button onClick={() => navigate('/')} className="btn-primary mt-8">

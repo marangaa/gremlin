@@ -7,14 +7,14 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ navigate }) => {
   return (
-    <footer className="relative z-10 pb-16 pt-8">
-      <div className="container-site border-t border-line/40 pt-12">
+    <footer className="relative z-10 border-t-2 border-coal bg-white pb-16 pt-12">
+      <div className="container-site pt-4">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-10">
           {/* Brand & Mission */}
           <div className="max-w-sm space-y-3">
             <div className="flex items-center gap-2.5">
-              <img src="/icon.png" alt="Gremlin logo" className="w-7 h-7 rounded-lg ring-1 ring-white/15" />
-              <span className="font-display font-bold text-ink">Gremlin</span>
+              <img src="/icon.png" alt="Gremlin logo" className="w-7 h-7 border-2 border-coal" />
+              <span className="font-display font-bold text-coal">Gremlin</span>
               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20 font-mono text-[10px] text-accent">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-dot" />
                 v0.4
