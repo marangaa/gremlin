@@ -24,7 +24,6 @@ import {
 import { CHARACTER_SKINS } from '@/lib/personalities/skins';
 import { sendMessage } from '@/lib/messaging';
 import { soundSynth } from '@/lib/audio/soundEngine';
-import { testAiConnection } from '@/lib/ai/engine';
 import { SUPPORTED_PROVIDERS, type SupportedAiProvider } from '@/lib/ai/providers';
 import { AnimatedSprite } from './components/AnimatedSprite';
 import { GoalStack } from './components/GoalStack';
@@ -262,7 +261,8 @@ export default function App() {
 
   const handleTestConnection = async () => {
     setTestStatus({ loading: true });
-    const res = await testAiConnection({
+    const { testAiConnection: testConnection } = await import('@/lib/ai/engine');
+    const res = await testConnection({
       provider: selectedProvider,
       apiKey: apiKeyInput.trim() || undefined,
       endpoint: endpointInput.trim() || undefined,
