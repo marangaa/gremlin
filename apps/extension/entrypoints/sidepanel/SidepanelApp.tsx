@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import {
   configStorage,
   sprintStorage,
@@ -19,20 +19,18 @@ import { sendMessage } from '@/lib/messaging';
 import { soundSynth } from '@/lib/audio/soundEngine';
 import { AnimatedSprite } from '../popup/components/AnimatedSprite';
 import { DiaryView } from '../popup/components/DiaryView';
-import { TelemetryDrawer } from '../popup/components/TelemetryDrawer';
 import {
   Volume2,
   VolumeX,
   Globe,
   Plus,
-  Trash2,
-  Calendar,
-  Sparkles,
   Terminal,
-  ExternalLink,
-  BookOpen,
 } from 'lucide-react';
 import '../popup/App.css';
+
+const LazyTelemetryDrawer = React.lazy(() =>
+  import('../popup/components/TelemetryDrawer').then((m) => ({ default: m.TelemetryDrawer })),
+);
 
 const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei'];
 
@@ -80,6 +78,7 @@ export const SidepanelApp: React.FC = () => {
     topDomains: [],
   });
   const [telemetryTraces, setTelemetryTraces] = useState<AiTelemetryTrace[]>([]);
+  const [hasOpenedTelemetry, setHasOpenedTelemetry] = useState(false);
   const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
 
   // Quick note form state
@@ -97,7 +96,6 @@ export const SidepanelApp: React.FC = () => {
     void sprintStorage.getValue().then((s: FocusSprint) => alive && setSprint(s));
     void organismStateStorage.getValue().then((st: OrganismStateData) => alive && setOrganismState(st));
     void notesStorage.getValue().then((n: SmartPageNote[]) => alive && setNotes(n));
-    void telemetryStorage.getValue().then((t: AiTelemetryTrace[]) => alive && setTelemetryTraces(t));
     void sendMessage('getTodayDiary', undefined).then((res) => {
       if (alive && res?.diary) setDiary(res.diary);
     });
@@ -106,7 +104,6 @@ export const SidepanelApp: React.FC = () => {
     const unwatchSprint = sprintStorage.watch((s: FocusSprint | null) => s && setSprint(s));
     const unwatchState = organismStateStorage.watch((st: OrganismStateData | null) => st && setOrganismState(st));
     const unwatchNotes = notesStorage.watch((n: SmartPageNote[] | null) => n && setNotes(n));
-    const unwatchTelemetry = telemetryStorage.watch((t: AiTelemetryTrace[] | null) => t && setTelemetryTraces(t));
     const unwatchDiary = diaryStorage.watch((diaries: DailyDiary[] | null) => {
       if (diaries && diaries[0]) setDiary(diaries[0]);
     });
@@ -137,12 +134,24 @@ export const SidepanelApp: React.FC = () => {
       unwatchSprint();
       unwatchState();
       unwatchNotes();
-      unwatchTelemetry();
       unwatchDiary();
       browser.tabs.onActivated.removeListener(updateActiveTab);
       browser.tabs.onUpdated.removeListener(updateActiveTab);
     };
   }, []);
+
+  useEffect(() => {
+    if (!hasOpenedTelemetry) return;
+    let alive = true;
+    void telemetryStorage.getValue().then((t: AiTelemetryTrace[]) => alive && setTelemetryTraces(t));
+    const unwatchTelemetry = telemetryStorage.watch((t: AiTelemetryTrace[] | null) => {
+      if (alive && t) setTelemetryTraces(t);
+    });
+    return () => {
+      alive = false;
+      unwatchTelemetry();
+    };
+  }, [hasOpenedTelemetry]);
 
   const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.Sarge;
 
@@ -179,85 +188,95 @@ export const SidepanelApp: React.FC = () => {
     await sendMessage('deletePageNote', { id });
   };
 
+  const handleToggleTelemetry = () => {
+    setIsTelemetryOpen((o) => !o);
+    setHasOpenedTelemetry(true);
+  };
+
   return (
     <div
-      className="w-full min-h-screen bg-base p-5 flex flex-col gap-5 relative overflow-x-hidden text-ink"
+      className="w-full min-h-screen bg-paper p-5 flex flex-col gap-5 relative overflow-x-hidden text-paper-ink"
       style={{
         '--skin-accent': skin.colors.step9,
         '--skin-accent-hover': skin.colors.step10,
       } as React.CSSProperties}
     >
-      <div className="absolute inset-0 pointer-events-none opacity-[0.15] z-0" style={{ backgroundSize: '16px 16px', backgroundImage: 'radial-gradient(circle, var(--skin-accent) 1px, transparent 1px)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.04] z-0 gm-dots-bg" />
 
-      {/* Editorial Diary Header */}
-      <header className="flex items-center justify-between pb-4 border-b border-line z-10 relative">
+      {/* Diary header */}
+      <header className="flex items-center justify-between pb-4 border-b-2 border-dashed border-line z-10 relative">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 border border-line flex items-center justify-center transition-colors" style={{ backgroundColor: 'var(--skin-accent)' }}>
+          <div
+            className="w-12 h-12 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center overflow-hidden"
+            style={{ backgroundColor: 'var(--skin-accent)' }}
+          >
             <AnimatedSprite id={config.organismId} size={36} state={organismState.state} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-display font-semibold text-xl tracking-tighter text-ink">
+              <span className="font-display font-bold text-xl tracking-tighter text-paper-ink">
                 Focus Diary
               </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 border border-line text-white" style={{ backgroundColor: 'var(--skin-accent)' }}>
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 text-white border-2 border-coal" style={{ backgroundColor: 'var(--skin-accent)' }}>
                 {skin.name}
               </span>
             </div>
-            <span className="text-xs font-mono font-bold text-ink-muted bg-surface-raised px-1 mt-1 inline-block border border-line">
-              {diary.date} · Auto-Journal
+            <span className="text-xs font-mono font-bold text-paper-muted bg-white px-1 mt-1 inline-block border border-coal">
+              {diary.date} · auto-journal
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={handleToggleSound}
-            className={`w-10 h-10 border border-line flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer ${config.soundEnabled ? 'text-white' : 'bg-surface-raised text-ink-faint'} `}
+            className={`w-10 h-10 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer ${config.soundEnabled ? 'text-white' : 'bg-white text-paper-faint'}`}
             style={config.soundEnabled ? { backgroundColor: 'var(--skin-accent)' } : {}}
             title={config.soundEnabled ? 'Mute' : 'Unmute'}
           >
-            {config.soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            {config.soundEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
           </button>
           <button
-            onClick={() => setIsTelemetryOpen(!isTelemetryOpen)}
-            className="w-10 h-10 border border-line flex items-center justify-center bg-surface text-ink hover:bg-surface-raised transition-colors cursor-pointer"
-            title="Inspect AI Reasoning Telemetry"
+            onClick={handleToggleTelemetry}
+            className={`w-10 h-10 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer ${hasOpenedTelemetry && isTelemetryOpen ? 'text-white' : 'bg-white text-paper-muted hover:text-paper-ink'}`}
+            style={hasOpenedTelemetry && isTelemetryOpen ? { backgroundColor: 'var(--skin-accent)' } : {}}
+            title="AI reasoning traces"
           >
-            <Terminal size={18} />
+            <Terminal size={17} />
           </button>
         </div>
       </header>
 
-      {/* Quick In-Page Note Taking Cardless Bar */}
-      <form onSubmit={handleSavePageNote} className="space-y-2 pt-1 z-10 relative bg-surface border border-line p-4">
-        <div className="flex items-center justify-between text-xs font-display font-semibold">
-          <span className="text-white border border-line px-2 py-1 flex items-center gap-1.5 truncate max-w-[70%]" style={{ backgroundColor: 'var(--skin-accent)' }}>
+      {/* Quick note bar */}
+      <form onSubmit={handleSavePageNote} className="space-y-2 pt-1 z-10 relative bg-white border-2 border-coal shadow-brut-sm p-4">
+        <div className="flex items-center justify-between text-xs font-display font-bold">
+          <span className="text-white border-2 border-coal px-2 py-1 flex items-center gap-1.5 truncate max-w-[70%]" style={{ backgroundColor: 'var(--skin-accent)' }}>
             <Globe size={12} className="shrink-0" />
-            <span className="truncate">{activeTabInfo.domain || 'Active Page'}</span>
+            <span className="truncate">{activeTabInfo.domain || 'Active page'}</span>
           </span>
-          <span className="text-ink-muted font-mono font-bold">Enter ↵ to save</span>
+          <span className="text-paper-faint font-mono font-bold">ENTER ↵</span>
         </div>
         <div className="flex gap-2">
           <input
             type="text"
-            className="flex-1 bg-base border border-line p-3 text-ink font-mono text-sm placeholder:text-ink-faint focus:outline-none focus:bg-surface transition-colors"
-            placeholder={`Annotate thoughts about ${activeTabInfo.domain || 'this page'}…`}
+            className="flex-1 min-w-0 bg-paper border-2 border-coal p-3 text-paper-ink font-mono text-sm placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
+            placeholder={`A thought about ${activeTabInfo.domain || 'this page'}…`}
             value={newNoteText}
             onChange={(e) => setNewNoteText(e.target.value)}
           />
           <button
             type="submit"
             disabled={!newNoteText.trim()}
-            className="bg-accent text-base-deep font-display font-semibold border border-line px-4 py-3 text-sm hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 flex items-center gap-2"
+            className="text-white font-display font-bold border-2 border-coal px-4 py-3 text-sm shadow-[2px_2px_0_0_#12151A] transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 flex items-center gap-1.5"
+            style={{ backgroundColor: 'var(--skin-accent)' }}
           >
-            <Plus size={16} />
+            <Plus size={15} />
             <span>NOTE</span>
           </button>
         </div>
       </form>
 
-      {/* Diary & Reflection Canvas */}
+      {/* Diary canvas */}
       <main className="space-y-6 flex-1 relative z-10">
         <DiaryView
           diary={diary}
@@ -267,13 +286,23 @@ export const SidepanelApp: React.FC = () => {
           onDeleteNote={handleDeleteNote}
         />
 
-        {/* AI Telemetry Drawer */}
-        <TelemetryDrawer
-          traces={telemetryTraces}
-          isOpen={isTelemetryOpen}
-          accentColor="var(--skin-accent)"
-          onToggle={() => setIsTelemetryOpen(!isTelemetryOpen)}
-        />
+        {/* AI Telemetry Drawer — chunk + data hydrate on first open */}
+        {hasOpenedTelemetry && (
+          <Suspense
+            fallback={
+              <div className="bg-white border-2 border-coal shadow-brut-sm p-3 font-mono text-xs font-bold text-paper-muted">
+                Loading traces…
+              </div>
+            }
+          >
+            <LazyTelemetryDrawer
+              traces={telemetryTraces}
+              isOpen={isTelemetryOpen}
+              accentColor="var(--skin-accent)"
+              onToggle={() => setIsTelemetryOpen((o) => !o)}
+            />
+          </Suspense>
+        )}
       </main>
     </div>
   );

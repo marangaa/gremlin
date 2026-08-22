@@ -2,17 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Bundled variable fonts — MV3 CSP blocks remote fonts, so the extension
+   ships the same families the website uses (Space Grotesk / Inter / JetBrains Mono). */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/space-grotesk-var.woff2') format('woff2');
+}
+
 @layer base {
   body {
-    @apply bg-base text-ink font-sans m-0 p-0 overflow-x-hidden overflow-y-auto;
+    @apply bg-paper text-paper-ink font-sans m-0 p-0 overflow-x-hidden overflow-y-auto;
+    color-scheme: light;
   }
 
   ::selection {
     background-color: #a3e635;
-    color: #070809;
+    color: #12151a;
   }
 
-  /* Hide scrollbar — popup is a fixed console viewport */
+  /* Hide scrollbar — popup is a fixed viewport */
   ::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
@@ -21,10 +48,23 @@
 }
 
 @layer utilities {
-  /* Phosphor dot grid — faint light dots on the dark shell */
-  .gm-dots {
-    @apply absolute inset-0 pointer-events-none opacity-[0.07] z-0;
-    background-size: 16px 16px;
-    background-image: radial-gradient(circle, #f2f5f9 1px, transparent 1px);
+  /* Paper dot grid — faint coal dots on the paper shell */
+  .gm-dots-bg {
+    background-size: 22px 22px;
+    background-image: radial-gradient(#12151a 1px, transparent 1px);
+  }
+
+  /* Flow-mode sprint progress: bar drifts across the track */
+  .animate-sprint-flow {
+    animation: sprint-flow-drift 1.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes sprint-flow-drift {
+    from {
+      left: -10%;
+    }
+    to {
+      left: 80%;
+    }
   }
 }

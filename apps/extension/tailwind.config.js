@@ -31,7 +31,7 @@ export default {
           deep: '#84CC16',
         },
         danger: '#FB7185',
-        // Deliberate light blocks inside the dark shell ("paper screen")
+        // Paper Brut surface system — mirrors the website
         paper: {
           DEFAULT: '#F5F6F1',
           card: '#FFFFFF',
@@ -39,6 +39,14 @@ export default {
           ink: '#12151A',
           muted: '#5B6472',
           faint: '#9AA1AC',
+        },
+        coal: '#12151A',
+        pop: {
+          pink: '#FF7EB0',
+          blue: '#4361EE',
+          yellow: '#FFD900',
+          teal: '#2EC4B6',
+          orange: '#FF9F1C',
         },
       },
       fontFamily: {
@@ -51,6 +59,9 @@ export default {
         lift: '0 1px 0 0 rgba(255,255,255,0.05) inset, 0 24px 60px -28px rgba(0,0,0,0.8)',
         glow: '0 0 0 1px rgba(163,230,53,0.25), 0 8px 40px -8px rgba(163,230,53,0.25)',
         paper: '0 1px 2px rgba(18,21,26,0.06), 0 8px 24px -12px rgba(18,21,26,0.25)',
+        brut: '4px 4px 0 0 #12151A',
+        'brut-sm': '3px 3px 0 0 #12151A',
+        'brut-lg': '8px 8px 0 0 #12151A',
       },
     },
   },

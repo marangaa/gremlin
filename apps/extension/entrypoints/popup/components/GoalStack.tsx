@@ -37,101 +37,98 @@ export const GoalStack: React.FC<GoalStackProps> = ({
   const completedGoals = goals.filter((g) => g.completed);
 
   return (
-    <div className="flex flex-col h-full bg-surface p-2">
-      {/* Header with Add Milestone toggle */}
-      <div className="flex items-center justify-between pb-2 border-b border-line mb-2">
-        <span className="font-display font-semibold text-xs text-ink">
-          Milestones ({activeGoals.length})
+    <div className="flex flex-col h-full bg-white border-2 border-coal shadow-brut-sm p-2">
+      <div className="flex items-center justify-between pb-2 border-b-2 border-dashed border-line mb-2">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted">
+          Milestones · {activeGoals.length}
         </span>
         <button
           type="button"
           onClick={() => setShowAddManual(!showAddManual)}
-          className="font-mono text-[10px] font-bold text-white px-2 py-0.5 cursor-pointer hover:opacity-90 transition-opacity"
+          className="font-mono text-[10px] font-bold text-white px-1.5 py-0.5 border-2 border-coal cursor-pointer transition-all hover:-translate-y-px hover:shadow-[2px_2px_0_0_#12151A] active:translate-y-0 active:shadow-none"
           style={{ backgroundColor: accentColor }}
         >
-          {showAddManual ? 'Cancel' : '+ Add'}
+          {showAddManual ? '✕' : '+ ADD'}
         </button>
       </div>
 
-      {/* Manual Quick Add Form */}
       {showAddManual && (
-        <form onSubmit={handleManualAdd} className="flex gap-2 mb-2">
+        <form onSubmit={handleManualAdd} className="flex gap-1.5 mb-2">
           <input
             type="text"
-            className="flex-1 bg-base border border-line-bright p-2 text-ink font-mono text-xs placeholder:text-ink-faint focus:outline-none focus:bg-surface transition-colors"
-            placeholder="e.g. Write unit tests..."
+            className="flex-1 min-w-0 bg-paper border-2 border-coal p-1.5 text-paper-ink font-mono text-xs placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
+            placeholder="New milestone…"
             value={manualTitle}
             onChange={(e) => setManualTitle(e.target.value)}
             autoFocus
           />
-          <button type="submit" className="text-white font-display font-semibold px-3 text-xs hover:opacity-90 transition-opacity cursor-pointer" style={{ backgroundColor: accentColor }}>
-            Add
+          <button
+            type="submit"
+            className="text-white font-display font-bold px-3 border-2 border-coal shadow-[2px_2px_0_0_#12151A] text-xs transition-all hover:-translate-y-px hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer"
+            style={{ backgroundColor: accentColor }}
+          >
+            ADD
           </button>
         </form>
       )}
 
-      {/* Goal Items Checklist */}
       {goals.length === 0 ? (
-        <div className="py-6 text-center text-xs text-ink-muted font-mono font-bold flex-1 flex items-center justify-center">
-          No sub-goals yet.
+        <div className="py-6 text-center text-xs text-paper-faint font-mono font-bold flex-1 flex items-center justify-center border-2 border-dashed border-line">
+          Nothing yet
         </div>
       ) : (
-        <div className="space-y-1.5 overflow-y-auto flex-1 pr-1">
-          {/* Active Goals */}
+        <div className="space-y-1 overflow-y-auto flex-1 pr-1">
           {activeGoals.map((g) => (
             <div
               key={g.id}
-              className={`p-2 border flex items-center justify-between gap-2 transition-colors group ${ g.isActive ? 'border-transparent text-white' : 'border-transparent bg-surface hover:bg-base' } `}
+              className={`p-1.5 flex items-center justify-between gap-2 transition-colors group ${g.isActive ? 'border-transparent' : 'hover:bg-paper'}`}
               style={g.isActive ? { backgroundColor: accentColor } : {}}
             >
               <div
                 className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                 onClick={() => onToggleGoal(g.id, true)}
               >
-                <div className={`w-4 h-4 border border-current transition-colors shrink-0 ${g.isActive ? 'bg-surface' : 'bg-transparent group-hover:bg-surface-raised'} `} />
-                <div className="flex-1 min-w-0">
-                  <span className={`text-xs font-mono font-bold block truncate ${g.isActive ? 'text-white' : 'text-ink'}`}>
-                    {g.title}
-                  </span>
-                </div>
+                <div className={`w-4 h-4 shrink-0 border-2 ${g.isActive ? 'border-white' : 'border-paper-muted group-hover:border-coal'}`} />
+                <span className={`text-xs font-mono font-bold block truncate ${g.isActive ? 'text-white' : 'text-paper-ink'}`}>
+                  {g.title}
+                </span>
               </div>
               <button
-                className={`opacity-0 group-hover:opacity-100 hover:text-ink transition-all cursor-pointer ${g.isActive ? 'text-white/80' : 'text-ink-faint'}`}
+                className={`opacity-0 group-hover:opacity-100 transition-all cursor-pointer ${g.isActive ? 'text-white/85 hover:text-white' : 'text-paper-faint hover:text-red-600'}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteGoal(g.id);
                 }}
+                title="Delete"
               >
-                <Trash2 size={14} />
+                <Trash2 size={13} />
               </button>
             </div>
           ))}
 
-          {/* Completed Goals */}
           {completedGoals.map((g) => (
             <div
               key={g.id}
-              className="p-2 flex items-center justify-between gap-2 opacity-50 transition-opacity hover:opacity-100 group border-b border-line"
+              className="p-1.5 flex items-center justify-between gap-2 opacity-55 transition-opacity hover:opacity-100 group"
             >
               <div
                 className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                 onClick={() => onToggleGoal(g.id, false)}
               >
-                <CheckCircle2 size={16} className="text-ink shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs text-ink-muted font-mono font-bold line-through block truncate">
-                    {g.title}
-                  </span>
-                </div>
+                <CheckCircle2 size={15} className="shrink-0" style={{ color: accentColor }} />
+                <span className="text-xs text-paper-muted font-mono font-bold line-through block truncate">
+                  {g.title}
+                </span>
               </div>
               <button
-                className="opacity-0 group-hover:opacity-100 text-ink-faint hover:text-black transition-colors cursor-pointer"
+                className="opacity-0 group-hover:opacity-100 text-paper-faint hover:text-red-600 transition-colors cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteGoal(g.id);
                 }}
+                title="Delete"
               >
-                <Trash2 size={14} />
+                <Trash2 size={13} />
               </button>
             </div>
           ))}
