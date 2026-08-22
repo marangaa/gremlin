@@ -49,14 +49,15 @@ graph TD
 
 ### Core Principles
 1. **Manifest V3 Native Lifecycle:** Powered by [WXT (Next-gen Web Extension Framework)](https://wxt.dev).
-2. **Shadow DOM Isolation:** The companion widget is injected into an isolated Shadow DOM (`gremlin-organism-viewport`) via `createShadowRootUi(ctx)`. Webpage styles and CSS frameworks cannot pollute or break the companion UI.
-3. **Reactive State Synchronization (`wxt/storage`):**
+2. **Consent-Gated Injection:** Content scripts mount NOTHING and extract NO page context until `onboardedStorage` flips true (first-run disclosure accepted in the popup). This matters because storage fallbacks (`enabled: true`, default companion) would otherwise wake the companion pre-consent on a fresh install; the content script defers its entire start sequence via an `onboardedStorage.watch()` and only then mounts the UI and begins relaying page signals.
+3. **Shadow DOM Isolation:** The companion widget is injected into an isolated Shadow DOM (`gremlin-organism-viewport`) via `createShadowRootUi(ctx)`. Webpage styles and CSS frameworks cannot pollute or break the companion UI.
+4. **Reactive State Synchronization (`wxt/storage`):**
    - Uses `storage.defineItem` wrappers (`configStorage`, `sprintStorage`, `organismStateStorage`, `activityStorage`).
    - Content scripts use `configStorage.watch()` to reactively update the companion avatar, audio volume, and dock position in real time across **all open browser tabs** without requiring a page refresh.
-4. **Retroactive Script Injection:**
+5. **Retroactive Script Injection:**
    - On install or extension reload, `browser.runtime.onInstalled` in `background.ts` queries all open HTTP/HTTPS tabs and executes `browser.scripting.executeScript` to inject `/content-scripts/content.js` dynamically.
-5. **Zero-Leak Lifecycle Invalidation:**
-   - Content scripts listen to `ctx.onInvalidated()`. When the extension is uninstalled or disabled in Chrome, all `requestAnimationFrame` loops, audio contexts, and injected DOM nodes are purged immediately.
+6. **Zero-Leak Lifecycle Invalidation:**
+   - Content scripts listen to `ctx.onInvalidated()`. When the extension is uninstalled or disabled in Chrome, all `requestAnimationFrame` loops, audio contexts, storage watchers, messaging listeners, and injected DOM nodes are purged immediately.
 
 ### Key Directories & Files
 * `entrypoints/content.ts`: Mounts the Shadow DOM container, handles SPA `wxt:locationchange` events, manages the active `OrganismController`, and relays privacy-filtered page snapshots to the service worker.
