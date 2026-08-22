@@ -17,69 +17,70 @@ export const TelemetryDrawer: React.FC<TelemetryDrawerProps & { accentColor?: st
   const latest = traces[0];
 
   return (
-    <div className="bg-white border-2 border-coal shadow-brut-sm p-3">
+    <div>
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between font-mono text-xs text-paper-ink hover:opacity-70 cursor-pointer transition-opacity"
+        className="w-full flex items-center justify-between py-2 font-mono text-xs cursor-pointer group"
       >
-        <div className="flex items-center gap-2">
-          <Terminal size={14} />
-          <span className="font-display font-bold text-sm">
+        <span className="flex items-center gap-2">
+          <Terminal size={13} className="text-paper-muted" />
+          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted group-hover:text-paper-ink transition-colors">
             Telemetry
           </span>
           {latest && (
-            <span className="font-mono font-bold text-[10px] text-white px-1 border border-transparent" style={{ backgroundColor: accentColor }}>
+            <span className="font-mono font-bold text-[10px] px-1" style={{ color: accentColor }}>
               {latest.latencyMs}ms
             </span>
           )}
-        </div>
-        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </span>
+        {isOpen ? <ChevronUp size={15} className="text-paper-faint" /> : <ChevronDown size={15} className="text-paper-faint" />}
       </button>
 
       {isOpen && (
-        <div className="space-y-3 pt-3 mt-3 border-t-2 border-dashed border-line text-xs">
+        <div className="pt-2 space-y-3">
           {traces.length === 0 ? (
-            <div className="text-center py-4 text-paper-faint font-mono font-bold text-xs bg-paper border-2 border-dashed border-line">
+            <p className="py-4 text-center font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint border-t border-dashed border-line">
               No traces yet
-            </div>
+            </p>
           ) : (
-            <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
               {traces.map((t) => {
                 const isDivergent = t.status === 'distracted' || t.status === 'exploring_tangent';
                 return (
                   <div
                     key={t.id}
-                    className="p-3 bg-paper border-2 border-coal space-y-2 font-mono text-paper-ink transition-shadow hover:shadow-brut-sm"
+                    className="pl-3 pr-1 py-2 space-y-1.5 font-mono text-paper-ink border-l-[3px]"
+                    style={{ borderColor: isDivergent ? '#DC2626' : accentColor }}
                   >
-                    <div className="flex items-center justify-between text-[10px] font-bold text-paper-muted border-b border-dashed border-line pb-1">
-                      <span className="text-paper-ink bg-white px-1 border border-coal">{t.model || t.provider}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1">
-                          <Clock size={10} /> {t.latencyMs}ms
+                    <div className="flex items-center justify-between text-[10px] font-bold text-paper-faint">
+                      <span className="text-paper-muted">{t.model || t.provider}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="flex items-center gap-0.5">
+                          <Clock size={9} /> {t.latencyMs}ms
                         </span>
                         <span>{t.totalTokens || (t.promptTokens + t.completionTokens)} tok</span>
-                      </div>
+                      </span>
                     </div>
 
-                    <div className="text-sm font-bold truncate">
-                      <span className="text-paper-faint text-[10px]">Domain: </span> {t.activeDomain || 'browser'}
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-xs font-bold truncate">{t.activeDomain || 'browser'}</span>
                       <span
-                        className="px-2 py-0.5 border-2 border-coal text-[10px] font-semibold text-white"
-                        style={{ backgroundColor: isDivergent ? '#DC2626' : accentColor }}
+                        className="shrink-0 font-bold text-[10px] uppercase tracking-wider"
+                        style={{ color: isDivergent ? '#DC2626' : accentColor }}
                       >
                         {t.status}
                       </span>
-                      <span className="text-paper-muted text-[10px] font-bold">Mood: {t.mood}</span>
+                    </div>
+
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-paper-faint">
+                      Mood · {t.mood}
                     </div>
 
                     {t.reasoning && (
-                      <div className="bg-white p-2 border-l-4 text-xs font-bold leading-relaxed mt-2 italic text-paper-muted" style={{ borderColor: accentColor }}>
+                      <p className="text-[11px] italic leading-relaxed text-paper-muted pt-1 border-t border-dashed border-line">
                         🧠 {t.reasoning}
-                      </div>
+                      </p>
                     )}
                   </div>
                 );

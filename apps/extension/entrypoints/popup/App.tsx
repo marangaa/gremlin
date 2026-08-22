@@ -35,9 +35,6 @@ import {
   Shield,
   BookOpen,
   CheckCircle2,
-  Flame,
-  Clock,
-  Zap,
 } from 'lucide-react';
 import './App.css';
 
@@ -337,40 +334,41 @@ export default function App() {
         </div>
         <p className="mt-2 text-xs text-paper-muted leading-relaxed">The legal bit, in plain English:</p>
 
-        <div className="mt-4 flex flex-col gap-3 text-[13px] leading-relaxed bg-white p-4 rounded-none border-2 border-coal shadow-brut">
-          <div className="flex gap-2">
+        <div className="mt-4 flex flex-col gap-3 text-[13px] leading-relaxed">
+          <div className="flex gap-2.5 pb-3 border-b border-dashed border-paper-line">
             <Shield size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
               <strong>During sprints only</strong>, Gremlin reads light page context from the current tab:
               title, headings, a short excerpt, domains visited.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2.5 pb-3 border-b border-dashed border-paper-line">
             <Sparkles size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
               It goes to the <strong>AI provider you configure</strong> — or Gremlin Cloud if signed in — only
               to judge whether you're on task. Never sold, never used for ads.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2.5">
             <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
               Goals, notes, and stats stay <strong>on your device</strong>. Nothing is captured while idle.
             </p>
           </div>
-          <a
-            href="https://gremlin.fasihi.xyz/privacy"
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs underline text-paper-muted hover:text-paper-ink"
-          >
-            Full privacy policy →
-          </a>
         </div>
+
+        <a
+          href="https://gremlin.fasihi.xyz/privacy"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 text-xs underline text-paper-muted hover:text-paper-ink"
+        >
+          Full privacy policy →
+        </a>
 
         <button
           onClick={handleCompleteOnboarding}
-          className="mt-6 w-full py-2.5 text-sm font-bold bg-accent text-coal border-2 border-coal shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
+          className="mt-5 w-full py-2.5 text-sm font-bold bg-accent text-coal border-2 border-coal shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
         >
           Got it — enable companion
         </button>
@@ -387,7 +385,7 @@ export default function App() {
   // ================= MAIN INTERFACE =================
   return (
     <div
-      className="w-[380px] min-h-[520px] bg-paper p-4 flex flex-col gap-4 relative overflow-hidden text-paper-ink"
+      className="w-[380px] min-h-[520px] bg-paper p-4 flex flex-col gap-3.5 relative overflow-hidden text-paper-ink"
       style={{
         '--skin-accent': skin.colors.step9,
         '--skin-accent-hover': skin.colors.step10,
@@ -396,118 +394,119 @@ export default function App() {
       <div className="absolute inset-0 pointer-events-none opacity-[0.05] z-0 gm-dots-bg" />
 
       {/* Header */}
-      <header className="flex items-center justify-between pb-3 border-b-2 border-dashed border-line z-10">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between z-10">
+        <div className="flex items-center gap-3 min-w-0">
           <div
-            className="w-12 h-12 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center overflow-hidden"
+            className="w-11 h-11 shrink-0 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center overflow-hidden"
             style={{ backgroundColor: 'var(--skin-accent)' }}
           >
-            <AnimatedSprite id={config.organismId} size={36} state={organismState.state} />
+            <AnimatedSprite id={config.organismId} size={33} state={organismState.state} />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-display font-bold text-lg tracking-tight text-paper-ink">
                 {skin.name}
               </span>
-              <span className={`w-2 h-2 ${config.enabled ? 'animate-pulse-dot' : ''}`} style={{ backgroundColor: config.enabled ? 'var(--skin-accent)' : '#C9CEB8' }} title={config.enabled ? 'Awake' : 'Asleep'} />
+              <span className={`w-2 h-2 shrink-0 ${config.enabled ? 'animate-pulse-dot' : ''}`} style={{ backgroundColor: config.enabled ? 'var(--skin-accent)' : '#C9CEB8' }} title={config.enabled ? 'Awake' : 'Asleep'} />
             </div>
-            <span className="font-mono text-[10px] font-bold text-paper-muted block truncate max-w-[170px]">
+            <span className="font-mono text-[10px] font-bold text-paper-muted block truncate max-w-[190px]">
               "{organismState.lastRemark || skin.tagline}"
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <button
-            className="w-8 h-8 bg-white border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center text-coal transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer"
             onClick={handleOpenSidePanel}
-            title="Diary sidepanel (Ctrl+Shift+E)"
+            className="text-paper-muted hover:text-coal transition-colors cursor-pointer"
+            title="Diary (Ctrl+Shift+E)"
           >
-            <BookOpen size={15} />
+            <BookOpen size={17} />
           </button>
           <button
-            className={`w-8 h-8 border-2 border-coal flex items-center justify-center transition-all cursor-pointer ${config.soundEnabled ? 'text-white shadow-[2px_2px_0_0_#12151A]' : 'bg-white text-paper-faint shadow-[2px_2px_0_0_#12151A]'}`}
-            style={config.soundEnabled ? { backgroundColor: 'var(--skin-accent)' } : {}}
             onClick={handleToggleSound}
+            className={`transition-colors cursor-pointer ${config.soundEnabled ? 'text-coal' : 'text-paper-faint'}`}
             title={config.soundEnabled ? 'Mute' : 'Unmute'}
           >
-            {config.soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            {config.soundEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
           </button>
           <button
-            className={`w-10 h-6 rounded-full border-2 border-coal relative cursor-pointer transition-colors ${config.enabled ? '' : 'bg-white'}`}
-            style={config.enabled ? { backgroundColor: 'var(--skin-accent)' } : {}}
+            className={`w-9 h-5 rounded-full border-2 relative cursor-pointer transition-colors ${config.enabled ? 'border-coal' : 'border-line'}`}
+            style={config.enabled ? { backgroundColor: 'var(--skin-accent)' } : { backgroundColor: '#E4E7DE' }}
             onClick={handleToggleEnabled}
             title={config.enabled ? 'Sleep' : 'Wake'}
             role="switch"
             aria-checked={config.enabled}
           >
-            <span className={`absolute top-[1px] w-4 h-4 rounded-full bg-white border-2 border-coal transition-transform ${config.enabled ? 'left-[17px]' : 'left-[0px]'}`} />
+            <span className={`absolute top-[-1px] w-3.5 h-3.5 rounded-full bg-white border-2 transition-transform ${config.enabled ? 'border-coal left-[16px]' : 'border-line left-[-1px]'}`} />
           </button>
         </div>
       </header>
 
-      {/* Companion strip */}
-      <div className="grid grid-cols-5 gap-1.5 z-10">
+      {/* Companion strip — bare sprites */}
+      <div className="grid grid-cols-5 z-10 pt-1">
         {ALL_COMPANIONS.map((cid) => {
           const comp = CHARACTER_SKINS[cid];
           const isSelected = config.organismId === cid;
           return (
             <button
               key={cid}
-              className={`flex flex-col items-center gap-1 py-1.5 cursor-pointer transition-all border-2 border-coal ${isSelected ? 'text-white shadow-[3px_3px_0_0_#12151A] -translate-y-px' : 'bg-white shadow-[2px_2px_0_0_#12151A] hover:-translate-y-px hover:shadow-[3px_3px_0_0_#12151A]'}`}
-              style={isSelected ? { backgroundColor: 'var(--skin-accent)' } : {}}
+              className={`flex flex-col items-center gap-0.5 pb-1.5 pt-1 cursor-pointer transition-opacity ${isSelected ? 'opacity-100' : 'opacity-40 hover:opacity-75'}`}
               onClick={() => handleOrganismChange(cid)}
               title={comp.name}
             >
-              <AnimatedSprite id={cid} size={20} state="idle" />
-              <span className={`font-mono text-[9px] font-bold ${isSelected ? 'text-white' : 'text-paper-muted'}`}>{comp.name}</span>
+              <AnimatedSprite id={cid} size={22} state="idle" />
+              <span className="font-mono text-[9px] font-bold text-paper-muted">{comp.name}</span>
+              <span
+                className="w-6 h-[3px] transition-colors"
+                style={{ backgroundColor: isSelected ? 'var(--skin-accent)' : 'transparent' }}
+              />
             </button>
           );
         })}
       </div>
 
-      {/* Icon tabs */}
-      <nav className="grid grid-cols-3 gap-1.5 z-10" aria-label="Sections">
+      {/* Underline tabs */}
+      <nav className="grid grid-cols-3 border-b-2 border-coal z-10" aria-label="Sections">
         {TABS.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
           return (
             <button
               key={id}
-              title={label}
               aria-label={label}
               aria-pressed={isActive}
-              className={`h-9 border-2 border-coal flex items-center justify-center gap-1.5 transition-all cursor-pointer ${isActive ? 'text-white -translate-y-px shadow-[3px_3px_0_0_#12151A]' : 'bg-white text-paper-muted hover:text-paper-ink hover:-translate-y-px hover:shadow-[3px_3px_0_0_#12151A]'}`}
-              style={isActive ? { backgroundColor: 'var(--skin-accent)' } : {}}
+              className={`relative flex items-center justify-center gap-1.5 pb-2 -mb-[2px] transition-colors cursor-pointer ${isActive ? 'text-paper-ink' : 'text-paper-faint hover:text-paper-muted'}`}
               onClick={() => setActiveTab(id)}
             >
-              <Icon size={14} />
-              <span className="font-mono text-[10px] font-bold tracking-wide">{label.toUpperCase()}</span>
+              <Icon size={13} />
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider">{label}</span>
+              <span
+                className="absolute inset-x-2 -bottom-[2px] h-[3px] transition-colors"
+                style={{ backgroundColor: isActive ? 'var(--skin-accent)' : 'transparent' }}
+              />
             </button>
           );
         })}
       </nav>
 
       {/* Tab content */}
-      <main className="z-10 flex-1 flex flex-col pt-1">
+      <main className="z-10 flex-1 flex flex-col">
         {/* ============ FOCUS ============ */}
         {activeTab === 'focus' && (
-          <div className="flex-1 flex flex-col gap-4">
+          <div className="flex-1 flex flex-col gap-4 pt-1">
             {!isConfigured && (
-              <div className="bg-pop-yellow border-2 border-coal shadow-[2px_2px_0_0_#12151A] p-2 flex items-center justify-between font-mono font-bold text-[10px]">
-                <span>NOT CONFIGURED</span>
-                <button
-                  onClick={() => setActiveTab('settings')}
-                  className="font-mono font-bold px-2 py-0.5 border-2 border-coal bg-white transition-colors hover:bg-accent cursor-pointer"
-                >
-                  FIX →
-                </button>
-              </div>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className="text-left font-mono font-bold text-[10px] uppercase tracking-wider text-red-600 hover:text-red-700 cursor-pointer"
+              >
+                ⚠ Not configured — fix →
+              </button>
             )}
 
             {!isSprintActive ? (
-              <div className="flex-1 flex flex-col gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+              <div className="flex-1 flex flex-col gap-4 min-h-0">
+                <div>
+                  <div className="flex items-end justify-between">
                     <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted">
                       Goal
                     </span>
@@ -515,46 +514,46 @@ export default function App() {
                       type="button"
                       onClick={handleDecomposeCurrentGoal}
                       disabled={!goalInput.trim() || isDecomposing}
-                      className="font-mono text-[10px] font-bold text-white px-2 py-0.5 border-2 border-coal shadow-[2px_2px_0_0_#12151A] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-1 transition-all hover:-translate-y-px hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer"
-                      style={{ backgroundColor: 'var(--skin-accent)' }}
+                      className="font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80 transition-opacity cursor-pointer"
+                      style={{ color: 'var(--skin-accent)' }}
                     >
                       <Sparkles size={11} />
-                      <span>{isDecomposing ? '…' : 'DECOMPOSE'}</span>
+                      <span>{isDecomposing ? '…' : 'Decompose'}</span>
                     </button>
                   </div>
                   <input
                     type="text"
-                    className="w-full bg-white border-2 border-coal p-3 text-paper-ink font-mono text-sm placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
-                    placeholder="Finish landing page refactor…"
+                    className="mt-1 w-full bg-transparent border-0 border-b-2 border-coal pb-1.5 text-paper-ink font-mono text-sm placeholder:text-paper-faint focus:outline-none"
+                    placeholder="What are we working on?"
                     value={goalInput}
                     onChange={(e) => setGoalInput(e.target.value)}
                   />
                 </div>
 
-                <div className="flex gap-1.5">
+                <div className="flex items-center gap-1">
                   {[15, 25, 45, 'flow' as const].map((d) => (
                     <button
                       key={String(d)}
                       type="button"
                       onClick={() => setDuration(d)}
-                      className={`flex-1 py-1.5 border-2 border-coal font-mono font-bold text-[11px] transition-all cursor-pointer ${duration === d ? 'text-white -translate-y-px shadow-[3px_3px_0_0_#12151A]' : 'bg-white text-paper-muted hover:-translate-y-px hover:shadow-[3px_3px_0_0_#12151A]'}`}
+                      className={`font-mono font-bold text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer ${duration === d ? 'text-white' : 'text-paper-muted hover:text-paper-ink'}`}
                       style={duration === d ? { backgroundColor: 'var(--skin-accent)' } : {}}
                     >
-                      {d === 'flow' ? '∞' : d}
+                      {d === 'flow' ? '∞ flow' : `${d} min`}
                     </button>
                   ))}
                 </div>
 
                 <button
                   onClick={handleStartSprint}
-                  className="w-full border-2 border-coal p-3.5 flex justify-center items-center gap-2 font-display font-bold text-lg text-white shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
-                  style={{ backgroundColor: 'var(--skin-accent)' }}
+                  className="w-full p-3 flex justify-center items-center gap-2 font-display font-bold text-base text-white shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
+                  style={{ backgroundColor: 'var(--skin-accent)', border: '2px solid #12151A' }}
                 >
-                  <Play size={19} fill="currentColor" />
-                  <span>START SPRINT</span>
+                  <Play size={17} fill="currentColor" />
+                  <span>Start sprint</span>
                 </button>
 
-                <div className="flex-1 min-h-0 pt-1">
+                <div className="flex-1 min-h-0 flex flex-col border-t-2 border-dashed border-line pt-2">
                   <GoalStack
                     goals={goals}
                     accentColor="var(--skin-accent)"
@@ -569,64 +568,49 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col gap-4">
-                {/* Mission card */}
-                <div className="bg-white border-2 border-coal shadow-brut p-5 relative">
-                  <div className="absolute inset-x-0 top-0 h-1.5 border-b-2 border-coal" style={{ backgroundColor: 'var(--skin-accent)' }} />
-
-                  <div className="flex items-center justify-between gap-2 pt-1.5">
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-ink bg-paper px-2 py-1 border-2 border-coal inline-flex items-center min-w-0">
-                      <span className="truncate">{sprint.goal || 'Focus sprint'}</span>
-                    </span>
-                    <span className="font-mono text-[10px] font-bold shrink-0 inline-flex items-center gap-1 px-2 py-1 text-white" style={{ backgroundColor: 'var(--skin-accent)' }}>
-                      <Zap size={10} fill="currentColor" />
-                      {isFlow ? '∞ FLOW' : `${sprint.targetMinutes} MIN`}
-                    </span>
-                  </div>
-
-                  <div className="font-display font-bold text-5xl tracking-tighter text-paper-ink text-center tabular-nums py-4">
-                    {clockLabel}
-                  </div>
-
-                  <div className="relative h-2 w-full bg-paper border-2 border-coal overflow-hidden mb-1.5" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPct}>
-                    {isFlow ? (
-                      <div className="absolute inset-y-0 w-1/3 animate-sprint-flow" style={{ backgroundColor: 'var(--skin-accent)' }} />
-                    ) : (
-                      <div className="absolute inset-y-0 left-0 transition-all duration-1000 ease-linear" style={{ width: `${progressPct}%`, backgroundColor: 'var(--skin-accent)' }} />
-                    )}
-                  </div>
-                  <div className="flex justify-between font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
-                    {isFlow ? (
-                      <>
-                        <span>No fixed end</span>
-                        <span>{Math.floor(elapsedSecs / 60)}m up</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{progressPct}%</span>
-                        <span>-{Math.floor(elapsedSecs / 60)}m</span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="relative bg-paper border-2 border-coal mt-4 px-3 py-2 font-mono text-[11px] font-bold text-paper-muted leading-relaxed">
-                    “{organismState.lastRemark || skin.greeting}”
-                  </div>
-
-                  <div className="flex items-center gap-3 justify-center mt-3 font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted">
-                    <span className="inline-flex items-center gap-1"><Clock size={11} /> {organismState.focusMinutesToday}m today</span>
-                    <span className="inline-flex items-center gap-1"><Flame size={11} /> {organismState.divergenceCountToday} off-track</span>
-                  </div>
-
-                  <button
-                    onClick={handleStopSprint}
-                    className="mt-4 w-full bg-coal text-paper border-2 border-coal px-4 py-2.5 font-display font-bold text-sm flex items-center justify-center gap-2 shadow-[3px_3px_0_0_#65A30D] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_#65A30D] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
-                  >
-                    <Square size={13} fill="currentColor" /> FINISH
-                  </button>
+              <div className="flex-1 flex flex-col gap-3 min-h-0">
+                {/* Live mission — flat, no card */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider truncate">
+                    {sprint.goal || 'Focus sprint'}
+                  </span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider shrink-0" style={{ color: 'var(--skin-accent)' }}>
+                    {isFlow ? '∞ flow' : `${sprint.targetMinutes} min`}
+                  </span>
                 </div>
 
-                <div className="flex-1 min-h-0 pt-1">
+                <div className="font-display font-bold text-6xl tracking-tighter text-paper-ink text-center tabular-nums leading-none py-2">
+                  {clockLabel}
+                </div>
+
+                <div>
+                  <div className="relative h-1.5 w-full bg-paper-line overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPct}>
+                    {isFlow ? (
+                      <div className="absolute inset-y-0 w-1/4 animate-sprint-flow" style={{ backgroundColor: 'var(--skin-accent)' }} />
+                    ) : (
+                      <div className="h-full transition-all duration-1000 ease-linear" style={{ width: `${progressPct}%`, backgroundColor: 'var(--skin-accent)' }} />
+                    )}
+                  </div>
+                  <div className="flex justify-between mt-1 font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
+                    <span>{isFlow ? 'no fixed end' : `${progressPct}%`}</span>
+                    <span>{organismState.focusMinutesToday}m today · {organismState.divergenceCountToday} off-track</span>
+                  </div>
+                </div>
+
+                {organismState.lastRemark && (
+                  <p className="border-l-[3px] pl-2.5 font-mono text-[11px] font-bold italic text-paper-muted leading-relaxed" style={{ borderColor: 'var(--skin-accent)' }}>
+                    “{organismState.lastRemark}”
+                  </p>
+                )}
+
+                <button
+                  onClick={handleStopSprint}
+                  className="mt-auto w-full bg-coal text-paper px-4 py-2.5 font-display font-bold text-sm flex items-center justify-center gap-2 transition-opacity hover:opacity-85 cursor-pointer"
+                >
+                  <Square size={12} fill="currentColor" /> Finish
+                </button>
+
+                <div className="min-h-0 flex border-t-2 border-dashed border-line pt-2">
                   <GoalStack
                     goals={goals}
                     accentColor="var(--skin-accent)"
@@ -646,205 +630,194 @@ export default function App() {
 
         {/* ============ PREFERENCES ============ */}
         {activeTab === 'preferences' && (
-          <div className="flex-1 flex flex-col gap-4 pt-1">
-            <div className="border-2 border-coal shadow-brut p-4 flex items-center justify-between text-white" style={{ backgroundColor: 'var(--skin-accent)' }}>
-              <div className="space-y-1.5">
-                <span className="font-display font-bold text-lg block">
-                  Daily Diary
+          <div className="flex-1 flex flex-col pt-1 divide-y divide-dashed divide-line">
+            <button
+              onClick={handleOpenSidePanel}
+              className="group flex items-center justify-between py-3.5 text-left cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <BookOpen size={16} className="text-paper-muted group-hover:text-coal transition-colors" />
+                <span>
+                  <span className="block font-display font-semibold text-sm text-paper-ink">Daily diary</span>
+                  <span className="block font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Ctrl+Shift+E</span>
                 </span>
-                <span className="font-mono text-[10px] font-bold bg-black/25 px-1.5 py-0.5 inline-block">
-                  CTRL+SHIFT+E
-                </span>
-              </div>
-              <button
-                onClick={handleOpenSidePanel}
-                className="bg-white text-coal border-2 border-coal font-display font-bold px-4 py-2 shadow-[2px_2px_0_0_#12151A] transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer"
-              >
-                OPEN
-              </button>
+              </span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--skin-accent)' }}>Open →</span>
+            </button>
+
+            <div className="flex items-center justify-between py-3.5">
+              <span className="font-display font-semibold text-sm text-paper-ink">Chirps & speech</span>
+              <input
+                type="checkbox"
+                checked={config.soundEnabled}
+                onChange={async (e) => {
+                  const next = { ...config, soundEnabled: e.target.checked };
+                  setConfig(next);
+                  await configStorage.setValue(next);
+                  soundSynth.setMuted(!e.target.checked);
+                }}
+                className="w-5 h-5 accent-[#A3E635] cursor-pointer"
+              />
             </div>
 
-            <div className="bg-white border-2 border-coal shadow-brut p-4 space-y-4">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted block border-b-2 border-dashed border-line pb-2">
-                Audio
-              </span>
-              <div className="flex items-center justify-between font-mono font-bold text-xs text-paper-ink">
-                <span>Chirps & speech</span>
+            {config.soundEnabled && (
+              <div className="flex items-center gap-3 py-3">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint w-10 shrink-0">{Math.round(config.volume * 100)}%</span>
                 <input
-                  type="checkbox"
-                  checked={config.soundEnabled}
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={config.volume}
                   onChange={async (e) => {
-                    const next = { ...config, soundEnabled: e.target.checked };
+                    const vol = parseFloat(e.target.value);
+                    const next = { ...config, volume: vol };
                     setConfig(next);
                     await configStorage.setValue(next);
-                    soundSynth.setMuted(!e.target.checked);
+                    soundSynth.setVolume(vol);
                   }}
-                  className="w-5 h-5 accent-[#A3E635] cursor-pointer"
+                  className="flex-1 cursor-pointer accent-[#A3E635] h-1.5 bg-paper-line appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-coal"
                 />
               </div>
-              {config.soundEnabled && (
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="font-mono font-bold text-[10px] text-paper-muted">{Math.round(config.volume * 100)}%</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={config.volume}
-                    onChange={async (e) => {
-                      const vol = parseFloat(e.target.value);
-                      const next = { ...config, volume: vol };
-                      setConfig(next);
-                      await configStorage.setValue(next);
-                      soundSynth.setVolume(vol);
-                    }}
-                    className="flex-1 cursor-pointer accent-[#A3E635] h-2 bg-paper border-2 border-coal appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-coal"
-                  />
-                </div>
-              )}
+            )}
+
+            <div className="flex items-center justify-between py-3.5">
+              <span className="font-display font-semibold text-sm text-paper-ink">Screen glitch</span>
+              <input
+                type="checkbox"
+                checked={config.effectsEnabled}
+                onChange={async (e) => {
+                  const next = { ...config, effectsEnabled: e.target.checked };
+                  setConfig(next);
+                  await configStorage.setValue(next);
+                }}
+                className="w-5 h-5 accent-[#A3E635] cursor-pointer"
+              />
             </div>
 
-            <div className="bg-white border-2 border-coal shadow-brut p-4 space-y-4">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted block border-b-2 border-dashed border-line pb-2">
-                Visual FX
-              </span>
-              <div className="flex items-center justify-between font-mono font-bold text-xs text-paper-ink">
-                <span>Screen glitch</span>
-                <input
-                  type="checkbox"
-                  checked={config.effectsEnabled}
-                  onChange={async (e) => {
-                    const next = { ...config, effectsEnabled: e.target.checked };
-                    setConfig(next);
-                    await configStorage.setValue(next);
-                  }}
-                  className="w-5 h-5 accent-[#A3E635] cursor-pointer"
-                />
-              </div>
-              <button
-                className="w-full bg-white border-2 border-coal py-2 font-display font-bold text-sm shadow-brut-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
-                onClick={() => handlePreviewEffect(config.organismId)}
-              >
-                PREVIEW
-              </button>
-            </div>
+            <button
+              onClick={() => handlePreviewEffect(config.organismId)}
+              className="flex items-center justify-between py-3.5 cursor-pointer group"
+            >
+              <span className="font-display font-semibold text-sm text-paper-muted group-hover:text-paper-ink transition-colors">Preview effect</span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--skin-accent)' }}>Run →</span>
+            </button>
           </div>
         )}
 
         {/* ============ MODEL ============ */}
         {activeTab === 'settings' && (
-          <div className="flex-1 flex flex-col gap-4 pt-1">
-            <div className="space-y-2">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted block">
-                Provider
-              </span>
-              <div className="flex flex-col gap-1.5">
-                {PROVIDER_ORDER.map((p) => {
-                  const prov = SUPPORTED_PROVIDERS[p];
-                  const isSelected = selectedProvider === p;
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => handleProviderSelect(p)}
-                      aria-pressed={isSelected}
-                      className={`w-full text-left border-2 border-coal p-2 flex items-center justify-between gap-2 transition-all cursor-pointer ${isSelected ? '-translate-y-px shadow-[3px_3px_0_0_#12151A]' : 'bg-white shadow-[2px_2px_0_0_#12151A] hover:-translate-y-px hover:shadow-[3px_3px_0_0_#12151A]'}`}
-                      style={isSelected ? { backgroundColor: 'var(--skin-accent)' } : {}}
+          <div className="flex-1 flex flex-col pt-1 min-h-0 overflow-y-auto">
+            {!isConfigured && (
+              <p className="pb-2 font-mono font-bold text-[10px] uppercase tracking-wider text-red-600">
+                ⚠ Pick a provider & save
+              </p>
+            )}
+            <div className="divide-y divide-dashed divide-line">
+              {PROVIDER_ORDER.map((p) => {
+                const prov = SUPPORTED_PROVIDERS[p];
+                const isSelected = selectedProvider === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => handleProviderSelect(p)}
+                    aria-pressed={isSelected}
+                    className="w-full text-left py-2.5 flex items-center gap-2.5 cursor-pointer group"
+                  >
+                    <span
+                      className="w-3.5 h-3.5 shrink-0 rounded-full border-2 flex items-center justify-center"
+                      style={{ borderColor: isSelected ? 'var(--skin-accent)' : '#C9CEB8' }}
                     >
-                      <span className="min-w-0">
-                        <span className={`block font-display font-semibold text-xs ${isSelected ? 'text-white' : 'text-paper-ink'}`}>
-                          {prov.name}
-                        </span>
-                        <span className={`block font-mono text-[9px] truncate ${isSelected ? 'text-white/85' : 'text-paper-muted'}`}>
-                          {PROVIDER_META[p].blurb}
-                        </span>
+                      {isSelected && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--skin-accent)' }} />}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block font-display font-semibold text-[13px] leading-tight ${isSelected ? 'text-paper-ink' : 'text-paper-muted group-hover:text-paper-ink'} transition-colors`}>
+                        {prov.name}
                       </span>
-                      <span className={`w-3.5 h-3.5 shrink-0 border-2 flex items-center justify-center ${isSelected ? 'border-white' : 'border-paper-faint'}`}>
-                        {isSelected && <span className="w-1.5 h-1.5 bg-white" />}
+                      <span className="block font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
+                        {PROVIDER_META[p].blurb}
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="space-y-3">
+            <div className="pt-3 space-y-3.5">
               {currentProviderConfig.requiresKey && (
-                <div className="space-y-1">
-                  <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-paper-muted">Key</span>
+                <div>
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Key</span>
                   <input
                     type="password"
                     placeholder={currentProviderConfig.placeholderKey}
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
-                    className="w-full bg-white border-2 border-coal p-2 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
+                    className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
                   />
                 </div>
               )}
 
               {(selectedProvider === 'ollama' || selectedProvider === 'custom') && (
-                <div className="space-y-1">
-                  <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-paper-muted">Endpoint</span>
+                <div>
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Endpoint</span>
                   <input
                     type="text"
                     placeholder={currentProviderConfig.defaultEndpoint || 'http://localhost:8000/v1'}
                     value={endpointInput}
                     onChange={(e) => setEndpointInput(e.target.value)}
-                    className="w-full bg-white border-2 border-coal p-2 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
+                    className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
                   />
                 </div>
               )}
 
-              <div className="space-y-1">
-                <span className="font-mono font-bold text-[10px] uppercase tracking-wider text-paper-muted">Model</span>
+              <div>
+                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Model</span>
                 <input
                   type="text"
                   placeholder={currentProviderConfig.defaultModel}
                   value={modelInput}
                   onChange={(e) => setModelInput(e.target.value)}
-                  className="w-full bg-white border-2 border-coal p-2 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
+                  className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
                 />
-                <div className="flex flex-wrap gap-1 pt-1">
+                <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-1">
                   {currentProviderConfig.popularModels.filter((m) => m !== 'custom-model').map((m) => (
                     <button
                       key={m}
                       type="button"
                       onClick={() => setModelInput(m)}
-                      className={`font-mono text-[9px] font-bold px-1.5 py-0.5 border-2 border-coal transition-all cursor-pointer ${modelInput === m ? '-translate-y-px shadow-[2px_2px_0_0_#12151A]' : 'bg-white text-paper-muted hover:-translate-y-px hover:shadow-[2px_2px_0_0_#12151A]'}`}
-                      style={modelInput === m ? { backgroundColor: 'var(--skin-accent)', color: '#fff' } : {}}
+                      className={`font-mono text-[9px] font-bold transition-colors cursor-pointer ${modelInput === m ? '' : 'text-paper-faint hover:text-paper-muted'}`}
+                      style={modelInput === m ? { color: 'var(--skin-accent)' } : {}}
                     >
-                      {m}
+                      {modelInput === m ? '✓ ' : ''}{m}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleSaveSettings}
+                  className="border-2 border-coal px-5 py-1.5 font-display font-bold text-xs text-white shadow-brut-sm transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none cursor-pointer"
+                  style={{ backgroundColor: 'var(--skin-accent)' }}
+                >
+                  {saveFeedback ? 'Saved ✓' : 'Save'}
+                </button>
                 <button
                   type="button"
                   onClick={handleTestConnection}
                   disabled={testStatus?.loading}
-                  className="flex-1 bg-white border-2 border-coal py-2 font-display font-bold text-xs shadow-brut-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer disabled:opacity-50 disabled:shadow-none disabled:hover:translate-x-0 disabled:hover:translate-y-0"
+                  className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted hover:text-paper-ink transition-colors cursor-pointer disabled:opacity-40"
                 >
-                  {testStatus?.loading ? '…' : 'TEST'}
+                  {testStatus?.loading ? 'Testing…' : 'Test connection'}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSaveSettings}
-                  className="flex-[2] border-2 border-coal py-2 font-display font-bold text-xs text-white shadow-brut-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
-                  style={{ backgroundColor: 'var(--skin-accent)' }}
-                >
-                  {saveFeedback ? 'SAVED ✓' : 'SAVE'}
-                </button>
+                {testStatus && !testStatus.loading && (
+                  <span className={`font-mono text-[10px] font-bold ${testStatus.ok ? 'text-green-700' : 'text-red-600'}`}>
+                    {testStatus.ok ? '✓ OK' : '✕ failed'}
+                  </span>
+                )}
               </div>
-
-              {testStatus && (
-                <div
-                  className={`p-2.5 font-mono font-bold text-xs border-2 border-coal ${testStatus.ok ? 'bg-accent text-coal' : 'bg-pop-pink text-coal'}`}
-                >
-                  {testStatus.message || (testStatus.ok ? 'OK' : 'FAILED')}
-                </div>
-              )}
             </div>
           </div>
         )}

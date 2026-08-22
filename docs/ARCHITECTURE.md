@@ -61,11 +61,13 @@ graph TD
 ### Key Directories & Files
 * `entrypoints/content.ts`: Mounts the Shadow DOM container, handles SPA `wxt:locationchange` events, manages the active `OrganismController`, and relays privacy-filtered page snapshots to the service worker.
 * `entrypoints/background.ts`: Service worker tracking tab switches (`tabs.onActivated`, `tabs.onUpdated`), running debounced + throttled evaluation alarms (45s minimum interval between LLM calls; manual pokes bypass), and handling typed RPC messages including inbound `pageSignal` deliveries.
-* `entrypoints/popup/App.tsx`: Paper-shell console interface ("paper moments" of the Phosphor Console palette) with three icon-only tabs (Focus / Preferences / Model):
+* `entrypoints/popup/App.tsx`: Cardless paper UI — hierarchy comes from typography, dashed hairline rules, and skin-accent fills instead of nested boxes (the popup is 380px wide; containers are reserved for the single primary action per view):
   - **Startup is a single batched read:** all persisted state is hydrated via one WXT `storage.getItems([...])` call (one underlying `browser.storage.local.get`) instead of per-item `getValue()` round trips; `storage.watch()` subscriptions keep it live afterwards.
-  - **Focus tab:** sprint goal input + AI decompose, duration pills (∞ flow supported), and a rethought active-sprint mission card — tabular-nums countdown, linear progress bar (indeterminate drift bar in flow mode), speech-bubble remark with tail, today's focus/detour stat chips, and full-width Finish action. A 1 Hz interval tick re-renders the clock only while a sprint is active.
-  - **Model tab:** AI provider picker as selectable descriptor rows (name + one-line blurb + radio indicator) plus popular-model quick-pick chips for the chosen provider.
-  - Companion switcher strip, sound/enable toggles, and the first-run consent screen share the same paper palette (`bg-paper`, white cards, `paper-line` borders) with each character's skin color reserved for accents.
+  - **Navigation:** bare companion sprite strip (selected = full opacity + accent underline) above underline-style tabs (accent 3px indicator on a shared coal rule).
+  - **Focus tab:** underline goal input + inline "Decompose" text action, pill duration selector (∞ flow supported), and one brutal START button. Active sprints render flat — display-font tabular countdown, hairline progress bar (indeterminate drift in flow mode), accent pull-quote remark, inline stats, solid-coal Finish bar. A 1 Hz interval tick re-renders the clock only while a sprint is active.
+  - **Prefs tab:** flat settings rows separated by dashed rules (diary shortcut row, chirps toggle + volume slider, glitch toggle, preview action).
+  - **Model tab:** radio-list provider picker (name + micro-blurb per row), underline key/endpoint/model fields, popular-model quick links, one Save button + inline test status.
+  - Companion strip, sound/enable controls, and the first-run consent screen share the same paper palette with each character's skin color reserved for accents.
 * `lib/organism/controller.ts`: Coordinates coordinate math, drag physics, sprite render loops, and thought pill speech bubbles.
 * `lib/organism/spriteEngine.ts`: Standalone, procedural Canvas2D pixel animator supporting idle, peek, surprised, annoyed, sleeping, and celebrating states.
 * `lib/audio/soundEngine.ts`: Pure Web Audio API procedural synthesizer for Animalese speech chirps, alert beeps, and start/finish chimes with zero external audio assets.

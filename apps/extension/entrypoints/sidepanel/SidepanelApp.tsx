@@ -227,51 +227,50 @@ export const SidepanelApp: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleToggleSound}
-            className={`w-10 h-10 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer ${config.soundEnabled ? 'text-white' : 'bg-white text-paper-faint'}`}
-            style={config.soundEnabled ? { backgroundColor: 'var(--skin-accent)' } : {}}
+            className={`transition-colors cursor-pointer ${config.soundEnabled ? 'text-coal' : 'text-paper-faint'}`}
             title={config.soundEnabled ? 'Mute' : 'Unmute'}
           >
-            {config.soundEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+            {config.soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
           <button
             onClick={handleToggleTelemetry}
-            className={`w-10 h-10 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer ${hasOpenedTelemetry && isTelemetryOpen ? 'text-white' : 'bg-white text-paper-muted hover:text-paper-ink'}`}
-            style={hasOpenedTelemetry && isTelemetryOpen ? { backgroundColor: 'var(--skin-accent)' } : {}}
+            className={`transition-colors cursor-pointer ${hasOpenedTelemetry && isTelemetryOpen ? '' : 'text-paper-muted hover:text-paper-ink'}`}
+            style={hasOpenedTelemetry && isTelemetryOpen ? { color: 'var(--skin-accent)' } : {}}
             title="AI reasoning traces"
           >
-            <Terminal size={17} />
+            <Terminal size={18} />
           </button>
         </div>
       </header>
 
       {/* Quick note bar */}
-      <form onSubmit={handleSavePageNote} className="space-y-2 pt-1 z-10 relative bg-white border-2 border-coal shadow-brut-sm p-4">
-        <div className="flex items-center justify-between text-xs font-display font-bold">
-          <span className="text-white border-2 border-coal px-2 py-1 flex items-center gap-1.5 truncate max-w-[70%]" style={{ backgroundColor: 'var(--skin-accent)' }}>
-            <Globe size={12} className="shrink-0" />
+      <form onSubmit={handleSavePageNote} className="pt-1 z-10 relative">
+        <div className="flex items-center justify-between pb-1">
+          <span className="flex items-center gap-1.5 min-w-0 font-mono text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--skin-accent)' }}>
+            <Globe size={11} className="shrink-0" />
             <span className="truncate">{activeTabInfo.domain || 'Active page'}</span>
           </span>
-          <span className="text-paper-faint font-mono font-bold">ENTER ↵</span>
+          <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint shrink-0">Enter ↵</span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-end gap-3">
           <input
             type="text"
-            className="flex-1 min-w-0 bg-paper border-2 border-coal p-3 text-paper-ink font-mono text-sm placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
-            placeholder={`A thought about ${activeTabInfo.domain || 'this page'}…`}
+            className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-coal pb-1.5 text-paper-ink font-mono text-sm placeholder:text-paper-faint focus:outline-none"
+            placeholder={`A thought about this page…`}
             value={newNoteText}
             onChange={(e) => setNewNoteText(e.target.value)}
           />
           <button
             type="submit"
             disabled={!newNoteText.trim()}
-            className="text-white font-display font-bold border-2 border-coal px-4 py-3 text-sm shadow-[2px_2px_0_0_#12151A] transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 flex items-center gap-1.5"
-            style={{ backgroundColor: 'var(--skin-accent)' }}
+            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-opacity hover:opacity-75 cursor-pointer disabled:opacity-30"
+            style={{ color: 'var(--skin-accent)' }}
           >
-            <Plus size={15} />
-            <span>NOTE</span>
+            <Plus size={12} />
+            <span>Save</span>
           </button>
         </div>
       </form>
@@ -290,9 +289,9 @@ export const SidepanelApp: React.FC = () => {
         {hasOpenedTelemetry && (
           <Suspense
             fallback={
-              <div className="bg-white border-2 border-coal shadow-brut-sm p-3 font-mono text-xs font-bold text-paper-muted">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint">
                 Loading traces…
-              </div>
+              </p>
             }
           >
             <LazyTelemetryDrawer

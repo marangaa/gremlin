@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Trash2,
-  CheckCircle2,
+  Plus,
 } from 'lucide-react';
 import type { DecomposedGoal } from '@gremlin/shared';
 
@@ -37,71 +37,75 @@ export const GoalStack: React.FC<GoalStackProps> = ({
   const completedGoals = goals.filter((g) => g.completed);
 
   return (
-    <div className="flex flex-col h-full bg-white border-2 border-coal shadow-brut-sm p-2">
-      <div className="flex items-center justify-between pb-2 border-b-2 border-dashed border-line mb-2">
+    <div className="flex flex-col min-h-0 flex-1">
+      <div className="flex items-center justify-between">
         <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted">
-          Milestones · {activeGoals.length}
+          Milestones{activeGoals.length > 0 ? ` · ${activeGoals.length}` : ''}
         </span>
         <button
           type="button"
           onClick={() => setShowAddManual(!showAddManual)}
-          className="font-mono text-[10px] font-bold text-white px-1.5 py-0.5 border-2 border-coal cursor-pointer transition-all hover:-translate-y-px hover:shadow-[2px_2px_0_0_#12151A] active:translate-y-0 active:shadow-none"
-          style={{ backgroundColor: accentColor }}
+          className="font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-0.5 transition-opacity hover:opacity-75 cursor-pointer"
+          style={{ color: accentColor }}
         >
-          {showAddManual ? '✕' : '+ ADD'}
+          {showAddManual ? <span aria-hidden="true">✕</span> : <Plus size={11} />}
+          <span>{showAddManual ? 'Cancel' : 'Add'}</span>
         </button>
       </div>
 
       {showAddManual && (
-        <form onSubmit={handleManualAdd} className="flex gap-1.5 mb-2">
+        <form onSubmit={handleManualAdd} className="mt-2">
           <input
             type="text"
-            className="flex-1 min-w-0 bg-paper border-2 border-coal p-1.5 text-paper-ink font-mono text-xs placeholder:text-paper-faint focus:outline-none focus:shadow-brut-sm transition-shadow"
+            className="w-full bg-transparent border-0 border-b-2 pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
+            style={{ borderColor: accentColor }}
             placeholder="New milestone…"
             value={manualTitle}
             onChange={(e) => setManualTitle(e.target.value)}
             autoFocus
           />
-          <button
-            type="submit"
-            className="text-white font-display font-bold px-3 border-2 border-coal shadow-[2px_2px_0_0_#12151A] text-xs transition-all hover:-translate-y-px hover:shadow-[3px_3px_0_0_#12151A] active:translate-y-0 active:shadow-none cursor-pointer"
-            style={{ backgroundColor: accentColor }}
-          >
-            ADD
-          </button>
         </form>
       )}
 
-      {goals.length === 0 ? (
-        <div className="py-6 text-center text-xs text-paper-faint font-mono font-bold flex-1 flex items-center justify-center border-2 border-dashed border-line">
+      {goals.length === 0 && !showAddManual ? (
+        <p className="py-4 text-center font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint">
           Nothing yet
-        </div>
+        </p>
       ) : (
-        <div className="space-y-1 overflow-y-auto flex-1 pr-1">
+        <div className="mt-1 space-y-px overflow-y-auto flex-1 min-h-0 pr-0.5">
           {activeGoals.map((g) => (
             <div
               key={g.id}
-              className={`p-1.5 flex items-center justify-between gap-2 transition-colors group ${g.isActive ? 'border-transparent' : 'hover:bg-paper'}`}
-              style={g.isActive ? { backgroundColor: accentColor } : {}}
+              className={`group flex items-center gap-2 px-1.5 py-1.5 -mx-1.5 transition-colors ${g.isActive ? '' : 'hover:bg-black/[0.04]'}`}
+              style={g.isActive ? { backgroundColor: `${accentColor}1A` } : {}}
             >
-              <div
-                className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+              <button
+                type="button"
+                onClick={() => onToggleGoal(g.id, true)}
+                className="shrink-0 cursor-pointer"
+                title="Complete"
+              >
+                <span
+                  className={`block w-3.5 h-3.5 border-2 transition-colors ${g.isActive ? '' : 'border-paper-faint group-hover:border-coal'}`}
+                  style={g.isActive ? { backgroundColor: accentColor, borderColor: accentColor } : {}}
+                />
+              </button>
+              <span
+                className={`flex-1 min-w-0 truncate font-mono text-xs font-bold cursor-pointer ${g.isActive ? 'text-paper-ink' : 'text-paper-muted'}`}
                 onClick={() => onToggleGoal(g.id, true)}
               >
-                <div className={`w-4 h-4 shrink-0 border-2 ${g.isActive ? 'border-white' : 'border-paper-muted group-hover:border-coal'}`} />
-                <span className={`text-xs font-mono font-bold block truncate ${g.isActive ? 'text-white' : 'text-paper-ink'}`}>
-                  {g.title}
-                </span>
-              </div>
+                {g.title}
+              </span>
               <button
-                className={`opacity-0 group-hover:opacity-100 transition-all cursor-pointer ${g.isActive ? 'text-white/85 hover:text-white' : 'text-paper-faint hover:text-red-600'}`}
+                type="button"
+                className="opacity-0 group-hover:opacity-100 text-paper-faint hover:text-red-600 transition-all cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteGoal(g.id);
                 }}
                 title="Delete"
               >
-                <Trash2 size={13} />
+                <Trash2 size={12} />
               </button>
             </div>
           ))}
@@ -109,26 +113,27 @@ export const GoalStack: React.FC<GoalStackProps> = ({
           {completedGoals.map((g) => (
             <div
               key={g.id}
-              className="p-1.5 flex items-center justify-between gap-2 opacity-55 transition-opacity hover:opacity-100 group"
+              className="group flex items-center gap-2 px-1.5 py-1 -mx-1.5 opacity-50 hover:opacity-100 transition-opacity"
             >
-              <div
-                className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+              <button type="button" onClick={() => onToggleGoal(g.id, false)} className="shrink-0 cursor-pointer" title="Reopen">
+                <CheckCircleIcon color={accentColor} />
+              </button>
+              <span
+                className="flex-1 min-w-0 truncate font-mono text-xs font-bold line-through text-paper-faint cursor-pointer"
                 onClick={() => onToggleGoal(g.id, false)}
               >
-                <CheckCircle2 size={15} className="shrink-0" style={{ color: accentColor }} />
-                <span className="text-xs text-paper-muted font-mono font-bold line-through block truncate">
-                  {g.title}
-                </span>
-              </div>
+                {g.title}
+              </span>
               <button
-                className="opacity-0 group-hover:opacity-100 text-paper-faint hover:text-red-600 transition-colors cursor-pointer"
+                type="button"
+                className="opacity-0 group-hover:opacity-100 text-paper-faint hover:text-red-600 transition-all cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDeleteGoal(g.id);
                 }}
                 title="Delete"
               >
-                <Trash2 size={13} />
+                <Trash2 size={12} />
               </button>
             </div>
           ))}
@@ -137,3 +142,10 @@ export const GoalStack: React.FC<GoalStackProps> = ({
     </div>
   );
 };
+
+const CheckCircleIcon: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <path d="m9 11 3 3L22 4" />
+  </svg>
+);
