@@ -61,20 +61,18 @@ export default defineBackground(() => {
   });
 
   // 2. Global keyboard shortcut listener for Side Panel
-  if (typeof chrome !== 'undefined' && chrome.commands) {
-    chrome.commands.onCommand.addListener(async (command) => {
-      if (command === 'open_side_panel') {
-        try {
-          const currentWindow = await chrome.windows.getCurrent();
-          if (currentWindow?.id) {
-            chrome.sidePanel?.open({ windowId: currentWindow.id });
-          }
-        } catch (err) {
-          console.warn('[Gremlin Background] sidePanel.open command error:', err);
+  browser.commands?.onCommand.addListener(async (command) => {
+    if (command === 'open_side_panel') {
+      try {
+        const currentWindow = await browser.windows.getCurrent();
+        if (currentWindow?.id) {
+          await browser.sidePanel?.open({ windowId: currentWindow.id });
         }
+      } catch (err) {
+        console.warn('[Gremlin Background] sidePanel.open command error:', err);
       }
-    });
-  }
+    }
+  });
 
   // 3. Broadcast live configuration changes to ALL open tabs immediately
   configStorage.watch(async (newConfig: OrganismConfig | null) => {
@@ -306,9 +304,9 @@ export default defineBackground(() => {
 
   onMessage('openSidePanel', async () => {
     try {
-      const currentWindow = await chrome.windows.getCurrent();
+      const currentWindow = await browser.windows.getCurrent();
       if (currentWindow?.id) {
-        chrome.sidePanel?.open({ windowId: currentWindow.id });
+        await browser.sidePanel?.open({ windowId: currentWindow.id });
       }
     } catch (err) {
       console.warn('[Gremlin Background] openSidePanel error:', err);

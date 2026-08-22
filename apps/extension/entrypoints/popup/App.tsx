@@ -296,9 +296,9 @@ export default function App() {
 
   const handleOpenSidePanel = async () => {
     try {
-      const win = await chrome.windows.getCurrent();
+      const win = await browser.windows.getCurrent();
       if (win?.id) {
-        await chrome.sidePanel?.open({ windowId: win.id });
+        await browser.sidePanel?.open({ windowId: win.id });
         window.close();
       }
     } catch {

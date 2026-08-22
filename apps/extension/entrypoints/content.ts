@@ -145,9 +145,13 @@ export default defineContentScript({
       disposers.push(offConfigUpdated, unwatchConfig);
     };
 
-    // CONSENT GATE — nothing mounts and no page context is extracted until
-    // the user completes first-run disclosure in the popup. Storage fallbacks
-    // would otherwise wake the companion (and signal pipeline) pre-consent.
+    /**
+     * CONSENT GATE — nothing mounts and no page context is extracted until
+     * the user completes first-run disclosure in the popup. Storage fallbacks
+     * (`enabled: true`, default companion) would otherwise wake the companion
+     * pre-consent on a fresh install, so the entire start sequence defers via
+     * an {@link onboardedStorage} watch instead of reading config alone.
+     */
     const onboarded = await onboardedStorage.getValue();
     if (!onboarded) {
       const unwatchOnboarding = onboardedStorage.watch((value) => {
@@ -162,13 +166,16 @@ export default defineContentScript({
 
     await start();
 
-    // ORPHAN HEARTBEAT — WXT detects invalidation lazily: the runtime.id check
-    // lives inside the ctx.isInvalid/isValid getters, and its active events
-    // only cover reload/update (a newer script announces itself). On UNINSTALL
-    // Chrome never notifies the orphaned script, so without a reader nothing
-    // tears down. This heartbeat makes ctx.setInterval read isValid each tick,
-    // which trips the getter, notifies the context, and unwinds everything
-    // through the framework's own abort signal — no hand-rolled probes.
+    /**
+     * ORPHAN HEARTBEAT — WXT detects invalidation lazily: the `runtime.id`
+     * check lives inside the ctx.isInvalid/isValid getters, and its active
+     * events (`stopOldScripts`) only cover reload/update, where a newer script
+     * announces itself. On UNINSTALL Chrome orphans the script silently, so
+     * without a reader nothing ever tears down and the companion lingers until
+     * refresh. This heartbeat makes ctx.setInterval read isValid every tick,
+     * which trips the getter, notifies the context, and unwinds all listeners,
+     * timers, and DOM through the framework's own abort signal.
+     */
     ctx.setInterval(() => {}, 2_500);
   },
 });
