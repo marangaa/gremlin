@@ -95,12 +95,21 @@ export default defineContentScript({
         ui.mount();
       }
 
-      // Extract page metadata on initial browser idle and relay it to the
-      // background service worker for AI evaluation context.
+      /**
+       * Extract page metadata on initial browser idle and relay it to the
+       * background service worker for AI evaluation context.
+       *
+       * The send is deliberately fire-and-forget with rejection swallowed:
+       * during extension reloads a freshly injected script can outrun the
+       * booting service worker ("Could not establish connection. Receiving
+       * end does not exist."), and mid-send invalidations race the guard
+       * below. Both are expected, harmless drops of ephemeral telemetry —
+       * the next navigation re-pushes.
+       */
       const pushPageSignal = () => {
         pageExtractor.extractOnIdle((snapshot) => {
           if (!snapshot || ctx.isInvalid) return;
-          void sendMessage('pageSignal', { signal: snapshot });
+          sendMessage('pageSignal', { signal: snapshot }).catch(() => {});
         });
       };
       pushPageSignal();
