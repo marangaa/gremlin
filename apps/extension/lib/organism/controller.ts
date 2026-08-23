@@ -157,23 +157,36 @@ export class OrganismController {
     if (this.speechTimeoutId) clearTimeout(this.speechTimeoutId);
 
     const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.Sarge;
+    const pill = this.thoughtPill;
 
-    // Smart vertical positioning: above vs below
-    this.thoughtPill.classList.remove('pos-above', 'pos-below');
-    if (this.y < 120) {
-      this.thoughtPill.classList.add('pos-below');
-    } else {
-      this.thoughtPill.classList.add('pos-above');
-    }
-
-    this.thoughtPill.style.borderColor = model.accentColor;
-    this.thoughtPill.innerHTML = `
+    pill.style.setProperty('--pill-accent', model.accentColor);
+    pill.innerHTML = `
       <div class="pill-header">
-        <span class="pill-badge" style="color: ${model.accentColor};">${model.name}</span>
+        <span class="pill-badge">${model.name}</span>
       </div>
       <div class="pill-body">${message}</div>
     `;
-    this.thoughtPill.classList.add('is-visible');
+
+    // Viewport-anchored placement: measure the laid-out pill (opacity-0 still
+    // occupies space), clamp its center so it never leaves the screen, and
+    // flip above/below depending on the room available near the companion.
+    const margin = 8;
+    const gap = 12;
+    const w = pill.offsetWidth || 220;
+    const h = pill.offsetHeight || 60;
+    const avatarCenterX = this.x + 48;
+    const clampedCenterX = Math.max(margin + w / 2, Math.min(avatarCenterX, window.innerWidth - margin - w / 2));
+    const placeAbove = this.y - h - gap > margin;
+
+    pill.style.left = `${Math.round(clampedCenterX - w / 2)}px`;
+    pill.style.top = `${Math.round(placeAbove ? this.y - h - gap : this.y + 96 + gap)}px`;
+    // Tail slides toward the companion when the bubble gets edge-clamped.
+    const tailX = Math.max(14, Math.min(w - 14, avatarCenterX - (clampedCenterX - w / 2)));
+    pill.style.setProperty('--tail-x', `${Math.round(tailX)}px`);
+    pill.classList.toggle('tail-below', placeAbove);
+    pill.classList.toggle('tail-above', !placeAbove);
+
+    pill.classList.add('is-visible');
 
     // Synthesize Animalese speech chirps
     if (this.soundEnabled) {
@@ -181,7 +194,7 @@ export class OrganismController {
     }
 
     this.speechTimeoutId = window.setTimeout(() => {
-      this.thoughtPill.classList.remove('is-visible');
+      pill.classList.remove('is-visible');
       this.speechTimeoutId = null;
     }, durationMs);
   }
@@ -189,22 +202,17 @@ export class OrganismController {
   public openNoteSheet() {
     if (this.destroyed || !this.noteHudEl) return;
     const model = ORGANISM_MODELS[this.organismId] || ORGANISM_MODELS.Sarge;
+    const hud = this.noteHudEl;
 
-    this.noteHudEl.classList.remove('pos-above', 'pos-below');
-    if (this.y < 180) {
-      this.noteHudEl.classList.add('pos-below');
-    } else {
-      this.noteHudEl.classList.add('pos-above');
-    }
+    hud.style.setProperty('--pill-accent', model.accentColor);
 
     const selectedText = window.getSelection()?.toString().trim() || '';
     const domain = window.location.hostname.replace(/^www\./, '');
     const title = document.title || domain;
 
-    this.noteHudEl.style.borderColor = model.accentColor;
-    this.noteHudEl.innerHTML = `
+    hud.innerHTML = `
       <div class="note-hud-header">
-        <span class="note-hud-badge" style="color: ${model.accentColor};">📝 Page Note · ${model.name}</span>
+        <span class="note-hud-badge">📝 Page Note · ${model.name}</span>
         <button class="note-hud-close">&times;</button>
       </div>
       ${selectedText ? `<div class="note-hud-snippet">“${selectedText.slice(0, 70)}…”</div>` : ''}
@@ -215,8 +223,20 @@ export class OrganismController {
       </div>
     `;
 
-    this.noteHudEl.classList.add('is-visible');
-    const textarea = this.noteHudEl.querySelector('.note-hud-textarea') as HTMLTextAreaElement;
+    // Same clamped, viewport-anchored placement as the speech bubble.
+    hud.classList.add('is-visible');
+    const margin = 8;
+    const gap = 12;
+    const w = hud.offsetWidth || 270;
+    const h = hud.offsetHeight || 200;
+    const avatarCenterX = this.x + 48;
+    const clampedCenterX = Math.max(margin + w / 2, Math.min(avatarCenterX, window.innerWidth - margin - w / 2));
+    const placeAbove = this.y - h - gap > margin;
+
+    hud.style.left = `${Math.round(clampedCenterX - w / 2)}px`;
+    hud.style.top = `${Math.round(placeAbove ? Math.max(margin, this.y - h - gap) : this.y + 96 + gap)}px`;
+
+    const textarea = hud.querySelector('.note-hud-textarea') as HTMLTextAreaElement;
     setTimeout(() => textarea?.focus(), 50);
 
     // Event listeners

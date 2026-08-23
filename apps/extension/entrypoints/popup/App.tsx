@@ -25,8 +25,8 @@ import {
   Volume2,
   VolumeX,
   Timer,
-  Sliders,
-  Cpu,
+  SlidersHorizontal,
+  KeyRound,
   Play,
   Square,
   Sparkles,
@@ -40,8 +40,8 @@ const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sen
 
 const TABS = [
   { id: 'focus', label: 'Focus', Icon: Timer },
-  { id: 'preferences', label: 'Prefs', Icon: Sliders },
-  { id: 'settings', label: 'Model', Icon: Cpu },
+  { id: 'preferences', label: 'Preferences', Icon: SlidersHorizontal },
+  { id: 'settings', label: 'Model & keys', Icon: KeyRound },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -230,17 +230,6 @@ export default function App() {
   const handleAddGoal = async (title: string, category: string) => {
     await sendMessage('addGoal', { title, category });
     soundSynth.playChime('poke');
-  };
-
-  const handlePreviewEffect = async (cid: OrganismId) => {
-    try {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tabs[0]?.id) {
-        await sendMessage('testScreenEffect', { organismId: cid }, tabs[0].id);
-      }
-    } catch (err) {
-      console.warn('Could not send testScreenEffect to active tab:', err);
-    }
   };
 
   const handleProviderSelect = (p: SupportedAiProvider) => {
@@ -458,22 +447,22 @@ export default function App() {
         })}
       </div>
 
-      {/* Underline tabs */}
+      {/* Icon tabs */}
       <nav className="grid grid-cols-3 border-b-2 border-coal z-10" aria-label="Sections">
         {TABS.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
           return (
             <button
               key={id}
+              title={label}
               aria-label={label}
               aria-pressed={isActive}
-              className={`relative flex items-center justify-center gap-1.5 pb-2 -mb-[2px] transition-colors cursor-pointer ${isActive ? 'text-paper-ink' : 'text-paper-faint hover:text-paper-muted'}`}
+              className={`relative flex items-center justify-center h-9 pb-1 -mb-[2px] transition-colors cursor-pointer ${isActive ? 'text-paper-ink' : 'text-paper-faint hover:text-paper-muted'}`}
               onClick={() => setActiveTab(id)}
             >
-              <Icon size={13} />
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider">{label}</span>
+              <Icon size={18} strokeWidth={2.25} />
               <span
-                className="absolute inset-x-2 -bottom-[2px] h-[3px] transition-colors"
+                className="absolute inset-x-3 -bottom-[2px] h-[3px] transition-colors"
                 style={{ backgroundColor: isActive ? 'var(--skin-accent)' : 'transparent' }}
               />
             </button>
@@ -686,14 +675,6 @@ export default function App() {
                 className="w-5 h-5 accent-[#A3E635] cursor-pointer"
               />
             </div>
-
-            <button
-              onClick={() => handlePreviewEffect(config.organismId)}
-              className="flex items-center justify-between py-3.5 cursor-pointer group"
-            >
-              <span className="font-display font-semibold text-sm text-paper-muted group-hover:text-paper-ink transition-colors">Preview effect</span>
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--skin-accent)' }}>Run →</span>
-            </button>
           </div>
         )}
 
@@ -715,7 +696,7 @@ export default function App() {
                     type="button"
                     onClick={() => handleProviderSelect(p)}
                     aria-pressed={isSelected}
-                    className="w-full text-left py-2.5 flex items-center gap-2.5 cursor-pointer group"
+                    className="w-full text-left py-2 flex items-center gap-2.5 cursor-pointer group"
                   >
                     <span
                       className="w-3.5 h-3.5 shrink-0 rounded-full border-2 flex items-center justify-center"
@@ -723,11 +704,11 @@ export default function App() {
                     >
                       {isSelected && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--skin-accent)' }} />}
                     </span>
-                    <span className="min-w-0">
-                      <span className={`block font-display font-semibold text-[13px] leading-tight ${isSelected ? 'text-paper-ink' : 'text-paper-muted group-hover:text-paper-ink'} transition-colors`}>
+                    <span className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
+                      <span className={`font-display font-semibold text-[13px] leading-tight truncate transition-colors ${isSelected ? 'text-paper-ink' : 'text-paper-muted group-hover:text-paper-ink'}`}>
                         {prov.name}
                       </span>
-                      <span className="block font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
+                      <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
                         {PROVIDER_META[p].blurb}
                       </span>
                     </span>
@@ -764,7 +745,7 @@ export default function App() {
               )}
 
               <div>
-                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Model</span>
+                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Model ID</span>
                 <input
                   type="text"
                   placeholder={currentProviderConfig.defaultModel}
@@ -772,22 +753,12 @@ export default function App() {
                   onChange={(e) => setModelInput(e.target.value)}
                   className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
                 />
-                <div className="flex flex-wrap gap-x-2 gap-y-0.5 pt-1">
-                  {currentProviderConfig.popularModels.filter((m) => m !== 'custom-model').map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setModelInput(m)}
-                      className={`font-mono text-[9px] font-bold transition-colors cursor-pointer ${modelInput === m ? '' : 'text-paper-faint hover:text-paper-muted'}`}
-                      style={modelInput === m ? { color: 'var(--skin-accent)' } : {}}
-                    >
-                      {modelInput === m ? '✓ ' : ''}{m}
-                    </button>
-                  ))}
-                </div>
+                <p className="pt-0.5 font-mono text-[9px] text-paper-faint">
+                  Defaults to {currentProviderConfig.defaultModel} — check your provider's docs for current IDs.
+                </p>
               </div>
 
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-3 pb-2">
                 <button
                   type="button"
                   onClick={handleSaveSettings}
