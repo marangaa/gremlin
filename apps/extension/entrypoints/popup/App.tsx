@@ -391,7 +391,7 @@ export default function App() {
               <span className={`w-2 h-2 shrink-0 ${config.enabled ? 'animate-pulse-dot' : ''}`} style={{ backgroundColor: config.enabled ? 'var(--skin-accent)' : '#C9CEB8' }} title={config.enabled ? 'Awake' : 'Asleep'} />
             </div>
             <span className="font-mono text-[10px] font-bold text-paper-muted block truncate max-w-[190px]">
-              "{organismState.lastRemark || skin.tagline}"
+              {skin.tagline}
             </span>
           </div>
         </div>

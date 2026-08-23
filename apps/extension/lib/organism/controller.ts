@@ -164,7 +164,7 @@ export class OrganismController {
     }
   }
 
-  public showRemark(message: string, durationMs = 5000) {
+  public showRemark(message: string, durationMs = 6500) {
     if (this.destroyed || !message) return;
     if (this.speechTimeoutId) clearTimeout(this.speechTimeoutId);
 
