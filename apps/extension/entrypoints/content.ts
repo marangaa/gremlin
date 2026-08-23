@@ -18,10 +18,22 @@ export default defineContentScript({
 
     let controller: OrganismController | null = null;
     const uiHolder: { ui: { mount: () => void; remove: () => void } | null } = { ui: null };
-    const disposers: Array<() => void> = [];
 
+    /**
+     * Teardown — deliberately touches ONLY DOM and timers.
+     *
+     * Per the WXT lifecycle docs, invalidation unwinds everything registered
+     * through ctx (addEventListener/setTimeout/setInterval/requestAnimationFrame)
+     * via its abort signal, whose unwind path never calls extension bindings.
+     * Storage watchers and messaging listeners are intentionally NOT
+     * unregistered here: once invalidated, Chrome stops dispatching events to
+     * them entirely, so removal is unnecessary — and because every binding
+     * METHOD call (removeListener included) throws "Extension context
+     * invalidated" on an orphaned script, calling them during teardown is the
+     * one way this handler could ever throw. Memory is reclaimed when the tab
+     * navigates or unloads.
+     */
     ctx.onInvalidated(() => {
-      disposers.splice(0).forEach((dispose) => dispose());
       controller?.destroy();
       controller = null;
       uiHolder.ui?.remove();
@@ -98,19 +110,21 @@ export default defineContentScript({
         pushPageSignal();
       });
 
-      // Handle live reactive messaging from background service worker
-      const offReaction = onMessage('triggerReaction', ({ data }) => {
+      // Handle live reactive messaging from background service worker. The
+      // returned unsubscribe closures are intentionally discarded — see the
+      // teardown JSDoc above.
+      onMessage('triggerReaction', ({ data }) => {
         if (!controller || ctx.isInvalid) return;
         controller.setState(data.state, Boolean(data.triggerEffect));
         if (data.message) {
           controller.showRemark(data.message);
         }
       });
-      const offTestEffect = onMessage('testScreenEffect', ({ data }) => {
+
+      onMessage('testScreenEffect', ({ data }) => {
         if (!controller || ctx.isInvalid) return;
         controller.triggerCustomEffect(data.organismId);
       });
-      disposers.push(offReaction, offTestEffect);
 
       const applyConfig = (newConfig: OrganismConfig) => {
         if (ctx.isInvalid) return;
@@ -132,17 +146,18 @@ export default defineContentScript({
         }
       };
 
-      const offConfigUpdated = onMessage('configUpdated', ({ data }) => {
+      onMessage('configUpdated', ({ data }) => {
         if (data?.config) {
           applyConfig(data.config);
         }
       });
-      const unwatchConfig = configStorage.watch((newConfig: OrganismConfig | null) => {
+
+      // Handle live configuration changes from WXT storage across all open tabs
+      configStorage.watch((newConfig: OrganismConfig | null) => {
         if (newConfig) {
           applyConfig(newConfig);
         }
       });
-      disposers.push(offConfigUpdated, unwatchConfig);
     };
 
     /**
@@ -154,13 +169,14 @@ export default defineContentScript({
      */
     const onboarded = await onboardedStorage.getValue();
     if (!onboarded) {
+      // One-shot self-removal while the context is still alive; if consent
+      // never arrives, the listener simply dies with the page.
       const unwatchOnboarding = onboardedStorage.watch((value) => {
         if (value === true) {
           unwatchOnboarding();
           void start();
         }
       });
-      disposers.push(unwatchOnboarding);
       return;
     }
 
@@ -173,8 +189,8 @@ export default defineContentScript({
      * announces itself. On UNINSTALL Chrome orphans the script silently, so
      * without a reader nothing ever tears down and the companion lingers until
      * refresh. This heartbeat makes ctx.setInterval read isValid every tick,
-     * which trips the getter, notifies the context, and unwinds all listeners,
-     * timers, and DOM through the framework's own abort signal.
+     * which trips the getter, notifies the context, and drives the DOM-only
+     * teardown above through the framework's own abort signal.
      */
     ctx.setInterval(() => {}, 2_500);
   },
