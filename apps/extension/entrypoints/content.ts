@@ -76,6 +76,7 @@ export default defineContentScript({
             soundEnabled: config.soundEnabled,
             volume: config.volume,
             effectsEnabled: config.effectsEnabled,
+            effectsIntensity: config.effectsIntensity,
             initialState: organismState.state,
           });
 
@@ -139,6 +140,7 @@ export default defineContentScript({
           controller.setOrganism(newConfig.organismId);
           controller.setSoundSettings(newConfig.soundEnabled, newConfig.volume);
           controller.setEffectsEnabled(newConfig.effectsEnabled);
+          controller.setEffectsIntensity(newConfig.effectsIntensity ?? 0.45);
 
           if (newConfig.xFrac !== undefined && newConfig.yFrac !== undefined) {
             controller.setPositionFraction(newConfig.xFrac, newConfig.yFrac);

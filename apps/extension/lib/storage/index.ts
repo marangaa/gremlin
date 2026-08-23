@@ -27,6 +27,8 @@ export interface OrganismConfig {
   soundEnabled: boolean;
   volume: number;
   effectsEnabled: boolean;
+  /** Chaos slider, 0 (calm) → 1 (unhinged). Scales effect visuals + ambient chance. */
+  effectsIntensity?: number;
 
   // Viewport Position
   xFrac: number;
@@ -95,6 +97,7 @@ export const configStorage = storage.defineItem<OrganismConfig>('local:organismC
     soundEnabled: true,
     volume: 0.6,
     effectsEnabled: true,
+    effectsIntensity: 0.45,
     xFrac: 0.9,
     yFrac: 0.82,
   },

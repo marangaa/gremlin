@@ -20,6 +20,7 @@ export interface ControllerOptions {
   soundEnabled?: boolean;
   volume?: number;
   effectsEnabled?: boolean;
+  effectsIntensity?: number;
   initialState?: OrganismState;
 }
 
@@ -35,6 +36,7 @@ export class OrganismController {
   private state: OrganismState = 'idle';
   private soundEnabled: boolean = true;
   private effectsEnabled: boolean = true;
+  private effectsIntensity: number = 0.45;
 
   // Viewport Coordinates (in pixels)
   private x: number = 0;
@@ -68,6 +70,7 @@ export class OrganismController {
     this.yFrac = options.yFrac ?? 0.80;
     this.soundEnabled = options.soundEnabled ?? true;
     this.effectsEnabled = options.effectsEnabled ?? true;
+    this.effectsIntensity = Math.max(0, Math.min(1, options.effectsIntensity ?? 0.45));
 
     soundSynth.setVolume(options.volume ?? 0.6);
     soundSynth.setMuted(!this.soundEnabled);
@@ -115,6 +118,10 @@ export class OrganismController {
     this.effectsEnabled = enabled;
   }
 
+  public setEffectsIntensity(intensity: number) {
+    this.effectsIntensity = Math.max(0, Math.min(1, intensity));
+  }
+
   public setPositionFraction(xFrac: number, yFrac: number) {
     this.xFrac = xFrac;
     this.yFrac = yFrac;
@@ -141,8 +148,13 @@ export class OrganismController {
       }
     }
 
-    if (triggerScreenFx && this.effectsEnabled) {
-      this.screenEffects.triggerEffect(this.organismId);
+    if (this.effectsEnabled) {
+      // AI-flagged effects always fire; at high chaos the companion also
+      // improvises on any state change.
+      const ambientChance = triggerScreenFx ? 1 : this.effectsIntensity * 0.22;
+      if (Math.random() < ambientChance) {
+        this.screenEffects.triggerEffect(this.organismId, this.effectsIntensity);
+      }
     }
   }
 

@@ -32,7 +32,7 @@ const LazyTelemetryDrawer = React.lazy(() =>
   import('../popup/components/TelemetryDrawer').then((m) => ({ default: m.TelemetryDrawer })),
 );
 
-const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei'];
+const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei', 'byte', 'pixel', 'ufo'];
 
 export const SidepanelApp: React.FC = () => {
   const [config, setConfig] = useState<OrganismConfig>({

@@ -167,6 +167,15 @@ export class SpriteEngine {
       case 'kuro':
         this.renderKuroGremlin(ctx, f, isBlinking);
         break;
+      case 'byte':
+        this.renderByteHacker(ctx, f, isBlinking);
+        break;
+      case 'pixel':
+        this.renderPixelCat(ctx, f, isBlinking);
+        break;
+      case 'ufo':
+        this.renderZetaSaucer(ctx, f, isBlinking);
+        break;
       case 'sensei':
       default:
         this.renderSenseiMonk(ctx, f, isBlinking);
@@ -364,6 +373,152 @@ export class SpriteEngine {
       ctx.fillRect(44, 50, 8, 4);
     } else {
       ctx.fillRect(44, 50, 8, 2);
+    }
+  }
+
+  // --- 6. BYTE (Cyan Rogue Hacker Gremlin) ---
+  private renderByteHacker(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+    // Subtle Glitch Offset (one body rect shifts on frame 2)
+    const glitch = f === 2 ? 1 : 0;
+
+    // Hooded Charcoal Cloak
+    ctx.fillStyle = '#1e293b';
+    this.pixelRect(ctx, 26 + glitch, 24, 44, 44, 10);
+
+    // Deep Hood Shadow Around The Face
+    ctx.fillStyle = '#0f172a';
+    this.pixelRect(ctx, 31, 29 + glitch, 34, 20, 8);
+
+    // Glowing Terminal Glasses
+    const shiftX = Math.round(this.gazeX * 2);
+    if (isBlinking) {
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillRect(34, 38, 12, 2);
+      ctx.fillRect(50, 38, 12, 2);
+    } else {
+      ctx.fillStyle = '#22d3ee';
+      ctx.fillRect(33 + shiftX, 35, 13, 8);
+      ctx.fillRect(50 + shiftX, 35, 13, 8);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(35 + shiftX, 37, 2, 2);
+      ctx.fillRect(52 + shiftX, 37, 2, 2);
+    }
+
+    // Tiny Cyan Mouth Line
+    ctx.fillStyle = '#22d3ee';
+    if (this.currentState === 'celebrating') {
+      ctx.fillRect(42, 46, 12, 3);
+    } else {
+      ctx.fillRect(44, 47, 8, 2);
+    }
+
+    // Paws Resting Beside The Deck
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(20, 66, 8, 6);
+    ctx.fillRect(68, 66, 8, 6);
+
+    // Laptop Lid + Base In Front
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(32, 58, 32, 12);
+    ctx.fillRect(28, 70, 40, 7);
+
+    // Flickering Screen Glow (brightness cycles per frame)
+    ctx.fillStyle = ['#164e63', '#0e7490', '#67e8f9', '#0891b2'][f]!;
+    ctx.fillRect(36, 61, 24, 6);
+  }
+
+  // --- 7. PIXEL (Yellow-Eyed Chaotic Black Cat) ---
+  private renderPixelCat(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+    // Triangle Ears
+    ctx.fillStyle = '#18181b';
+    ctx.fillRect(28, 22, 12, 5);
+    ctx.fillRect(31, 17, 6, 5);
+    ctx.fillRect(56, 22, 12, 5);
+    ctx.fillRect(59, 17, 6, 5);
+
+    // Sleek Loaf Body
+    ctx.fillStyle = '#18181b';
+    this.pixelRect(ctx, 22, 26, 52, 44, 14);
+
+    // Subtle Highlights
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(34, 29, 28, 4);
+    this.pixelRect(ctx, 30, 60, 36, 8, 4);
+
+    // Big Yellow Eyes With Vertical Slit Pupils
+    if (isBlinking) {
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(34, 45, 11, 2);
+      ctx.fillRect(51, 45, 11, 2);
+    } else {
+      const shiftX = Math.round(this.gazeX * 2);
+      const shiftY = Math.round(this.gazeY * 1);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(34, 40, 11, 11);
+      ctx.fillRect(51, 40, 11, 11);
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(39 + shiftX, 43 + shiftY, 3, 7);
+      ctx.fillRect(56 + shiftX, 43 + shiftY, 3, 7);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(35, 41, 2, 2);
+      ctx.fillRect(52, 41, 2, 2);
+    }
+
+    // Tiny Pink Nose
+    ctx.fillStyle = '#f9a8d4';
+    ctx.fillRect(45, 55, 6, 3);
+
+    // Whiskers
+    ctx.fillStyle = '#a1a1aa';
+    ctx.fillRect(8, 52, 12, 1);
+    ctx.fillRect(8, 56, 12, 1);
+    ctx.fillRect(76, 52, 12, 1);
+    ctx.fillRect(76, 56, 12, 1);
+
+    // Tail Curl (tip position cycles through 3 poses)
+    ctx.fillStyle = '#27272a';
+    ctx.fillRect(72, 58, 8, 6);
+    if (f === 1) {
+      ctx.fillRect(78, 46, 5, 14);
+    } else if (f === 2) {
+      ctx.fillRect(80, 54, 5, 12);
+    } else {
+      ctx.fillRect(74, 64, 12, 5);
+    }
+  }
+
+  // --- 8. ZETA (Violet Cosmic Abductor Saucer) ---
+  private renderZetaSaucer(ctx: CanvasRenderingContext2D, f: number, isBlinking: boolean) {
+    const oy = (y: number) => y + (f % 2 === 1 ? 2 : 0);
+
+    // Glass Dome (dims while blinking)
+    ctx.fillStyle = isBlinking ? '#7cb8d4' : '#bae6fd';
+    ctx.fillRect(38, oy(24), 20, 4);
+    ctx.fillRect(34, oy(28), 28, 6);
+
+    // Alien Pilot Silhouette
+    ctx.fillStyle = '#7c3aed';
+    ctx.fillRect(43, oy(27), 10, 4);
+    ctx.fillRect(41, oy(31), 14, 3);
+
+    // Metallic Hull (stacked ellipse)
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(24, oy(34), 48, 8);
+    ctx.fillRect(18, oy(40), 60, 10);
+
+    // Underside
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(26, oy(50), 44, 6);
+    ctx.fillRect(40, oy(56), 16, 5);
+
+    // Beam Emitter Glow
+    ctx.fillStyle = '#8b5cf6';
+    ctx.fillRect(44, oy(60), 8, 3);
+
+    // Hull Light Row (active light cycles by frame)
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i === f % 6 ? '#8b5cf6' : '#334155';
+      ctx.fillRect(23 + i * 9, oy(43), 4, 4);
     }
   }
 

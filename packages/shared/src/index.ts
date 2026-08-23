@@ -6,7 +6,10 @@ export type OrganismId =
   | 'waifu'
   | 'sherlock'
   | 'kuro'
-  | 'sensei';
+  | 'sensei'
+  | 'byte'
+  | 'pixel'
+  | 'ufo';
 
 /**
  * Visual and behavioral mood states of the companion organism.

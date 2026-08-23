@@ -101,4 +101,43 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
       step10: '#059669',
     },
   },
+  byte: {
+    id: 'byte',
+    name: 'Byte',
+    tagline: 'Your focus has been flagged. Patching now.',
+    greeting: '> gremlin daemon online. monitoring.',
+    pokeNotice: 'Byte logged the intrusion: "poke attempt. traced."',
+    colors: {
+      ...BASE_NEUTRAL_DARK,
+      step8: 'rgba(34, 211, 238, 0.4)',
+      step9: '#22d3ee', // Terminal Cyan
+      step10: '#06b6d4',
+    },
+  },
+  pixel: {
+    id: 'pixel',
+    name: 'Pixel',
+    tagline: 'Not judging. Just knocking your tabs off the table.',
+    greeting: 'mrrp. *slow blink*',
+    pokeNotice: 'Pixel knocked your cursor off the desk.',
+    colors: {
+      ...BASE_NEUTRAL_DARK,
+      step8: 'rgba(250, 204, 21, 0.4)',
+      step9: '#facc15', // Cat-Eye Yellow
+      step10: '#eab308',
+    },
+  },
+  ufo: {
+    id: 'ufo',
+    name: 'Zeta',
+    tagline: 'Beaming up your productivity. One word at a time.',
+    greeting: 'specimen logged. observing human.',
+    pokeNotice: 'Zeta scanned you. Findings: "still distracted."',
+    colors: {
+      ...BASE_NEUTRAL_DARK,
+      step8: 'rgba(139, 92, 246, 0.4)',
+      step9: '#8b5cf6', // Abduction Violet
+      step10: '#7c3aed',
+    },
+  },
 };

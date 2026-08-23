@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei'];
+const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei', 'byte', 'pixel', 'ufo'];
 
 const TABS = [
   { id: 'focus', label: 'Focus', Icon: Timer },
@@ -425,7 +425,7 @@ export default function App() {
       </header>
 
       {/* Companion strip — bare sprites */}
-      <div className="grid grid-cols-5 z-10 pt-1">
+      <div className="grid grid-cols-8 gap-0.5 z-10 pt-1">
         {ALL_COMPANIONS.map((cid) => {
           const comp = CHARACTER_SKINS[cid];
           const isSelected = config.organismId === cid;
@@ -434,12 +434,12 @@ export default function App() {
               key={cid}
               className={`flex flex-col items-center gap-0.5 pb-1.5 pt-1 cursor-pointer transition-opacity ${isSelected ? 'opacity-100' : 'opacity-40 hover:opacity-75'}`}
               onClick={() => handleOrganismChange(cid)}
-              title={comp.name}
+              title={`${comp.name} · ${comp.tagline}`}
             >
-              <AnimatedSprite id={cid} size={22} state="idle" animated={isSelected} />
-              <span className="font-mono text-[9px] font-bold text-paper-muted">{comp.name}</span>
+              <AnimatedSprite id={cid} size={19} state="idle" animated={isSelected} />
+              <span className="font-mono text-[8px] font-bold text-paper-muted truncate max-w-full">{comp.name}</span>
               <span
-                className="w-6 h-[3px] transition-colors"
+                className="w-5 h-[3px] transition-colors"
                 style={{ backgroundColor: isSelected ? 'var(--skin-accent)' : 'transparent' }}
               />
             </button>
@@ -662,18 +662,42 @@ export default function App() {
               </div>
             )}
 
-            <div className="flex items-center justify-between py-3.5">
-              <span className="font-display font-semibold text-sm text-paper-ink">Screen glitch</span>
-              <input
-                type="checkbox"
-                checked={config.effectsEnabled}
-                onChange={async (e) => {
-                  const next = { ...config, effectsEnabled: e.target.checked };
-                  setConfig(next);
-                  await configStorage.setValue(next);
-                }}
-                className="w-5 h-5 accent-[#A3E635] cursor-pointer"
-              />
+            <div className="py-3.5">
+              <div className="flex items-center justify-between">
+                <span className="font-display font-semibold text-sm text-paper-ink">Screen FX</span>
+                <input
+                  type="checkbox"
+                  checked={config.effectsEnabled}
+                  onChange={async (e) => {
+                    const next = { ...config, effectsEnabled: e.target.checked };
+                    setConfig(next);
+                    await configStorage.setValue(next);
+                  }}
+                  className="w-5 h-5 accent-[#A3E635] cursor-pointer"
+                />
+              </div>
+              {config.effectsEnabled && (
+                <div className="flex items-center gap-3 mt-3">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint w-12 shrink-0">Chaos</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={Math.round((config.effectsIntensity ?? 0.45) * 100)}
+                    onChange={async (e) => {
+                      const intensity = parseInt(e.target.value, 10) / 100;
+                      const next = { ...config, effectsIntensity: intensity };
+                      setConfig(next);
+                      await configStorage.setValue(next);
+                    }}
+                    className="flex-1 cursor-pointer accent-[#A3E635] h-1.5 bg-paper-line appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-coal"
+                  />
+                  <span className="font-mono text-[10px] font-bold text-paper-muted w-9 shrink-0 text-right">
+                    {Math.round((config.effectsIntensity ?? 0.45) * 100)}%
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
