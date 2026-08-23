@@ -12,6 +12,47 @@ export type OrganismId =
   | 'ufo';
 
 /**
+ * How the companion chooses to respond to a judged moment.
+ * `observe` is a deliberate decision to stay silent.
+ */
+export type InterventionKind = 'observe' | 'nudge' | 'callout' | 'reset';
+
+/**
+ * Append-only session episode — the raw material of the memory loop.
+ * Interventions open episodes; outcome observations close them.
+ */
+export interface SessionEpisode {
+  id: string;
+  ts: number;
+  type: 'divergence' | 'on_task' | 'intervention' | 'outcome' | 'milestone';
+  domain?: string;
+  detail: string;
+  goalTitle?: string;
+  intervention?: {
+    kind: InterventionKind;
+    level: number;
+    remark?: string;
+  };
+  outcome?: {
+    returnedWithinMin?: number;
+    effective?: boolean;
+  };
+}
+
+/**
+ * What the companion has learned about how its human focuses. Rules keep the live stats
+ * fresh; the nightly Psychologist distills `lessons`. Mirrored to sync storage
+ * (best-effort) so reinstallations retain identity.
+ */
+export interface FocusProfile {
+  focusWindows: Array<{ hour: number; score: number }>;
+  topDistractions: Array<{ domain: string; count: number }>;
+  interventionEffectiveness: Record<string, { sent: number; effective: number }>;
+  lessons: string[];
+  updatedAt: number;
+}
+
+/**
  * Visual and behavioral mood states of the companion organism.
  */
 export type OrganismState =
@@ -208,4 +249,11 @@ export interface EvaluationResult {
   visualEffect: 'none' | 'vignette' | 'screen_shake' | 'confetti';
   soundReaction: 'none' | 'chirp' | 'alert' | 'celebrate' | 'sigh';
   reasoning: string;
+  /** Chosen response. `observe` means the agent deliberately stays silent. */
+  intervention: InterventionKind;
+  /** One-line memory worth carrying into the diary/profile. */
+  noteForDiary?: string;
+  /** Suggested escalation adjustment, typically -1..+1 per judgment. */
+  escalationDelta?: number;
 }
+

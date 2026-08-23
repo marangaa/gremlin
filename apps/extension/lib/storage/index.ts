@@ -7,6 +7,8 @@ import type {
   DailyDiary,
   CompanionDailyReflection,
   AiTelemetryTrace,
+  SessionEpisode,
+  FocusProfile,
 } from '@gremlin/shared';
 
 export type OperatingMode = 'self-hosted' | 'cloud';
@@ -50,6 +52,8 @@ export interface OrganismStateData {
   focusMinutesToday: number;
   divergenceCountToday: number;
   lastObservationAt: number;
+  /** Escalation ladder position (0 calm → 3 deep spiral). Decays when on-task. */
+  escalationLevel?: number;
 }
 
 export interface UserSession {
@@ -119,6 +123,7 @@ export const organismStateStorage = storage.defineItem<OrganismStateData>('local
     lastRemarkAt: 0,
     focusMinutesToday: 0,
     divergenceCountToday: 0,
+      escalationLevel: 0,
     lastObservationAt: 0,
   },
 });
@@ -157,3 +162,35 @@ export const diaryStorage = storage.defineItem<DailyDiary[]>('local:diaries', {
 export const telemetryStorage = storage.defineItem<AiTelemetryTrace[]>('local:aiTelemetryTraces', {
   fallback: [],
 });
+
+// ================= MEMORY LOOP =================
+
+/** Append-only episode history (interventions + outcomes + observations). */
+export const episodeLogStorage = storage.defineItem<SessionEpisode[]>('local:episodeLog', {
+  fallback: [],
+});
+
+/** What the companion has learned about its human (live stats + distilled lessons). */
+const FOCUS_PROFILE_FALLBACK: FocusProfile = {
+  focusWindows: [],
+  topDistractions: [],
+  interventionEffectiveness: {},
+  lessons: [],
+  updatedAt: 0,
+};
+
+export const focusProfileStorage = storage.defineItem<FocusProfile>('local:focusProfile', {
+  fallback: FOCUS_PROFILE_FALLBACK,
+});
+
+/**
+ * Best-effort sync mirror of the profile so identity survives reinstalls.
+ * chrome.storage.sync persists per Google-account profile; quotas are tight
+ * (single item < 8KB), which the small profile comfortably satisfies.
+ */
+export const focusProfileSyncStorage = storage.defineItem<FocusProfile>('sync:focusProfile', {
+  fallback: FOCUS_PROFILE_FALLBACK,
+});
+
+
+

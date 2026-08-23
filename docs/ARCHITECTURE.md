@@ -98,6 +98,19 @@ graph TD
   * Plan tier (`free`/`pro`) lives on `user.additionalFields.plan` with `input: false` so it can only be mutated server-side (billing webhooks/admins).
 * **AI Ingestion:** [Vercel AI SDK v7](https://sdk.vercel.ai) (`@ai-sdk/google`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/groq`). Structured output uses `generateText` + `Output.object({ schema })` (`generateObject` is deprecated). **Zero Fallbacks:** an unconfigured or failing provider surfaces an honest `503` error envelope instead of faking an `on_task` result.
 
+### Memory Loop & Judge Architecture
+
+Sessions are **timerless**: the human sets a goal and works; there is no countdown (`targetMinutes` is always 0; popup shows only muted elapsed minutes). Judgment replaces scheduling.
+
+The loop: `PERCEIVE → JUDGE → INTERVENE/OBSERVE → RECORD → OUTCOME → LEARN`.
+
+* **Presence** — `chrome.idle` (60s detection) tracks active/idle/locked. Evaluations pause entirely when the human is absent; the companion never coaches an empty chair.
+* **Judge** — `FocusMonitorAgent` runs as an AI SDK v7 `ToolLoopAgent` (`stopWhen: isStepCount(5)`) with three memory tools it may call mid-reasoning: `recall_lessons`, `get_intervention_history`, `get_session_digest`. Its output schema includes `intervention: observe|nudge|callout|reset` (**observe = deliberately silent**), `noteForDiary`, and `escalationDelta`. Per-character system prompts encode the doctrine: silence when flow is healthy, gradual escalation informed by history, never repeat a remark.
+* **Episode store** — `lib/memory/episodeStore.ts`: append-only `local:episodeLog` (cap 300). Interventions open episodes; the **outcome watcher** inside `evaluateCurrentState` closes them — when a post-intervention evaluation classifies the human back `on_task`, the loop records an effective outcome and decays escalation.
+* **Focus profile** — `lib/memory/focusProfile.ts`: rule-updated hour-of-day focus windows, top distraction domains, per-kind intervention effectiveness; mirrored best-effort to `sync:focusProfile` so identity survives reinstalls (chrome.storage.sync quotas are tight but the small profile fits; verify empirically).
+* **Psychologist** — `PsychologistAgent.distillDaily()` condenses today's episodes + diary into ≤8 distilled lessons merged into the focus profile. *(Nightly trigger wiring pending.)*
+* Planned persistence additions: user-owned Export/Import JSON backup button; Gremlin Cloud mirror reusing the dormant sprint-sync endpoints.
+
 ### Cloud API Routes
 * `GET /health`: Health check and status ping.
 * `ALL /api/auth/*`: Better Auth handler (sign-up, sign-in, sign-out, session validation).

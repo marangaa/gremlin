@@ -64,6 +64,7 @@ export const SidepanelApp: React.FC = () => {
     lastRemarkAt: 0,
     focusMinutesToday: 0,
     divergenceCountToday: 0,
+      escalationLevel: 0,
     lastObservationAt: 0,
   });
 
@@ -306,3 +307,4 @@ export const SidepanelApp: React.FC = () => {
     </div>
   );
 };
+

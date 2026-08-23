@@ -35,6 +35,9 @@ export const AgentEvaluationSchema = z.object({
   remark: z.string().max(80).describe('Short, punchy in-character remark (under 12 words).'),
   visualEffect: z.enum(['none', 'vignette', 'screen_shake', 'confetti']).describe('Visual distraction effect to trigger on screen.'),
   soundReaction: z.enum(['none', 'chirp', 'alert', 'celebrate', 'sigh']).describe('Web audio synthesizer reaction.'),
+  intervention: z.enum(['observe', 'nudge', 'callout', 'reset']).default('nudge').describe('Chosen response. observe = deliberately stay silent (psychology: never interrupt flow).'),
+  noteForDiary: z.string().max(140).optional().describe('One-line observation worth carrying into the diary/profile.'),
+  escalationDelta: z.number().min(-1).max(1).default(0).describe('Suggested escalation adjustment based on how the human responds over time.'),
   reasoning: z.string().describe('Brief agent chain-of-thought explaining why this judgment was reached from the browsing timeline.'),
 });
 

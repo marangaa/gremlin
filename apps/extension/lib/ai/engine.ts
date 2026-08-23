@@ -98,6 +98,11 @@ export async function decideOrganismReaction(
   triggerEffect: boolean;
   intensity: number;
   isConfigured: boolean;
+  /** Focus classification for the memory loop (episode recording). */
+  status: import('@gremlin/shared').AgentFocusStatus;
+  /** Chosen response kind — `observe` means deliberately silent. */
+  intervention: import('@gremlin/shared').InterventionKind;
+  escalationDelta?: number;
 }> {
   const startTime = performance.now();
 
@@ -161,6 +166,9 @@ export async function decideOrganismReaction(
             triggerEffect: evalData.visualEffect === 'vignette' || evalData.visualEffect === 'screen_shake',
             intensity: evalData.divergenceScore,
             isConfigured: true,
+            status: evalData.status,
+            intervention: evalData.intervention,
+            escalationDelta: evalData.escalationDelta,
           };
         }
       }
@@ -212,6 +220,9 @@ export async function decideOrganismReaction(
       triggerEffect: decision.visualEffect === 'vignette' || decision.visualEffect === 'screen_shake',
       intensity: decision.divergenceScore,
       isConfigured: true,
+      status: decision.status,
+      intervention: decision.intervention,
+      escalationDelta: decision.escalationDelta,
     };
   }
 
@@ -223,6 +234,9 @@ export async function decideOrganismReaction(
     triggerEffect: false,
     intensity: 0,
     isConfigured: false,
+    status: 'on_task',
+    intervention: 'observe',
+    escalationDelta: 0,
   };
 }
 

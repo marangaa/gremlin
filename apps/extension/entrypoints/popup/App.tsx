@@ -87,6 +87,7 @@ const DEFAULT_ORGANISM_STATE: OrganismStateData = {
   lastRemarkAt: 0,
   focusMinutesToday: 0,
   divergenceCountToday: 0,
+      escalationLevel: 0,
   lastObservationAt: 0,
 };
 
@@ -100,7 +101,6 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<TabId>('focus');
   const [goalInput, setGoalInput] = useState('');
-  const [duration, setDuration] = useState<number | 'flow'>(25);
   const [isDecomposing, setIsDecomposing] = useState(false);
 
   const [selectedProvider, setSelectedProvider] = useState<SupportedAiProvider>('google');
@@ -192,9 +192,8 @@ export default function App() {
   };
 
   const handleStartSprint = async () => {
-    const targetMins = duration === 'flow' ? 0 : duration;
-    const g = goalInput.trim() || (goals.find((m) => !m.completed)?.title ?? 'Deep Focus Block');
-    await sendMessage('startSprint', { goal: g, targetMinutes: targetMins });
+    const g = goalInput.trim() || 'Open-ended focus';
+    await sendMessage('startSprint', { goal: g, targetMinutes: 0 });
     soundSynth.playChime('start');
   };
 
@@ -300,14 +299,7 @@ export default function App() {
     (!(selectedProvider === 'ollama' || selectedProvider === 'custom') || endpointInput.trim().length > 0);
 
   const isSprintActive = sprint.status === 'active';
-  const isFlow = sprint.targetMinutes === 0;
   const elapsedSecs = isSprintActive ? Math.max(0, Math.floor((now - sprint.startedAt) / 1000)) : 0;
-  const targetSecs = Math.max(1, (sprint.targetMinutes || 25) * 60);
-  const clockSecs = isFlow ? elapsedSecs : Math.max(0, targetSecs - elapsedSecs);
-  const progressPct = isSprintActive && !isFlow ? Math.min(100, Math.round((elapsedSecs / targetSecs) * 100)) : 0;
-  const clockLabel = isFlow
-    ? `${Math.floor(elapsedSecs / 60)}:${String(elapsedSecs % 60).padStart(2, '0')}`
-    : `${Math.floor(clockSecs / 60)}:${String(clockSecs % 60).padStart(2, '0')}`;
 
   // ================= FIRST-RUN CONSENT =================
   if (!hasOnboarded) {
@@ -513,20 +505,9 @@ export default function App() {
                     value={goalInput}
                     onChange={(e) => setGoalInput(e.target.value)}
                   />
-                </div>
-
-                <div className="flex items-center gap-1">
-                  {[15, 25, 45, 'flow' as const].map((d) => (
-                    <button
-                      key={String(d)}
-                      type="button"
-                      onClick={() => setDuration(d)}
-                      className={`font-mono font-bold text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer ${duration === d ? 'text-white' : 'text-paper-muted hover:text-paper-ink'}`}
-                      style={duration === d ? { backgroundColor: 'var(--skin-accent)' } : {}}
-                    >
-                      {d === 'flow' ? '∞ flow' : `${d} min`}
-                    </button>
-                  ))}
+                  <p className="mt-1.5 font-mono text-[9px] text-paper-faint">
+                    No timers. Your companion watches and speaks when it matters.
+                  </p>
                 </div>
 
                 <button
@@ -554,39 +535,24 @@ export default function App() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col gap-3 min-h-0">
-                {/* Live mission — flat, no card */}
+                {/* Live mission — timerless: goal + elapsed context only */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider truncate">
-                    {sprint.goal || 'Focus sprint'}
+                    {sprint.goal || 'Open-ended focus'}
                   </span>
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider shrink-0" style={{ color: 'var(--skin-accent)' }}>
-                    {isFlow ? '∞ flow' : `${sprint.targetMinutes} min`}
+                    live
                   </span>
                 </div>
 
-                <div className="font-display font-bold text-6xl tracking-tighter text-paper-ink text-center tabular-nums leading-none py-2">
-                  {clockLabel}
+                <div className="font-display font-semibold text-3xl tracking-tight text-paper-muted text-center tabular-nums py-2">
+                  {Math.floor(elapsedSecs / 60)}m
                 </div>
 
-                <div>
-                  <div className="relative h-1.5 w-full bg-paper-line overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progressPct}>
-                    {isFlow ? (
-                      <div className="absolute inset-y-0 w-1/4 animate-sprint-flow" style={{ backgroundColor: 'var(--skin-accent)' }} />
-                    ) : (
-                      <div className="h-full transition-all duration-1000 ease-linear" style={{ width: `${progressPct}%`, backgroundColor: 'var(--skin-accent)' }} />
-                    )}
-                  </div>
-                  <div className="flex justify-between mt-1 font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
-                    <span>{isFlow ? 'no fixed end' : `${progressPct}%`}</span>
-                    <span>{organismState.focusMinutesToday}m today · {organismState.divergenceCountToday} off-track</span>
-                  </div>
+                <div className="flex justify-between font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
+                  <span>{organismState.focusMinutesToday}m today</span>
+                  <span>{organismState.divergenceCountToday} off-track</span>
                 </div>
-
-                {organismState.lastRemark && (
-                  <p className="border-l-[3px] pl-2.5 font-mono text-[11px] font-bold italic text-paper-muted leading-relaxed" style={{ borderColor: 'var(--skin-accent)' }}>
-                    “{organismState.lastRemark}”
-                  </p>
-                )}
 
                 <button
                   onClick={handleStopSprint}
@@ -819,3 +785,4 @@ export default function App() {
     </div>
   );
 }
+

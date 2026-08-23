@@ -18,12 +18,30 @@ import {
   type SmartPageNote,
   type DecomposedGoal,
 } from '@/lib/storage';
+import {
+  recordEpisode,
+  openIntervention,
+  closeOpenOutcomes,
+} from '@/lib/memory/episodeStore';
+import { recordObservation } from '@/lib/memory/focusProfile';
 import { onMessage, sendMessage } from '@/lib/messaging';
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const DEBOUNCE_MS = 600;
 /** Minimum interval between AI evaluations; pokes bypass it. */
 const EVALUATION_THROTTLE_MS = 45_000;
+
+/**
+ * Presence via chrome.idle (permission long declared, now finally used).
+ * The companion never judges an empty chair: evaluations pause while the
+ * human is idle or the machine is locked.
+ */
+type Presence = 'active' | 'idle' | 'locked';
+let presence: Presence = 'active';
+
+function isHumanPresent(): boolean {
+  return presence === 'active';
+}
 
 function debouncedEvaluate(force = false) {
   if (debounceTimer) {
@@ -93,11 +111,16 @@ export default defineBackground(() => {
     }
   });
 
-  // Periodic heartbeat alarm for checking focus sprint progress
+  // Periodic heartbeat: presence checks + safety-net evaluation cadence
   browser.alarms.create('organismTick', { periodInMinutes: 0.5 });
+  browser.idle.setDetectionInterval(60);
+  browser.idle.onStateChanged.addListener((newState) => {
+    presence = (newState as Presence) === 'locked' ? 'locked' : newState === 'idle' ? 'idle' : 'active';
+  });
 
   browser.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'organismTick') {
+      if (!isHumanPresent()) return;
       await evaluateCurrentState();
     }
   });
@@ -204,6 +227,7 @@ export default defineBackground(() => {
       ...state,
       focusMinutesToday: 0,
       divergenceCountToday: 0,
+      escalationLevel: 0,
     });
   });
 
@@ -362,23 +386,58 @@ async function evaluateCurrentState(force = false): Promise<{
     // so throttling reflects real evaluation cadence.
     organismState.lastObservationAt = Date.now();
 
+    const onTask =
+      decision.status === 'on_task' || decision.status === 'goal_completed' || decision.status === 'resting_or_idle';
+    await recordObservation({
+      domain: ctx.currentDomain,
+      onTask,
+      hour: new Date().getHours(),
+    });
+
     if (decision.shouldReact || force) {
       if (decision.triggerEffect || decision.state === 'annoyed' || decision.state === 'suspicious') {
         organismState.divergenceCountToday += 1;
         await logActivity('divergence', ctx.currentDomain, `Detour on ${ctx.currentDomain}`);
+        void recordEpisode({
+          type: 'divergence',
+          domain: ctx.currentDomain,
+          detail: decision.remark ?? `Detour on ${ctx.currentDomain}`,
+          ...(sprint.goal ? { goalTitle: sprint.goal } : {}),
+        });
       } else if (decision.state === 'celebrating') {
         organismState.focusMinutesToday += 15;
         await logActivity('focus', ctx.currentDomain, 'Focus streak milestone');
       }
 
-      organismState.state = decision.state;
-      organismState.lastRemark = decision.remark;
-      organismState.lastRemarkAt = Date.now();
+      // MEMORY LOOP — the judge spoke: open an intervention episode and
+      // remember its kind so outcomes can close it later.
+      const kind = decision.intervention ?? 'nudge';
+      const level = organismState.escalationLevel ?? 0;
+      if (kind !== 'observe') {
+        await openIntervention({
+          kind,
+          level,
+          remark: decision.remark,
+          domain: ctx.currentDomain,
+          ...(sprint.goal ? { goalTitle: sprint.goal } : {}),
+        });
+      }
+      organismState.escalationLevel = Math.max(
+        0,
+        Math.min(3, level + (kind === 'observe' ? -1 : (decision.escalationDelta ?? 1))),
+      );
+      if (kind !== 'observe') {
+        organismState.state = decision.state;
+        organismState.lastRemark = decision.remark;
+        organismState.lastRemarkAt = Date.now();
+      } else {
+        organismState.state = decision.state;
+      }
       await organismStateStorage.setValue(organismState);
 
       const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
 
-      if (activeTab?.id) {
+      if (activeTab?.id && kind !== 'observe') {
         try {
           await sendMessage(
             'triggerReaction',
@@ -396,10 +455,19 @@ async function evaluateCurrentState(force = false): Promise<{
       }
 
       return {
-        triggered: true,
+        triggered: kind !== 'observe',
         message: decision.remark,
         state: decision.state,
       };
+    }
+
+    // OUTCOME WATCHER — the judge stayed silent this cycle; if that silence
+    // follows an intervention and the human is back on task, close the loop.
+    if (onTask) {
+      const closed = await closeOpenOutcomes({ effective: true });
+      if (closed > 0) {
+        organismState.escalationLevel = Math.max(0, (organismState.escalationLevel ?? 0) - 1);
+      }
     }
 
     // Persist observation timestamp even when no reaction fires so the
@@ -431,3 +499,4 @@ async function logActivity(
     // Storage error fallback
   }
 }
+
