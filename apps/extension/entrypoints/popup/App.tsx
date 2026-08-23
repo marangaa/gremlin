@@ -295,6 +295,10 @@ export default function App() {
     }
   };
 
+  const canSaveSettings =
+    (!currentProviderConfig.requiresKey || apiKeyInput.trim().length > 0) &&
+    (!(selectedProvider === 'ollama' || selectedProvider === 'custom') || endpointInput.trim().length > 0);
+
   const isSprintActive = sprint.status === 'active';
   const isFlow = sprint.targetMinutes === 0;
   const elapsedSecs = isSprintActive ? Math.max(0, Math.floor((now - sprint.startedAt) / 1000)) : 0;
@@ -777,16 +781,19 @@ export default function App() {
                   onChange={(e) => setModelInput(e.target.value)}
                   className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
                 />
-                <p className="pt-0.5 font-mono text-[9px] text-paper-faint">
-                  Defaults to {currentProviderConfig.defaultModel} — check your provider's docs for current IDs.
-                </p>
               </div>
 
               <div className="flex items-center gap-3 pb-2">
+                {!canSaveSettings && (
+                  <span className="font-mono text-[10px] font-bold text-red-600">
+                    {currentProviderConfig.requiresKey && !apiKeyInput.trim() ? 'Key required' : 'Endpoint required'}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={handleSaveSettings}
-                  className="border-2 border-coal px-5 py-1.5 font-display font-bold text-xs text-white shadow-brut-sm transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none cursor-pointer"
+                  disabled={!canSaveSettings}
+                  className="border-2 border-coal px-5 py-1.5 font-display font-bold text-xs text-white shadow-brut-sm transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none cursor-pointer disabled:opacity-40 disabled:shadow-none disabled:hover:translate-y-0"
                   style={{ backgroundColor: 'var(--skin-accent)' }}
                 >
                   {saveFeedback ? 'Saved ✓' : 'Save'}
@@ -794,7 +801,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={handleTestConnection}
-                  disabled={testStatus?.loading}
+                  disabled={testStatus?.loading || !canSaveSettings}
                   className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted hover:text-paper-ink transition-colors cursor-pointer disabled:opacity-40"
                 >
                   {testStatus?.loading ? 'Testing…' : 'Test connection'}
