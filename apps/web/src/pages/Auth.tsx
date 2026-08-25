@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
+import { createAuthClient } from 'better-auth/react';
 import { Shield, Sparkles, Check, ArrowRight, Mail, Key } from 'lucide-react';
+
+/**
+ * Better Auth client pointed at the Gremlin backend. The session cookie is
+ * set on the backend domain and shared with the extension's service worker
+ * (which sends the same cookie via credentials: include).
+ */
+const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8787';
+const authClient = createAuthClient({ baseURL: API_URL });
 
 interface AuthProps {
   navigate?: (path: string) => void;
@@ -22,11 +31,18 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
     setErrorMsg(null);
 
     try {
-      // Simulate / call auth backend
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Real Better Auth call against the backend — creates the Neon user
+      // row and sets a session cookie scoped to the backend domain.
+      const result = isSignUp
+        ? await authClient.signUp.email({ email, password, name: name || email.split('@')[0] })
+        : await authClient.signIn.email({ email, password });
+
+      if (result.error) {
+        throw new Error(result.error.message ?? 'Authentication failed.');
+      }
       setSuccess(true);
 
-      // If opened from extension, broadcast session message
+      // Legacy handoff signal — kept for any opener that listens.
       if (window.opener) {
         window.opener.postMessage(
           {

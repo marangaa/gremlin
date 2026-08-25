@@ -97,7 +97,26 @@ The dynamic import + `import.meta.env.DEV` gate keep the package out of release 
 
 ## 3. Backend & Cloud Architecture (`apps/backend`)
 
-> **Status (v1 launch): DORMANT.** The extension ships BYOK-only — cloud sign-in is hidden from the UI (`userSessionStorage` stays defined for schema stability, but nothing reads it). All server-side infrastructure remains deployed and intact for reintroduction: Better Auth routes, `/api/sprint/*` sync endpoints, plan tiers on `user.additionalFields`, and the extension's `config.mode === 'cloud'` evaluation branch in `lib/ai/engine.ts`. To re-enable: surface an auth row in the Model tab (`authClient.getSession()` → flip mode), restore the popup session watch, and ship billing.
+> **Status: LIVE.** The extension ships BYOK by default but Gremlin Cloud is fully wired — inline sign-in in the popup's Model tab, `mode === 'cloud'` evaluation through `/api/sprint/evaluate`, and memory mirroring via `/api/memory/*` (see Memory Loop section). Billing/plan enforcement is the only unbuilt piece.
+
+### Auth & Sessions
+
+Better Auth (email/password) issues a session cookie scoped to the **backend domain**. Three clients talk to it:
+
+| Client | Cookie jar | Notes |
+|---|---|---|
+| Web (`gremlin.fasihi.xyz/auth`) | Browser jar for backend domain | Real `signUp.email` / `signIn.email` since the mock was removed. Account rows live in Neon. |
+| Popup | Extension fetches share the browser cookie jar for the request URL | Inline sign-in form; also **probes `authClient.getSession()` on open** — so signing in on the website auto-signs the extension on next popup open (empirically verify SameSite behavior per Chrome version). |
+| Service worker | Same shared jar via `credentials: include` | Powers `decideOrganismReaction`'s cloud branch and memory sync; no separate login needed once any session exists. |
+
+There is no token handoff or device-code flow — one cookie domain, three consumers.
+
+### Data-flow when switching Local ↔ Cloud
+
+- **Exactly ONE evaluation path runs per moment**, chosen by `config.mode`: `self-hosted` → local FocusMonitorAgent with your key; `cloud` → backend proxy with server keys (your BYOK key is unused while cloud is active).
+- **Memory is always recorded locally first** (episodes, profile rules), regardless of mode — then opportunistically mirrored to Neon only when `cloud + signed in`. Switching modes mid-session never loses data or pauses tracking.
+- Local-only data that never leaves the device in either mode: goals, milestones, smart notes, diaries.
+- Plan-tier enforcement (`free` vs `pro`) is not yet checked server-side — pending billing.
 
 ### Tech Stack
 * **Framework:** [Hono v4](https://hono.dev) deployed on **Cloudflare Workers**.

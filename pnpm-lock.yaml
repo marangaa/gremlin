@@ -86,7 +86,7 @@ importers:
         version: 7.0.74(zod@4.4.3)
       better-auth:
         specifier: 1.7.1
-        version: 1.7.1(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)))
+        version: 1.7.1(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -126,10 +126,10 @@ importers:
         version: 19.2.4(@types/react@19.2.18)
       '@vitejs/plugin-react':
         specifier: ^4.3.4
-        version: 4.7.0(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))
+        version: 4.7.0(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))
       '@wxt-dev/module-react':
         specifier: ^1.1.3
-        version: 1.2.2(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))(wxt@0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@1.21.7))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))(web-ext@10.6.0(jiti@1.21.7)))
+        version: 1.2.2(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))(wxt@0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@2.7.0))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))(web-ext@10.6.0(jiti@2.7.0)))
       autoprefixer:
         specifier: ^10.4.21
         version: 10.5.4(postcss@8.5.26)
@@ -144,16 +144,19 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))
+        version: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))
       wxt:
         specifier: ^0.21.4
-        version: 0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@1.21.7))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))(web-ext@10.6.0(jiti@1.21.7))
+        version: 0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@2.7.0))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))(web-ext@10.6.0(jiti@2.7.0))
 
   apps/web:
     dependencies:
       '@gremlin/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      better-auth:
+        specifier: 1.7.1
+        version: 1.7.1(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0)))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -187,7 +190,7 @@ importers:
         version: 0.174.0
       '@vitejs/plugin-react':
         specifier: ^4.3.4
-        version: 4.7.0(vite@6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0))
+        version: 4.7.0(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0))
       autoprefixer:
         specifier: ^10.4.21
         version: 10.5.4(postcss@8.5.26)
@@ -202,7 +205,7 @@ importers:
         version: 5.9.3
       vite:
         specifier: ^6.2.0
-        version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0)
+        version: 6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0)
 
   packages/shared:
     devDependencies:
@@ -4197,9 +4200,9 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
-  '@eslint-community/eslint-utils@4.10.1(eslint@9.39.4(jiti@1.21.7))':
+  '@eslint-community/eslint-utils@4.10.1(eslint@9.39.4(jiti@2.7.0))':
     dependencies:
-      eslint: 9.39.4(jiti@1.21.7)
+      eslint: 9.39.4(jiti@2.7.0)
       eslint-visitor-keys: 3.4.3
     optional: true
 
@@ -4715,7 +4718,7 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
-  '@vitejs/plugin-react@4.7.0(vite@6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0))':
+  '@vitejs/plugin-react@4.7.0(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7)
@@ -4723,11 +4726,11 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0)
+      vite: 6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-react@4.7.0(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))':
+  '@vitejs/plugin-react@4.7.0(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-react-jsx-self': 7.29.7(@babel/core@7.29.7)
@@ -4735,7 +4738,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.27
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)
+      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -4748,13 +4751,14 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.1
 
-  '@vitest/mocker@4.1.11(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))':
+  '@vitest/mocker@4.1.11(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)
+      vite: 6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0)
+    optional: true
 
   '@vitest/mocker@4.1.11(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))':
     dependencies:
@@ -4763,7 +4767,6 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)
-    optional: true
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -4815,11 +4818,11 @@ snapshots:
       '@types/filesystem': 0.0.36
       '@types/har-format': 1.2.16
 
-  '@wxt-dev/module-react@1.2.2(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))(wxt@0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@1.21.7))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))(web-ext@10.6.0(jiti@1.21.7)))':
+  '@wxt-dev/module-react@1.2.2(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))(wxt@0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@2.7.0))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))(web-ext@10.6.0(jiti@2.7.0)))':
     dependencies:
-      '@vitejs/plugin-react': 4.7.0(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))
-      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)
-      wxt: 0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@1.21.7))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))(web-ext@10.6.0(jiti@1.21.7))
+      '@vitejs/plugin-react': 4.7.0(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))
+      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)
+      wxt: 0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@2.7.0))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))(web-ext@10.6.0(jiti@2.7.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -4835,7 +4838,7 @@ snapshots:
 
   acorn@8.18.0: {}
 
-  addons-linter@10.10.0(jiti@1.21.7):
+  addons-linter@10.10.0(jiti@2.7.0):
     dependencies:
       '@fluent/syntax': 0.19.0
       '@fregante/relaxed-json': 2.0.0
@@ -4848,8 +4851,8 @@ snapshots:
       common-tags: 1.8.2
       css-tree: 3.2.1
       deepmerge: 4.3.1
-      eslint: 9.39.4(jiti@1.21.7)
-      eslint-plugin-no-unsanitized: 4.1.5(eslint@9.39.4(jiti@1.21.7))
+      eslint: 9.39.4(jiti@2.7.0)
+      eslint-plugin-no-unsanitized: 4.1.5(eslint@9.39.4(jiti@2.7.0))
       eslint-visitor-keys: 5.0.1
       espree: 11.2.0
       esprima: 4.0.1
@@ -4974,7 +4977,7 @@ snapshots:
 
   baseline-browser-mapping@2.11.15: {}
 
-  better-auth@1.7.1(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))):
+  better-auth@1.7.1(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0))):
     dependencies:
       '@better-auth/core': 1.7.1(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.4.3))(jose@6.2.9)(kysely@0.29.5)(nanostores@1.5.1)
       '@better-auth/drizzle-adapter': 1.7.1(@better-auth/core@1.7.1(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@cloudflare/workers-types@4.20260702.1)(@opentelemetry/api@1.9.0)(better-call@1.4.0(zod@4.4.3))(jose@6.2.9)(kysely@0.29.5)(nanostores@1.5.1))(@better-auth/utils@0.4.2)
@@ -4996,7 +4999,7 @@ snapshots:
     optionalDependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
-      vitest: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))
+      vitest: 4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0))
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
       - '@opentelemetry/api'
@@ -5495,9 +5498,9 @@ snapshots:
 
   escape-string-regexp@5.0.0: {}
 
-  eslint-plugin-no-unsanitized@4.1.5(eslint@9.39.4(jiti@1.21.7)):
+  eslint-plugin-no-unsanitized@4.1.5(eslint@9.39.4(jiti@2.7.0)):
     dependencies:
-      eslint: 9.39.4(jiti@1.21.7)
+      eslint: 9.39.4(jiti@2.7.0)
     optional: true
 
   eslint-scope@8.4.0:
@@ -5515,9 +5518,9 @@ snapshots:
   eslint-visitor-keys@5.0.1:
     optional: true
 
-  eslint@9.39.4(jiti@1.21.7):
+  eslint@9.39.4(jiti@2.7.0):
     dependencies:
-      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.4(jiti@1.21.7))
+      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.4(jiti@2.7.0))
       '@eslint-community/regexpp': 4.12.2
       '@eslint/config-array': 0.21.2
       '@eslint/config-helpers': 0.4.2
@@ -5552,7 +5555,7 @@ snapshots:
       natural-compare: 1.4.0
       optionator: 0.9.4
     optionalDependencies:
-      jiti: 1.21.7
+      jiti: 2.7.0
     transitivePeerDependencies:
       - supports-color
     optional: true
@@ -6869,7 +6872,7 @@ snapshots:
     dependencies:
       pathe: 2.0.3
 
-  unimport@6.4.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)):
+  unimport@6.4.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)):
     dependencies:
       acorn: 8.18.0
       escape-string-regexp: 5.0.0
@@ -6883,7 +6886,7 @@ snapshots:
       scule: 1.3.0
       strip-literal: 4.0.0
       tinyglobby: 0.2.17
-      unplugin: 3.3.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))
+      unplugin: 3.3.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))
       unplugin-utils: 0.3.2
     optionalDependencies:
       rolldown: 1.2.5
@@ -6905,7 +6908,7 @@ snapshots:
       pathe: 2.0.3
       picomatch: 4.0.5
 
-  unplugin@3.3.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)):
+  unplugin@3.3.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)):
     dependencies:
       '@jridgewell/remapping': 2.3.5
       picomatch: 4.0.5
@@ -6914,7 +6917,7 @@ snapshots:
       esbuild: 0.28.1
       rolldown: 1.2.5
       rollup: 4.62.5
-      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)
+      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)
 
   upath@3.0.7:
     optional: true
@@ -6949,7 +6952,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  vite@6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.33.0):
+  vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0):
     dependencies:
       esbuild: 0.25.12
       fdir: 6.5.0(picomatch@4.0.5)
@@ -6960,21 +6963,8 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.20.1
       fsevents: 2.3.3
-      jiti: 2.7.0
-      lightningcss: 1.33.0
-
-  vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7):
-    dependencies:
-      lightningcss: 1.33.0
-      picomatch: 4.0.5
-      postcss: 8.5.26
-      rolldown: 1.2.5
-      tinyglobby: 0.2.17
-    optionalDependencies:
-      '@types/node': 22.20.1
-      esbuild: 0.28.1
-      fsevents: 2.3.3
       jiti: 1.21.7
+      lightningcss: 1.33.0
 
   vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0):
     dependencies:
@@ -6988,12 +6978,11 @@ snapshots:
       esbuild: 0.28.1
       fsevents: 2.3.3
       jiti: 2.7.0
-    optional: true
 
-  vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)):
+  vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))
+      '@vitest/mocker': 4.1.11(vite@6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -7010,13 +6999,14 @@ snapshots:
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.1
-      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)
+      vite: 6.4.3(@types/node@22.20.1)(jiti@1.21.7)(lightningcss@1.33.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/node': 22.20.1
     transitivePeerDependencies:
       - msw
+    optional: true
 
   vitest@4.1.11(@opentelemetry/api@1.9.0)(@types/node@22.20.1)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)):
     dependencies:
@@ -7045,7 +7035,6 @@ snapshots:
       '@types/node': 22.20.1
     transitivePeerDependencies:
       - msw
-    optional: true
 
   watchpack@2.5.2:
     dependencies:
@@ -7057,11 +7046,11 @@ snapshots:
       defaults: 1.0.4
     optional: true
 
-  web-ext@10.6.0(jiti@1.21.7):
+  web-ext@10.6.0(jiti@2.7.0):
     dependencies:
       '@babel/runtime': 8.0.0
       '@devicefarmer/adbkit': 3.3.9
-      addons-linter: 10.10.0(jiti@1.21.7)
+      addons-linter: 10.10.0(jiti@2.7.0)
       camelcase: 8.0.0
       chrome-launcher: 1.2.0
       debounce: 1.2.1
@@ -7177,7 +7166,7 @@ snapshots:
       powershell-utils: 0.1.0
     optional: true
 
-  wxt@0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@1.21.7))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))(web-ext@10.6.0(jiti@1.21.7)):
+  wxt@0.21.4(esbuild@0.28.1)(eslint@9.39.4(jiti@2.7.0))(rolldown@1.2.5)(rollup@4.62.5)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))(web-ext@10.6.0(jiti@2.7.0)):
     dependencies:
       '@1natsu/wait-element': 4.2.0
       '@aklinker1/rollup-plugin-visualizer': 5.12.0(rollup@4.62.5)
@@ -7207,12 +7196,12 @@ snapshots:
       tiny-open: 1.3.0
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      unimport: 6.4.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7))
-      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@1.21.7)
+      unimport: 6.4.0(esbuild@0.28.1)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0))
+      vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.1)(jiti@2.7.0)
     optionalDependencies:
-      eslint: 9.39.4(jiti@1.21.7)
+      eslint: 9.39.4(jiti@2.7.0)
       typescript: 5.9.3
-      web-ext: 10.6.0(jiti@1.21.7)
+      web-ext: 10.6.0(jiti@2.7.0)
     transitivePeerDependencies:
       - '@farmfe/core'
       - '@rspack/core'

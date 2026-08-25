@@ -155,6 +155,20 @@ export default function App() {
     const unwatchOnboard = onboardedStorage.watch((o: boolean | null) => o !== null && setHasOnboarded(o));
     const unwatchGoals = goalsStorage.watch((g: DecomposedGoal[] | null) => g && setGoals(g));
 
+    // Shared-cookie auto-detect: the extension's service worker sends the
+    // browser's cookie jar to the backend, so a session created on the WEBSITE
+    // is visible here too. Probe once per popup open and adopt it silently —
+    // this makes web sign-in effectively sign the extension in.
+    void authClient
+      .getSession()
+      .then(({ data }) => {
+        if (!alive || !data?.user) return;
+        setSession((prev) =>
+          prev.isLoggedIn ? prev : { plan: 'pro', isLoggedIn: true, email: data.user.email },
+        );
+      })
+      .catch(() => {});
+
     return () => {
       alive = false;
       unwatchConfig();
