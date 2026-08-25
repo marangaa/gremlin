@@ -3,6 +3,7 @@ import { AgentMemoryStore, agentMemoryStore } from './memory/AgentMemoryStore';
 import { GoalDecomposerAgent } from './agents/GoalDecomposerAgent';
 import { FocusMonitorAgent } from './agents/FocusMonitorAgent';
 import { DiarySynthesizerAgent } from './agents/DiarySynthesizerAgent';
+import { PsychologistAgent } from './agents/PsychologistAgent';
 import { resolveLanguageModel } from './modelFactory';
 import { configStorage, type OrganismConfig } from '../storage';
 import type { OrganismId } from '@gremlin/shared';
@@ -59,6 +60,12 @@ export class AgentOrchestrator {
       companionId: companionId || cfg.organismId || 'Sarge',
       memoryStore: this.memoryStore,
     });
+  }
+
+  public async getPsychologist(): Promise<PsychologistAgent> {
+    const cfg = await configStorage.getValue();
+    const model = await this.getResolvedModel(cfg);
+    return new PsychologistAgent({ model });
   }
 }
 

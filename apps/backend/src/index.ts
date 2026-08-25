@@ -6,6 +6,7 @@ import { handleGlobalError, handleNotFound, type ErrorEnvelope } from './middlew
 import { authRoutes } from './routes/auth';
 import { userRoutes } from './routes/user';
 import { sprintRoutes } from './routes/sprint';
+import { memoryRoutes } from './routes/memory';
 import type { AppEnv } from './types/env';
 
 /**
@@ -36,7 +37,8 @@ app.get('/health', (c) => {
 const routes = app
   .route('/api/auth', authRoutes)
   .route('/api/user', userRoutes)
-  .route('/api/sprint', sprintRoutes);
+  .route('/api/sprint', sprintRoutes)
+  .route('/api/memory', memoryRoutes);
 
 /**
  * Exported AppType representing the composite API schema for Hono Client (`hc<AppType>`).

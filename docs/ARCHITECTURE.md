@@ -111,6 +111,16 @@ The loop: `PERCEIVE → JUDGE → INTERVENE/OBSERVE → RECORD → OUTCOME → L
 * **Psychologist** — `PsychologistAgent.distillDaily()` condenses today's episodes + diary into ≤8 distilled lessons merged into the focus profile. *(Nightly trigger wiring pending.)*
 * Planned persistence additions: user-owned Export/Import JSON backup button; Gremlin Cloud mirror reusing the dormant sprint-sync endpoints.
 
+### Cloud Memory Sync (live)
+
+Cloud mode is fully re-enabled: sign-in lives inline in the popup's Model tab (`authClient.signIn.email`), and `mode === 'cloud'` counts toward `isConfigured`. For signed-in users, the memory loop mirrors server-side via the **`/api/memory/*`** routes (Neon tables `memory_episodes` + `focus_profiles`, schema in `schema.sql`):
+
+* `POST /api/memory/episodes` — upsert-by-id batch push
+* `GET /api/memory/episodes?since&limit` — pull for cross-device merge
+* `GET|PUT /api/memory/profile` — focus profile mirror
+
+Extension-side sync is opportunistic and local-first (`lib/api/memoryClient.ts`): after each judged moment the newest episode + profile push fire-and-forget; at service-worker boot a newer remote profile is adopted by `updatedAt` comparison. Every failure is swallowed — network state never disrupts local behavior.
+
 ### Cloud API Routes
 * `GET /health`: Health check and status ping.
 * `ALL /api/auth/*`: Better Auth handler (sign-up, sign-in, sign-out, session validation).

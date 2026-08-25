@@ -33,7 +33,10 @@ export class DiarySynthesizerAgent {
     this.memoryStore = config.memoryStore || agentMemoryStore;
   }
 
-  public async synthesize(diary: DailyDiary): Promise<AgentResult<CompanionDailyReflection>> {
+  public async synthesize(
+    diary: DailyDiary,
+    memory?: { episodeDigest: string; profileLessons: string[] },
+  ): Promise<AgentResult<CompanionDailyReflection>> {
     const startTime = performance.now();
 
     // Zero Fallback: Enforce Model Configuration
@@ -73,7 +76,13 @@ ${diary.topDomains.map((t) => `  • ${t.domain}: ${t.minutes}m`).join('\n') || 
 SMART NOTES EXCERPTS:
 ${diary.notes.slice(0, 4).map((n) => `[${n.domain}] "${n.content}"`).join('\n') || 'None'}
 
-Synthesize the in-character score (1-10), catchy headline, analytical summary, and tomorrow's advice.`;
+EPISODE TIMELINE (interventions & outcomes):
+${memory?.episodeDigest || 'None recorded'}
+
+WHAT YOU HAVE LEARNED ABOUT THIS HUMAN:
+${memory?.profileLessons.map((l) => `- ${l}`).join('\n') || 'Nothing yet — first days are for observing.'}
+
+Synthesize the in-character score (1-10), catchy headline, analytical summary, and tomorrow's advice. Ground the advice in the episode timeline and lessons when available.`;
 
       const result = await generateText({
         model: this.config.model,

@@ -22,9 +22,30 @@ import {
   recordEpisode,
   openIntervention,
   closeOpenOutcomes,
+  getTodaysEpisodes,
 } from '@/lib/memory/episodeStore';
-import { recordObservation } from '@/lib/memory/focusProfile';
+import { recordObservation, getProfile, bumpLessons } from '@/lib/memory/focusProfile';
+import { pushEpisodes, pushProfile } from '@/lib/api/memoryClient';
+import { agentOrchestrator } from '@/lib/ai/AgentOrchestrator';
 import { onMessage, sendMessage } from '@/lib/messaging';
+
+/**
+ * Cloud memory mirror — when the human is signed into Gremlin Cloud, new
+ * episodes and profile updates opportunistically mirror server-side so
+ * learning survives reinstalls and follows them across devices. Local-first:
+ * every failure is swallowed and nothing waits on the network.
+ */
+async function isCloudSyncActive(): Promise<boolean> {
+  try {
+    const [config, session] = await Promise.all([
+      configStorage.getValue(),
+      (await import('@/lib/storage')).userSessionStorage.getValue(),
+    ]);
+    return config.mode === 'cloud' && Boolean(session.isLoggedIn);
+  } catch {
+    return false;
+  }
+}
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const DEBOUNCE_MS = 600;
@@ -38,9 +59,43 @@ const EVALUATION_THROTTLE_MS = 45_000;
  */
 type Presence = 'active' | 'idle' | 'locked';
 let presence: Presence = 'active';
+let wentIdleAt: number | null = null;
+let welcomedBackForGap: number | null = null;
 
 function isHumanPresent(): boolean {
   return presence === 'active';
+}
+
+/**
+ * Nightly Psychologist trigger — lazy date-change hook. Chrome MV3 cannot
+ * reliably wake at a scheduled hour, so instead: the first evaluation of a
+ * new day distills YESTERDAY'S episodes into profile lessons (one LLM call
+ * on the user's key), then stamps today as done.
+ */
+let lastDistillDate = '';
+
+async function maybeRunNightlyDistill(): Promise<void> {
+  const today = new Date().toISOString().slice(0, 10);
+  if (lastDistillDate === today) return;
+  lastDistillDate = today;
+
+  try {
+    const episodes = await getTodaysEpisodes();
+    if (episodes.length < 3) return;
+
+    const psychologist = await agentOrchestrator.getPsychologist();
+    const profile = await getProfile();
+    const result = await psychologist.distillDaily({
+      episodes,
+      diarySummary: `Focus minutes today tracked; ${episodes.filter((e) => e.type === 'divergence').length} divergence events.`,
+      currentLessons: profile.lessons,
+    });
+    if (result.success && result.data) {
+      await bumpLessons(result.data.lessons);
+    }
+  } catch {
+    // Distillation is opportunistic — never block evaluations on it.
+  }
 }
 
 function debouncedEvaluate(force = false) {
@@ -113,14 +168,60 @@ export default defineBackground(() => {
 
   // Periodic heartbeat: presence checks + safety-net evaluation cadence
   browser.alarms.create('organismTick', { periodInMinutes: 0.5 });
+
+  // Boot-time profile merge: if Gremlin Cloud holds a newer focus profile
+  // (e.g., synced from another device), adopt it locally.
+  void (async () => {
+    try {
+      const { pullProfile } = await import('@/lib/api/memoryClient');
+      const { focusProfileStorage } = await import('@/lib/storage');
+      if (!(await isCloudSyncActive())) return;
+      const remote = await pullProfile();
+      if (!remote) return;
+      const local = await focusProfileStorage.getValue();
+      if ((remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
+        await focusProfileStorage.setValue(remote);
+      }
+    } catch {
+      // Cloud unreachable — local-first continues unaffected.
+    }
+  })();
+
   browser.idle.setDetectionInterval(60);
   browser.idle.onStateChanged.addListener((newState) => {
+    const prev = presence;
     presence = (newState as Presence) === 'locked' ? 'locked' : newState === 'idle' ? 'idle' : 'active';
+
+    // Welcome-back flow: after a long idle gap during an active sprint, greet
+    // the human warmly on return — once per gap, zero guilt attached.
+    if (prev !== 'active' && presence === 'active' && wentIdleAt) {
+      const gapMin = (Date.now() - wentIdleAt) / 60000;
+      if (gapMin >= 15 && welcomedBackForGap !== wentIdleAt) {
+        welcomedBackForGap = wentIdleAt;
+        void (async () => {
+          try {
+            const sprint = await sprintStorage.getValue();
+            if (sprint.status !== 'active') return;
+            const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+            if (!tab?.id) return;
+            await sendMessage(
+              'triggerReaction',
+              { state: 'curious', message: 'Welcome back — where were we?' },
+              tab.id,
+            );
+          } catch {
+            // Tab not injectable — skip the greeting
+          }
+        })();
+      }
+    }
+    wentIdleAt = presence !== 'active' ? Date.now() : wentIdleAt;
   });
 
   browser.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'organismTick') {
       if (!isHumanPresent()) return;
+      await maybeRunNightlyDistill();
       await evaluateCurrentState();
     }
   });
@@ -394,6 +495,7 @@ async function evaluateCurrentState(force = false): Promise<{
       hour: new Date().getHours(),
     });
 
+
     if (decision.shouldReact || force) {
       if (decision.triggerEffect || decision.state === 'annoyed' || decision.state === 'suspicious') {
         organismState.divergenceCountToday += 1;
@@ -434,6 +536,14 @@ async function evaluateCurrentState(force = false): Promise<{
         organismState.state = decision.state;
       }
       await organismStateStorage.setValue(organismState);
+
+      void (async () => {
+        if (await isCloudSyncActive()) {
+          const eps = await getTodaysEpisodes();
+          if (eps[0]) await pushEpisodes([eps[0]!]);
+          await pushProfile(await getProfile());
+        }
+      })();
 
       const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
 

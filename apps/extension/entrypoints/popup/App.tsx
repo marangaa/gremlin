@@ -4,13 +4,17 @@ import {
   configStorage,
   sprintStorage,
   organismStateStorage,
+  userSessionStorage,
   onboardedStorage,
   goalsStorage,
   type OrganismConfig,
   type FocusSprint,
   type OrganismStateData,
+  type UserSession,
+  type OperatingMode,
   type DecomposedGoal,
 } from '@/lib/storage';
+import { authClient } from '@/lib/auth/client';
 import {
   ORGANISM_MODELS,
   type OrganismId,
@@ -96,6 +100,11 @@ export default function App() {
   const [sprint, setSprint] = useState<FocusSprint>(DEFAULT_SPRINT);
   const [organismState, setOrganismState] = useState<OrganismStateData>(DEFAULT_ORGANISM_STATE);
   const [hasOnboarded, setHasOnboarded] = useState<boolean>(true);
+  const [session, setSession] = useState<UserSession>({ plan: 'free', isLoggedIn: false });
+  const [cloudEmail, setCloudEmail] = useState('');
+  const [cloudPassword, setCloudPassword] = useState('');
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudError, setCloudError] = useState<string | null>(null);
 
   const [goals, setGoals] = useState<DecomposedGoal[]>([]);
 
@@ -119,10 +128,11 @@ export default function App() {
       configStorage,
       sprintStorage,
       organismStateStorage,
+      userSessionStorage,
       onboardedStorage,
       goalsStorage,
-    ]).then(([c, s, st, o, g]) => {
-      if (!alive || !c || !s || !st || !o || !g) return;
+    ]).then(([c, s, st, u, o, g]) => {
+      if (!alive || !c || !s || !st || !u || !o || !g) return;
       const cfg = c.value as OrganismConfig;
       setConfig(cfg);
       setSelectedProvider(cfg.provider || 'google');
@@ -133,6 +143,7 @@ export default function App() {
       soundSynth.setMuted(!cfg.soundEnabled);
       setSprint(s.value as FocusSprint);
       setOrganismState(st.value as OrganismStateData);
+      setSession(u.value as UserSession);
       setHasOnboarded(o.value as boolean);
       setGoals(g.value as DecomposedGoal[]);
     });
@@ -140,6 +151,7 @@ export default function App() {
     const unwatchConfig = configStorage.watch((c: OrganismConfig | null) => c && setConfig(c));
     const unwatchSprint = sprintStorage.watch((s: FocusSprint | null) => s && setSprint(s));
     const unwatchState = organismStateStorage.watch((st: OrganismStateData | null) => st && setOrganismState(st));
+    const unwatchSession = userSessionStorage.watch((u: UserSession | null) => u && setSession(u));
     const unwatchOnboard = onboardedStorage.watch((o: boolean | null) => o !== null && setHasOnboarded(o));
     const unwatchGoals = goalsStorage.watch((g: DecomposedGoal[] | null) => g && setGoals(g));
 
@@ -148,6 +160,7 @@ export default function App() {
       unwatchConfig();
       unwatchSprint();
       unwatchState();
+      unwatchSession();
       unwatchOnboard();
       unwatchGoals();
     };
@@ -164,7 +177,8 @@ export default function App() {
 
   const isConfigured =
     Boolean(config.selfHostedApiKey?.trim()) ||
-    (config.provider === 'ollama' && Boolean(config.selfHostedEndpoint?.trim()));
+    (config.provider === 'ollama' && Boolean(config.selfHostedEndpoint?.trim())) ||
+    (session.isLoggedIn && config.mode === 'cloud');
 
   const handleOrganismChange = async (id: OrganismId) => {
     const next = { ...config, organismId: id, name: ORGANISM_MODELS[id].name };
@@ -258,7 +272,7 @@ export default function App() {
   const handleSaveSettings = async () => {
     const next: OrganismConfig = {
       ...config,
-      mode: 'self-hosted',
+      mode: config.mode,
       provider: selectedProvider,
       selfHostedEndpoint: endpointInput.trim() || 'http://localhost:11434/v1',
       selfHostedApiKey: apiKeyInput.trim(),
@@ -680,6 +694,115 @@ export default function App() {
                 ⚠ Pick a provider & save
               </p>
             )}
+
+            {/* Gremlin Cloud */}
+            <div className="pb-3 mb-1 border-b-2 border-dashed border-line">
+              {session.isLoggedIn ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block font-display font-semibold text-[13px] text-paper-ink">
+                      Gremlin Cloud <span className="font-mono text-[9px] font-bold uppercase" style={{ color: config.mode === 'cloud' ? 'var(--skin-accent)' : 'text-paper-faint' }}>{config.mode === 'cloud' ? '· active' : '· idle'}</span>
+                    </span>
+                    <span className="block font-mono text-[9px] font-bold truncate text-paper-faint">{session.email}</span>
+                  </span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const next = { ...config, mode: config.mode === 'cloud' ? 'self-hosted' as OperatingMode : 'cloud' as OperatingMode };
+                        setConfig(next);
+                        await configStorage.setValue(next);
+                      }}
+                      className={`font-mono text-[9px] font-bold uppercase px-2 py-1 border-2 border-coal transition-colors cursor-pointer ${config.mode === 'cloud' ? 'text-white' : 'bg-white text-paper-muted hover:text-paper-ink'}`}
+                      style={config.mode === 'cloud' ? { backgroundColor: 'var(--skin-accent)' } : {}}
+                    >
+                      {config.mode === 'cloud' ? 'On' : 'Off'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await authClient.signOut();
+                        const nextSession: UserSession = { plan: 'free', isLoggedIn: false };
+                        await userSessionStorage.setValue(nextSession);
+                        setSession(nextSession);
+                        if (config.mode === 'cloud') {
+                          const next = { ...config, mode: 'self-hosted' as OperatingMode };
+                          setConfig(next);
+                          await configStorage.setValue(next);
+                        }
+                      }}
+                      className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-paper-ink cursor-pointer"
+                    >
+                      Sign out
+                    </button>
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-display font-semibold text-[13px] text-paper-ink">Gremlin Cloud</span>
+                    <a href="https://gremlin.fasihi.xyz/auth" target="_blank" rel="noreferrer" className="font-mono text-[9px] font-bold uppercase underline underline-offset-2" style={{ color: 'var(--skin-accent)' }}>
+                      Create account
+                    </a>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="email"
+                      placeholder="email"
+                      value={cloudEmail}
+                      onChange={(e) => setCloudEmail(e.target.value)}
+                      className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
+                    />
+                    <input
+                      type="password"
+                      placeholder="password"
+                      value={cloudPassword}
+                      onChange={(e) => setCloudPassword(e.target.value)}
+                      className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[9px] text-red-600">{cloudError ?? ''}</span>
+                    <button
+                      type="button"
+                      disabled={cloudBusy || !cloudEmail.trim() || !cloudPassword}
+                      onClick={async () => {
+                        setCloudBusy(true);
+                        setCloudError(null);
+                        try {
+                          const res = await authClient.signIn.email({ email: cloudEmail.trim(), password: cloudPassword });
+                          if (res.error) {
+                            setCloudError(res.error.message ?? 'Sign-in failed');
+                          } else {
+                            const nextSession: UserSession = {
+                              plan: 'pro',
+                              isLoggedIn: true,
+                              email: cloudEmail.trim(),
+                            };
+                            await userSessionStorage.setValue(nextSession);
+                            setSession(nextSession);
+                            const next = { ...config, mode: 'cloud' as OperatingMode };
+                            setConfig(next);
+                            await configStorage.setValue(next);
+                            setCloudPassword('');
+                          }
+                        } finally {
+                          setCloudBusy(false);
+                        }
+                      }}
+                      className="font-mono text-[10px] font-bold uppercase tracking-wider disabled:opacity-40 hover:opacity-75 transition-opacity cursor-pointer"
+                      style={{ color: 'var(--skin-accent)' }}
+                    >
+                      {cloudBusy ? '…' : 'Sign in →'}
+                    </button>
+                  </div>
+                  <p className="font-mono text-[8.5px] text-paper-faint leading-snug">
+                    Zero setup · memory synced across devices · episodes mirrored to your account.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="divide-y divide-dashed divide-line">
               {PROVIDER_ORDER.map((p) => {
                 const prov = SUPPORTED_PROVIDERS[p];

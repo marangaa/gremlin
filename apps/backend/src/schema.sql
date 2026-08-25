@@ -101,3 +101,29 @@ CREATE TABLE IF NOT EXISTS "preferences" (
 CREATE INDEX IF NOT EXISTS "idx_session_userId" ON "session"("userId");
 CREATE INDEX IF NOT EXISTS "idx_account_userId" ON "account"("userId");
 CREATE INDEX IF NOT EXISTS "idx_sprints_userId" ON "sprints"("userId");
+
+-- ==========================================================
+-- Memory Sync (episodes + focus profile mirror)
+-- ==========================================================
+
+CREATE TABLE IF NOT EXISTS "memory_episodes" (
+  "id" TEXT PRIMARY KEY,
+  "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+  "ts" BIGINT NOT NULL,
+  "type" TEXT NOT NULL,
+  "domain" TEXT,
+  "detail" TEXT NOT NULL DEFAULT '',
+  "goalTitle" TEXT,
+  "interventionKind" TEXT,
+  "interventionLevel" INTEGER,
+  "outcomeEffective" BOOLEAN,
+  "returnedWithinMin" REAL,
+  "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS "memory_episodes_user_ts_idx" ON "memory_episodes" ("userId", "ts" DESC);
+
+CREATE TABLE IF NOT EXISTS "focus_profiles" (
+  "userId" TEXT PRIMARY KEY REFERENCES "user"("id") ON DELETE CASCADE,
+  "data" JSONB NOT NULL,
+  "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);

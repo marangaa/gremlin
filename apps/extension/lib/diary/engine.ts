@@ -115,7 +115,26 @@ export async function recordDiarySession(session: {
 export async function generateCompanionDiaryReflection(): Promise<CompanionDailyReflection> {
   const diary = await getOrCreateTodayDiary();
   const agent = await agentOrchestrator.getDiarySynthesizer();
-  const result = await agent.synthesize(diary);
+
+  // Memory loop enrichment — the diary consumes episodes + lessons, not raw logs.
+  const { getTodaysEpisodes } = await import('../memory/episodeStore');
+  const { getProfile } = await import('../memory/focusProfile');
+  const [episodes, profile] = await Promise.all([getTodaysEpisodes(), getProfile()]);
+
+  const episodeDigest = episodes
+    .map((e) => {
+      const clock = new Date(e.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (e.type === 'intervention') return `${clock} — intervened (${e.intervention?.kind ?? 'nudge'}): ${e.detail}`;
+      if (e.type === 'divergence') return `${clock} — divergence on ${e.domain ?? '?'}: ${e.detail}`;
+      if (e.type === 'outcome') return `${clock} — outcome: ${e.outcome?.effective ? 'human recovered' : 'ignored'}${e.outcome?.returnedWithinMin != null ? ` in ${Math.round(e.outcome.returnedWithinMin)}m` : ''}`;
+      return `${clock} — ${e.type}: ${e.detail}`;
+    })
+    .join('\n');
+
+  const result = await agent.synthesize(diary, {
+    episodeDigest: episodeDigest || 'None recorded',
+    profileLessons: profile.lessons,
+  });
 
   if (!result.success) {
     throw result.error;
