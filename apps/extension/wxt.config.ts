@@ -6,14 +6,7 @@ export default defineConfig({
   manifest: {
     name: 'Gremlin — AI Focus Companion',
     description: 'A pixel desk companion living in your browser to keep you on task and take notes.',
-    permissions: [
-      'storage',
-      'tabs',
-      'idle',
-      'alarms',
-      'scripting',
-      'sidePanel',
-    ],
+    permissions: ['storage', 'tabs', 'idle', 'alarms', 'scripting', 'sidePanel'],
     host_permissions: ['<all_urls>'],
     action: {
       default_title: 'Open Gremlin Companion',
@@ -29,6 +22,14 @@ export default defineConfig({
         },
         description: 'Toggle Gremlin Side Panel',
       },
+    },
+  },
+  hooks: {
+    // AI SDK DevTools viewer access — development builds only, never ships.
+    'build:manifestGenerated': (wxt, manifest) => {
+      if (process.env.NODE_ENV !== 'production') {
+        manifest.host_permissions = [...(manifest.host_permissions ?? []), 'http://localhost:4983/*'];
+      }
     },
   },
 });

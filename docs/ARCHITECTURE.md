@@ -79,7 +79,18 @@ graph TD
 * `lib/events/tracker.ts` & `extractor.ts`: The extractor captures page titles, meta tags, headings, article snippets, scroll depth, and HTML5 media state using `requestIdleCallback`; content scripts push snapshots to the background via the typed `pageSignal` RPC. The tracker keys signals by domain (TTL 15 min, capacity 30) and exposes the fresh signal for the current domain inside `BrowserContext.pageSignal`, where it feeds real page context (headings/excerpt/media/scroll) into both cloud and BYOK AI evaluation breadcrumbs.
 * `lib/storage/index.ts`: All persisted state defined via `storage.defineItem` with `fallback` defaults; imports flow through WXT's canonical `#imports`.
 * `lib/ai/providers.ts`: Pure provider catalog (names, default/popular models, key requirements, endpoints) with zero SDK imports — safe to pull into lightweight surfaces like the popup. `resolveLanguageModel` lives in `lib/ai/modelFactory.ts`, which owns the `@ai-sdk/*` imports; only the background-side engine/orchestrator (and the popup's dynamically imported test-connection path) touch it. This keeps the popup bundle ~31 KB instead of dragging every provider SDK into it.
-* `entrypoints/sidepanel/SidepanelApp.tsx`: Focus Diary sidepanel sharing the paper shell. The AI telemetry drawer is fully lazy: its chunk is `React.lazy`-split and both the trace array read and its `telemetryStorage.watch()` subscription are deferred until the drawer is first opened, so panel startup never deserializes telemetry history.
+* `entrypoints/sidepanel/SidepanelApp.tsx`: Focus Diary sidepanel sharing the paper shell (today's metrics, reflection synthesis, domain breakdown, notes stream).
+
+### AI SDK DevTools (development only)
+
+Every judge call is observable in **AI SDK DevTools** — the SDK's official observability UI. In dev builds (`wxt dev`), `lib/ai/devtools.ts` registers `DevToolsTelemetry` from `@ai-sdk/devtools`; all `generateText`/`ToolLoopAgent` calls then stream runs & steps (full prompts, structured outputs, memory-tool round-trips, token usage) to a local viewer.
+
+```bash
+npx @ai-sdk/devtools@latest   # serves http://localhost:4983
+pnpm --filter @gremlin/extension dev
+```
+
+The dynamic import + `import.meta.env.DEV` gate keep the package out of release bundles, and the `localhost:4983` host permission is injected into the manifest only by the `build:manifestGenerated` hook when `NODE_ENV !== 'production'`. The legacy in-extension telemetry trace list was removed — DevTools supersedes it.
 * Unit tests live beside sources (`*.test.ts`) and run on the `WxtVitest()` plugin with `fakeBrowser` (`pnpm --filter @gremlin/extension test`).
 
 ---

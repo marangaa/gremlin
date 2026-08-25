@@ -1,17 +1,15 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   configStorage,
   sprintStorage,
   organismStateStorage,
   notesStorage,
   diaryStorage,
-  telemetryStorage,
   type OrganismConfig,
   type FocusSprint,
   type OrganismStateData,
   type SmartPageNote,
   type DailyDiary,
-  type AiTelemetryTrace,
 } from '@/lib/storage';
 import { CHARACTER_SKINS } from '@/lib/personalities/skins';
 import { type OrganismId } from '@/lib/personalities/types';
@@ -24,13 +22,8 @@ import {
   VolumeX,
   Globe,
   Plus,
-  Terminal,
 } from 'lucide-react';
 import '../popup/App.css';
-
-const LazyTelemetryDrawer = React.lazy(() =>
-  import('../popup/components/TelemetryDrawer').then((m) => ({ default: m.TelemetryDrawer })),
-);
 
 const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei', 'byte', 'pixel', 'ufo'];
 
@@ -78,9 +71,6 @@ export const SidepanelApp: React.FC = () => {
     notes: [],
     topDomains: [],
   });
-  const [telemetryTraces, setTelemetryTraces] = useState<AiTelemetryTrace[]>([]);
-  const [hasOpenedTelemetry, setHasOpenedTelemetry] = useState(false);
-  const [isTelemetryOpen, setIsTelemetryOpen] = useState(false);
 
   // Quick note form state
   const [newNoteText, setNewNoteText] = useState('');
@@ -141,19 +131,6 @@ export const SidepanelApp: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!hasOpenedTelemetry) return;
-    let alive = true;
-    void telemetryStorage.getValue().then((t: AiTelemetryTrace[]) => alive && setTelemetryTraces(t));
-    const unwatchTelemetry = telemetryStorage.watch((t: AiTelemetryTrace[] | null) => {
-      if (alive && t) setTelemetryTraces(t);
-    });
-    return () => {
-      alive = false;
-      unwatchTelemetry();
-    };
-  }, [hasOpenedTelemetry]);
-
   const skin = CHARACTER_SKINS[config.organismId] || CHARACTER_SKINS.Sarge;
 
   const handleToggleSound = async () => {
@@ -187,11 +164,6 @@ export const SidepanelApp: React.FC = () => {
 
   const handleDeleteNote = async (id: string) => {
     await sendMessage('deletePageNote', { id });
-  };
-
-  const handleToggleTelemetry = () => {
-    setIsTelemetryOpen((o) => !o);
-    setHasOpenedTelemetry(true);
   };
 
   return (
@@ -236,14 +208,6 @@ export const SidepanelApp: React.FC = () => {
           >
             {config.soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
-          <button
-            onClick={handleToggleTelemetry}
-            className={`transition-colors cursor-pointer ${hasOpenedTelemetry && isTelemetryOpen ? '' : 'text-paper-muted hover:text-paper-ink'}`}
-            style={hasOpenedTelemetry && isTelemetryOpen ? { color: 'var(--skin-accent)' } : {}}
-            title="AI reasoning traces"
-          >
-            <Terminal size={18} />
-          </button>
         </div>
       </header>
 
@@ -285,26 +249,10 @@ export const SidepanelApp: React.FC = () => {
           onGenerateReflection={handleGenerateReflection}
           onDeleteNote={handleDeleteNote}
         />
-
-        {/* AI Telemetry Drawer — chunk + data hydrate on first open */}
-        {hasOpenedTelemetry && (
-          <Suspense
-            fallback={
-              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint">
-                Loading traces…
-              </p>
-            }
-          >
-            <LazyTelemetryDrawer
-              traces={telemetryTraces}
-              isOpen={isTelemetryOpen}
-              accentColor="var(--skin-accent)"
-              onToggle={() => setIsTelemetryOpen((o) => !o)}
-            />
-          </Suspense>
-        )}
       </main>
     </div>
   );
 };
+
+
 

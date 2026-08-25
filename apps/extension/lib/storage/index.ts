@@ -6,7 +6,6 @@ import type {
   SmartPageNote,
   DailyDiary,
   CompanionDailyReflection,
-  AiTelemetryTrace,
   SessionEpisode,
   FocusProfile,
 } from '@gremlin/shared';
@@ -83,8 +82,7 @@ export type {
   DecomposedGoal,
   SmartPageNote,
   DailyDiary,
-  CompanionDailyReflection,
-  AiTelemetryTrace,
+  CompanionDailyReflection
 };
 
 // ================= STORAGE DEFINITIONS =================
@@ -159,10 +157,6 @@ export const diaryStorage = storage.defineItem<DailyDiary[]>('local:diaries', {
   fallback: [],
 });
 
-export const telemetryStorage = storage.defineItem<AiTelemetryTrace[]>('local:aiTelemetryTraces', {
-  fallback: [],
-});
-
 // ================= MEMORY LOOP =================
 
 /** Append-only episode history (interventions + outcomes + observations). */
@@ -191,6 +185,7 @@ export const focusProfileStorage = storage.defineItem<FocusProfile>('local:focus
 export const focusProfileSyncStorage = storage.defineItem<FocusProfile>('sync:focusProfile', {
   fallback: FOCUS_PROFILE_FALLBACK,
 });
+
 
 
 

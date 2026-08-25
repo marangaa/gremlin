@@ -152,28 +152,6 @@ export interface DailyDiary {
 }
 
 /**
- * AI SDK execution telemetry trace capturing latency, token usage, and thinking traces.
- */
-export interface AiTelemetryTrace {
-  id: string;
-  timestamp: number;
-  functionId: string;
-  provider: string;
-  model: string;
-  latencyMs: number;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  goal: string;
-  activeDomain: string;
-  activeTitle: string;
-  status: AgentFocusStatus;
-  mood: OrganismState;
-  remark?: string;
-  reasoning?: string;
-}
-
-/**
  * User account profile.
  */
 export interface UserProfile {
@@ -256,4 +234,5 @@ export interface EvaluationResult {
   /** Suggested escalation adjustment, typically -1..+1 per judgment. */
   escalationDelta?: number;
 }
+
 

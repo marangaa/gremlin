@@ -1,11 +1,10 @@
 import { generateText } from 'ai';
+import './devtools';
 import { z } from 'zod';
 import { type BrowserContext } from '../events/tracker';
 import {
   type FocusSprint,
   type OrganismConfig,
-  type AiTelemetryTrace,
-  telemetryStorage,
 } from '../storage';
 import { resolveLanguageModel } from './modelFactory';
 import { type SupportedAiProvider } from './providers';
@@ -44,23 +43,6 @@ export const OrganismDecisionSchema = z.object({
 });
 
 export type OrganismDecision = z.infer<typeof OrganismDecisionSchema>;
-
-/**
- * Helper to record execution telemetry into persistent storage.
- */
-async function recordTelemetryTrace(trace: Omit<AiTelemetryTrace, 'id' | 'timestamp'>) {
-  try {
-    const current = await telemetryStorage.getValue();
-    const newTrace: AiTelemetryTrace = {
-      id: `trace_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      timestamp: Date.now(),
-      ...trace,
-    };
-    await telemetryStorage.setValue([newTrace, ...current.slice(0, 49)]);
-  } catch {
-    // Ignore
-  }
-}
 
 /**
  * Builds the current-tab breadcrumb from live page signals when available,
@@ -142,23 +124,6 @@ export async function decideOrganismReaction(
         if (json.success && json.data) {
           const evalData: EvaluationResult = json.data;
 
-          await recordTelemetryTrace({
-            functionId: 'cloud:sprint.evaluate',
-            provider: 'gremlin-cloud',
-            model: 'hosted-edge',
-            latencyMs,
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-            goal: sprint.goal,
-            activeDomain: ctx.currentDomain,
-            activeTitle: ctx.currentTitle,
-            status: evalData.status,
-            mood: evalData.mood,
-            remark: evalData.remark,
-            reasoning: evalData.reasoning,
-          });
-
           return {
             shouldReact: evalData.status !== 'on_task' || forcePoke,
             state: evalData.mood,
@@ -194,24 +159,6 @@ export async function decideOrganismReaction(
 
   if (result.success) {
     const decision = result.data;
-    const latencyMs = result.executionTimeMs;
-
-    await recordTelemetryTrace({
-      functionId: 'ai-agent:focusMonitor',
-      provider: config.provider || 'google',
-      model: config.selfHostedModel || 'default',
-      latencyMs,
-      promptTokens: result.usage?.inputTokens ?? 0,
-      completionTokens: result.usage?.outputTokens ?? 0,
-      totalTokens: result.usage?.totalTokens ?? 0,
-      goal: sprint.goal,
-      activeDomain: ctx.currentDomain,
-      activeTitle: ctx.currentTitle,
-      status: decision.status,
-      mood: decision.mood,
-      remark: decision.remark,
-      reasoning: decision.reasoning,
-    });
 
     return {
       shouldReact: decision.status !== 'on_task' || forcePoke,
@@ -257,3 +204,5 @@ export async function testAiConnection(options: {
     return { ok: false, message: err?.message || 'Connection failed' };
   }
 }
+
+

@@ -109,6 +109,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@ai-sdk/devtools':
+        specifier: ^1.0.13
+        version: 1.0.13
       '@types/chrome':
         specifier: ^0.0.308
         version: 0.0.308
@@ -218,6 +221,11 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/devtools@1.0.13':
+    resolution: {integrity: sha512-x/nTRhH5FxG7zk9WV/XMcpLmTV7wVweHlVczRxLhmHkUBxLXJxUcOu912bjfwAJl1VqWY/S4qNC9c2037hr3cA==}
+    engines: {node: '>=22'}
+    hasBin: true
+
   '@ai-sdk/gateway@4.0.60':
     resolution: {integrity: sha512-t6nc44aG2LsGGia0Udxf3p/S5SkIQqK4bFo8ruqvD3C75Mpt0+hzbGNItrD2BIiOKjr2r15ymYTRHZBVCusQeQ==}
     engines: {node: '>=22'}
@@ -250,6 +258,10 @@ packages:
 
   '@ai-sdk/provider@4.0.7':
     resolution: {integrity: sha512-6or44XprPzKbr8zkmzosowSE0pxkvJcoojBL+mCZvPUt3kvXp3XSNqeVun9golb1acEfSo6yaEBRT18h2VU+1Q==}
+    engines: {node: '>=22'}
+
+  '@ai-sdk/provider@4.0.8':
+    resolution: {integrity: sha512-aWO7iwhFUGf347tCwNGggggfmZigaSu7TF739IZSrWWABUp7zkb4Cr3fMqvBe5EIS7ABJJu3Cadn0g/zs1G0QQ==}
     engines: {node: '>=22'}
 
   '@aklinker1/rollup-plugin-visualizer@5.12.0':
@@ -863,6 +875,12 @@ packages:
   '@fregante/relaxed-json@2.0.0':
     resolution: {integrity: sha512-PyUXQWB42s4jBli435TDiYuVsadwRHnMc27YaLouINktvTWsL3FcKrRMGawTayFk46X+n5bE23RjUTWQwrukWw==}
     engines: {node: '>= 0.10.0'}
+
+  '@hono/node-server@1.19.17':
+    resolution: {integrity: sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
 
   '@hono/zod-validator@0.9.0':
     resolution: {integrity: sha512-n0ZSXmCiHVIp4Y5wlOOyZCeTd/rsawA/qW1cipB8QOYKZ9N8Tk0nZUZCXho9cu374AN4JpDNKioNKBJ/W+LBug==}
@@ -3734,6 +3752,12 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.28(zod@4.4.3)
       zod: 4.4.3
 
+  '@ai-sdk/devtools@1.0.13':
+    dependencies:
+      '@ai-sdk/provider': 4.0.8
+      '@hono/node-server': 1.19.17(hono@4.13.3)
+      hono: 4.13.3
+
   '@ai-sdk/gateway@4.0.60(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
@@ -3769,6 +3793,10 @@ snapshots:
       zod: 4.4.3
 
   '@ai-sdk/provider@4.0.7':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@4.0.8':
     dependencies:
       json-schema: 0.4.0
 
@@ -4229,6 +4257,10 @@ snapshots:
 
   '@fregante/relaxed-json@2.0.0':
     optional: true
+
+  '@hono/node-server@1.19.17(hono@4.13.3)':
+    dependencies:
+      hono: 4.13.3
 
   '@hono/zod-validator@0.9.0(hono@4.13.3)(zod@4.4.3)':
     dependencies:
