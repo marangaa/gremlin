@@ -30,18 +30,16 @@ import { agentOrchestrator } from '@/lib/ai/AgentOrchestrator';
 import { onMessage, sendMessage } from '@/lib/messaging';
 
 /**
- * Cloud memory mirror — when the human is signed into Gremlin Cloud, new
- * episodes and profile updates opportunistically mirror server-side so
- * learning survives reinstalls and follows them across devices. Local-first:
+ * Account-scoped memory sync — any signed-in human gets their episode log and
+ * focus profile mirrored to Gremlin Cloud, INDEPENDENT of evaluation mode.
+ * Mode (`self-hosted` vs `cloud`) decides only who runs the LLM. Local-first:
  * every failure is swallowed and nothing waits on the network.
  */
-async function isCloudSyncActive(): Promise<boolean> {
+async function isAccountSyncActive(): Promise<boolean> {
   try {
-    const [config, session] = await Promise.all([
-      configStorage.getValue(),
-      (await import('@/lib/storage')).userSessionStorage.getValue(),
-    ]);
-    return config.mode === 'cloud' && Boolean(session.isLoggedIn);
+    const { userSessionStorage } = await import('@/lib/storage');
+    const session = await userSessionStorage.getValue();
+    return Boolean(session.isLoggedIn);
   } catch {
     return false;
   }
@@ -175,7 +173,7 @@ export default defineBackground(() => {
     try {
       const { pullProfile } = await import('@/lib/api/memoryClient');
       const { focusProfileStorage } = await import('@/lib/storage');
-      if (!(await isCloudSyncActive())) return;
+      if (!(await isAccountSyncActive())) return;
       const remote = await pullProfile();
       if (!remote) return;
       const local = await focusProfileStorage.getValue();
@@ -538,7 +536,7 @@ async function evaluateCurrentState(force = false): Promise<{
       await organismStateStorage.setValue(organismState);
 
       void (async () => {
-        if (await isCloudSyncActive()) {
+        if (await isAccountSyncActive()) {
           const eps = await getTodaysEpisodes();
           if (eps[0]) await pushEpisodes([eps[0]!]);
           await pushProfile(await getProfile());
@@ -609,4 +607,5 @@ async function logActivity(
     // Storage error fallback
   }
 }
+
 

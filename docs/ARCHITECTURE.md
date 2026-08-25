@@ -113,10 +113,20 @@ There is no token handoff or device-code flow — one cookie domain, three consu
 
 ### Data-flow when switching Local ↔ Cloud
 
-- **Exactly ONE evaluation path runs per moment**, chosen by `config.mode`: `self-hosted` → local FocusMonitorAgent with your key; `cloud` → backend proxy with server keys (your BYOK key is unused while cloud is active).
-- **Memory is always recorded locally first** (episodes, profile rules), regardless of mode — then opportunistically mirrored to Neon only when `cloud + signed in`. Switching modes mid-session never loses data or pauses tracking.
-- Local-only data that never leaves the device in either mode: goals, milestones, smart notes, diaries.
-- Plan-tier enforcement (`free` vs `pro`) is not yet checked server-side — pending billing.
+`config.mode` answers exactly one question: **who runs the LLM** — your key locally (`self-hosted`) or server keys via proxy (`cloud`). It does NOT control syncing.
+
+Syncing is **account-scoped**: any signed-in human mirrors their episode log and focus profile to Neon, regardless of mode. Exactly one evaluation path runs per moment; memory is always recorded locally first and never pauses on network state.
+
+| Data | No account | Signed in (either mode) |
+|---|---|---|
+| LLM judgment | local agent, your key | mode decides: your key locally, or server proxy |
+| Episodes + focus profile | device-only | ✅ mirrored to Neon |
+| Goals, milestones | device-only | ⏳ roadmap |
+| Smart notes, diaries | device-only | ⏳ roadmap (personal reflections — same account privacy) |
+
+Local-only data that never leaves the device without an account: goals, milestones, smart notes, diaries. Plan-tier enforcement (`free` vs `pro`) is not yet checked server-side — pending billing.
+
+Roadmap for full "account = everything synced": extend `/api/memory/*` with goals/notes/diaries tables + client push hooks alongside episodes.
 
 ### Tech Stack
 * **Framework:** [Hono v4](https://hono.dev) deployed on **Cloudflare Workers**.
