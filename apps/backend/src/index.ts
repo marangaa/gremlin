@@ -7,6 +7,7 @@ import { authRoutes } from './routes/auth';
 import { userRoutes } from './routes/user';
 import { sprintRoutes } from './routes/sprint';
 import { memoryRoutes } from './routes/memory';
+import { syncRoutes } from './routes/memory.sync';
 import type { AppEnv } from './types/env';
 
 /**
@@ -38,7 +39,8 @@ const routes = app
   .route('/api/auth', authRoutes)
   .route('/api/user', userRoutes)
   .route('/api/sprint', sprintRoutes)
-  .route('/api/memory', memoryRoutes);
+  .route('/api/memory', memoryRoutes)
+  .route('/api/memory', syncRoutes);
 
 /**
  * Exported AppType representing the composite API schema for Hono Client (`hc<AppType>`).

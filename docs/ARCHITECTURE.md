@@ -121,12 +121,13 @@ Syncing is **account-scoped**: any signed-in human mirrors their episode log and
 |---|---|---|
 | LLM judgment | local agent, your key | mode decides: your key locally, or server proxy |
 | Episodes + focus profile | device-only | ✅ mirrored to Neon |
-| Goals, milestones | device-only | ⏳ roadmap |
-| Smart notes, diaries | device-only | ⏳ roadmap (personal reflections — same account privacy) |
+| Goals + milestones | device-only | ✅ mirrored (full-list upsert by id) |
+| Smart notes | device-only | ✅ mirrored |
+| Diaries | device-only | ✅ today's diary mirrored on finish/reflect |
 
-Local-only data that never leaves the device without an account: goals, milestones, smart notes, diaries. Plan-tier enforcement (`free` vs `pro`) is not yet checked server-side — pending billing.
+Local-only without an account: everything stays on-device. Plan-tier enforcement (`free` vs `pro`) is not yet checked server-side — pending billing.
 
-Roadmap for full "account = everything synced": extend `/api/memory/*` with goals/notes/diaries tables + client push hooks alongside episodes.
+Full sync lives in `/api/memory/*` (`routes/memory.ts` for episodes/profile, `routes/memory.sync.ts` for goals/notes/diary). Push strategy is full-list upsert-by-id/date after every mutation and judged moment; boot-time pull unions missing ids/dates into local storage (server fills gaps, local wins conflicts).
 
 ### Tech Stack
 * **Framework:** [Hono v4](https://hono.dev) deployed on **Cloudflare Workers**.

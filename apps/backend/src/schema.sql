@@ -127,3 +127,43 @@ CREATE TABLE IF NOT EXISTS "focus_profiles" (
   "data" JSONB NOT NULL,
   "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
+
+-- ==========================================================
+-- Full account sync: goals, smart notes, diaries
+-- ==========================================================
+
+CREATE TABLE IF NOT EXISTS "sync_goals" (
+  "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+  "id" TEXT NOT NULL,
+  "title" TEXT NOT NULL,
+  "category" TEXT NOT NULL DEFAULT 'general',
+  "estimatedMinutes" INTEGER,
+  "isActive" BOOLEAN NOT NULL DEFAULT TRUE,
+  "completed" BOOLEAN NOT NULL DEFAULT FALSE,
+  "createdAt" BIGINT NOT NULL,
+  "completedAt" BIGINT,
+  PRIMARY KEY ("userId", "id")
+);
+
+CREATE TABLE IF NOT EXISTS "sync_notes" (
+  "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+  "id" TEXT NOT NULL,
+  "content" TEXT NOT NULL,
+  "url" TEXT NOT NULL DEFAULT '',
+  "domain" TEXT NOT NULL DEFAULT '',
+  "pageTitle" TEXT NOT NULL DEFAULT '',
+  "snippet" TEXT,
+  "goalId" TEXT,
+  "goalTitle" TEXT,
+  "companionId" TEXT NOT NULL DEFAULT 'Sarge',
+  "timestamp" BIGINT NOT NULL,
+  PRIMARY KEY ("userId", "id")
+);
+
+CREATE TABLE IF NOT EXISTS "sync_diaries" (
+  "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+  "date" TEXT NOT NULL,
+  "data" JSONB NOT NULL,
+  "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  PRIMARY KEY ("userId", "date")
+);

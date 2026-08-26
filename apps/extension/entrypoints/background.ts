@@ -13,6 +13,7 @@ import {
   activityStorage,
   goalsStorage,
   notesStorage,
+  diaryStorage,
   type ActivityEntry,
   type OrganismConfig,
   type SmartPageNote,
@@ -42,6 +43,28 @@ async function isAccountSyncActive(): Promise<boolean> {
     return Boolean(session.isLoggedIn);
   } catch {
     return false;
+  }
+}
+
+/**
+ * Pushes the current goals/notes/today-diary snapshot to the account.
+ * Full-list upserts by id/date keep server and device convergent without
+ * delta bookkeeping.
+ */
+async function mirrorAccountData(): Promise<void> {
+  try {
+    if (!(await isAccountSyncActive())) return;
+    const { pushGoals, pushNotes, pushDiary } = await import('@/lib/api/memoryClient');
+    const [goals, notes, diaries] = await Promise.all([
+      goalsStorage.getValue(),
+      notesStorage.getValue(),
+      diaryStorage.getValue(),
+    ]);
+    await pushGoals(goals.slice(0, 300));
+    await pushNotes(notes.slice(0, 200));
+    if (diaries[0]) await pushDiary(diaries[0].date, diaries[0]);
+  } catch {
+    // Best-effort mirror — local-first continues on any failure.
   }
 }
 
@@ -167,19 +190,36 @@ export default defineBackground(() => {
   // Periodic heartbeat: presence checks + safety-net evaluation cadence
   browser.alarms.create('organismTick', { periodInMinutes: 0.5 });
 
-  // Boot-time profile merge: if Gremlin Cloud holds a newer focus profile
-  // (e.g., synced from another device), adopt it locally.
+  // Boot-time cloud merge: adopt anything the account holds that this device
+  // is missing (profile by freshness; goals/notes/diaries union-by-id/date).
   void (async () => {
     try {
-      const { pullProfile } = await import('@/lib/api/memoryClient');
-      const { focusProfileStorage } = await import('@/lib/storage');
       if (!(await isAccountSyncActive())) return;
+      const { pullAll, pullProfile } = await import('@/lib/api/memoryClient');
+      const { focusProfileStorage } = await import('@/lib/storage');
+
       const remote = await pullProfile();
-      if (!remote) return;
-      const local = await focusProfileStorage.getValue();
-      if ((remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
-        await focusProfileStorage.setValue(remote);
+      if (remote) {
+        const local = await focusProfileStorage.getValue();
+        if ((remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
+          await focusProfileStorage.setValue(remote);
+        }
       }
+
+      const all = await pullAll();
+      if (!all) return;
+
+      const localGoals = await goalsStorage.getValue();
+      const missingGoals = all.goals.filter((g) => !localGoals.some((l) => l.id === g.id));
+      if (missingGoals.length > 0) await goalsStorage.setValue([...localGoals, ...missingGoals]);
+
+      const localNotes = await notesStorage.getValue();
+      const missingNotes = all.notes.filter((n) => !localNotes.some((l) => l.id === n.id));
+      if (missingNotes.length > 0) await notesStorage.setValue([...missingNotes, ...localNotes]);
+
+      const diaries = await diaryStorage.getValue();
+      const missingDiaries = all.diaries.filter((d) => !diaries.some((l) => l.date === d.date));
+      if (missingDiaries.length > 0) await diaryStorage.setValue([...diaries, ...missingDiaries]);
     } catch {
       // Cloud unreachable — local-first continues unaffected.
     }
@@ -308,10 +348,11 @@ export default defineBackground(() => {
 
     await sprintStorage.setValue({
       goal: '',
-      targetMinutes: 25,
+      targetMinutes: 0,
       startedAt: 0,
       status: 'idle',
     });
+    void mirrorAccountData();
   });
 
   onMessage('pokeOrganism', async () => {
@@ -361,10 +402,12 @@ export default defineBackground(() => {
 
     return { note: newNote };
   });
+  void mirrorAccountData();
 
   onMessage('deletePageNote', async ({ data }) => {
     const notes: SmartPageNote[] = await notesStorage.getValue();
     await notesStorage.setValue(notes.filter((n: SmartPageNote) => n.id !== data.id));
+    void mirrorAccountData();
   });
 
   onMessage('toggleGoal', async ({ data }) => {
@@ -382,10 +425,12 @@ export default defineBackground(() => {
     });
     await goalsStorage.setValue(updated);
   });
+  void mirrorAccountData();
 
   onMessage('deleteGoal', async ({ data }) => {
     const goals: DecomposedGoal[] = await goalsStorage.getValue();
     await goalsStorage.setValue(goals.filter((g: DecomposedGoal) => g.id !== data.id));
+    void mirrorAccountData();
   });
 
   onMessage('addGoal', async ({ data }) => {
@@ -403,6 +448,7 @@ export default defineBackground(() => {
     await goalsStorage.setValue(updated);
     return { goal: newGoal };
   });
+  void mirrorAccountData();
 
   onMessage('getTodayDiary', async () => {
     const diary = await getOrCreateTodayDiary();
@@ -607,5 +653,6 @@ async function logActivity(
     // Storage error fallback
   }
 }
+
 
 
