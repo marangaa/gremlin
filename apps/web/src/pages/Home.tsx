@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Download, Volume2 } from 'lucide-react';
+import { ArrowRight, Volume2 } from 'lucide-react';
 import { COMPANIONS, type CompanionId, playCharacterVoice } from '../lib/companions';
 import { Reveal } from '../components/Reveal';
 import { Sprite } from '../components/Sprite';
 import { CardlessHowItWorks } from '../components/CardlessHowItWorks';
+import { WaitlistForm } from '../components/WaitlistForm';
 
 /* ------------------------------------------------------------------ */
 /* Typewriter for the live reaction                                    */
@@ -74,16 +75,15 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
 
               <Reveal delay={160}>
                 <p className="mt-6 text-base sm:text-lg text-[#374151] dark:text-[#D1D5DB] leading-relaxed max-w-md font-medium">
-                  A Chrome extension that watches your screen, keeps you accountable, and helps you stay focused.
+                  A personal AI organism that lives in your browser, catches you when you drift, and closes the intention-action gap.
                 </p>
               </Reveal>
 
               <Reveal delay={240}>
-                <div className="mt-8 flex flex-wrap items-center gap-4">
-                  <a href="https://chromewebstore.google.com" target="_blank" rel="noopener noreferrer" className="btn-primary">
-                    <Download className="w-4 h-4" />
-                    Add to Chrome — Free
-                  </a>
+                <div className="mt-8">
+                  <WaitlistForm source="hero" />
+                </div>
+                <div className="mt-6 flex flex-wrap items-center gap-4">
                   <button
                     onClick={() =>
                       document.getElementById('companions')?.scrollIntoView({ behavior: 'smooth' })
@@ -93,6 +93,14 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
                     Meet the companions
                     <ArrowRight className="w-4 h-4" />
                   </button>
+                  <a
+                    href="https://github.com/marangaa/gremlin"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-xs text-[#5D6675] dark:text-[#9CA3AF] hover:text-coal dark:hover:text-white underline underline-offset-4"
+                  >
+                    Open Source (GitHub)
+                  </a>
                 </div>
               </Reveal>
             </div>
@@ -255,25 +263,19 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
               Scroll <span className="mark-lime text-coal">less</span>.
             </h2>
             <p className="mt-6 text-[#374151] dark:text-[#D1D5DB] max-w-md mx-auto text-base sm:text-lg leading-relaxed font-medium">
-              Add your desk companion, lock in your goal, and protect your focus.
+              Join the early access waitlist to get your desk companion before public Chrome Web Store release.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <a
-                href="https://chromewebstore.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary"
-              >
-                <Download className="w-4 h-4" />
-                Add to Chrome — Free
-              </a>
-              <button onClick={() => navigate('/pricing')} className="btn-ghost">
-                View pricing
-                <ArrowRight className="w-4 h-4" />
+            <div className="mt-8 flex justify-center">
+              <WaitlistForm source="final_cta" className="mx-auto" />
+            </div>
+            <div className="mt-6 flex justify-center gap-4">
+              <button onClick={() => navigate('/pricing')} className="btn-ghost text-xs py-2">
+                Compare Free BYOK vs Cloud Pro
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
             <p className="mt-6 font-mono text-xs font-bold tracking-wide text-[#4B5563] dark:text-[#9CA3AF]">
-              Free forever tier · Bring your own AI key · Nothing leaves your machine
+              Local-first · 100% on-device private option · Open source
             </p>
           </Reveal>
         </div>

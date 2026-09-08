@@ -3,9 +3,7 @@ import { createMiddleware } from 'hono/factory';
 import type { AppEnv } from '../types/env';
 
 const INTERNAL_SCHEME = 'chrome-extension://';
-
-// Fail-closed fallback: a non-matching ACAO value makes browsers reject the response.
-const SITE_ORIGIN = 'https://gremlin.fasihi.xyz';
+const DEFAULT_DEV_ORIGIN = 'http://localhost:5173';
 
 /**
  * Parses a comma-separated environment variable into trimmed, non-empty entries.
@@ -23,16 +21,13 @@ function parseList(value?: string): string[] {
  *
  * - Extension IDs from ALLOWED_EXTENSION_IDS become `chrome-extension://<id>` entries.
  * - Extra web origins come from ALLOWED_ORIGINS verbatim.
- * - Canonical production origins are always allowed.
  * - Localhost dev origins and the permissive chrome-extension:// wildcard are only
  *   included outside production so local development keeps working unconfigured.
  */
-export function buildAllowedOrigins(env: Partial<AppEnv['Bindings']>): string[] {
+export function buildAllowedOrigins(env: Partial<AppEnv['Bindings']> = {}): string[] {
   const isProduction = env.NODE_ENV === 'production';
 
-  const origins = new Set<string>([
-    SITE_ORIGIN,
-  ]);
+  const origins = new Set<string>();
 
   for (const id of parseList(env.ALLOWED_EXTENSION_IDS)) {
     origins.add(`${INTERNAL_SCHEME}${id}`);
@@ -43,6 +38,7 @@ export function buildAllowedOrigins(env: Partial<AppEnv['Bindings']>): string[] 
   }
 
   if (!isProduction) {
+    origins.add(DEFAULT_DEV_ORIGIN);
     origins.add('http://localhost:*');
     origins.add('http://127.0.0.1:*');
     // Permissive dev fallback: any installed extension until IDs are pinned.
@@ -94,11 +90,11 @@ export function isAllowedOrigin(
 export const dynamicCors = createMiddleware<AppEnv>(async (c, next) => {
   const handler = cors({
     origin: (origin) => {
-      if (!origin) return SITE_ORIGIN;
+      if (!origin) return DEFAULT_DEV_ORIGIN;
       if (isAllowedOrigin(origin, c.env)) {
         return origin;
       }
-      return SITE_ORIGIN;
+      return DEFAULT_DEV_ORIGIN;
     },
     allowHeaders: ['Content-Type', 'Authorization', 'x-requested-with', 'Cookie'],
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

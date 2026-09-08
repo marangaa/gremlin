@@ -22,6 +22,7 @@ import {
 import { CHARACTER_SKINS } from '@/lib/personalities/skins';
 import { sendMessage } from '@/lib/messaging';
 import { soundSynth } from '@/lib/audio/soundEngine';
+import { WEB_APP_URL } from '@/lib/api/client';
 import { SUPPORTED_PROVIDERS, type SupportedAiProvider } from '@/lib/ai/providers';
 import { AnimatedSprite } from './components/AnimatedSprite';
 import { GoalStack } from './components/GoalStack';
@@ -363,7 +364,7 @@ export default function App() {
         </div>
 
         <a
-          href="https://gremlin.fasihi.xyz/privacy"
+          href={`${WEB_APP_URL}/privacy`}
           target="_blank"
           rel="noreferrer"
           className="mt-4 text-xs underline text-paper-muted hover:text-paper-ink"
@@ -752,7 +753,7 @@ export default function App() {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="font-display font-semibold text-[13px] text-paper-ink">Gremlin Cloud</span>
-                    <a href="https://gremlin.fasihi.xyz/auth" target="_blank" rel="noreferrer" className="font-mono text-[9px] font-bold uppercase underline underline-offset-2" style={{ color: 'var(--skin-accent)' }}>
+                    <a href={`${WEB_APP_URL}/auth`} target="_blank" rel="noreferrer" className="font-mono text-[9px] font-bold uppercase underline underline-offset-2" style={{ color: 'var(--skin-accent)' }}>
                       Create account
                     </a>
                   </div>

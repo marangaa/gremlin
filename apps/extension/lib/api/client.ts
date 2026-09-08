@@ -9,6 +9,12 @@ export const API_BASE_URL =
   import.meta.env.WXT_API_URL || 'http://localhost:8787';
 
 /**
+ * Resolves the frontend web app URL (e.g. for /auth, /pricing, /privacy).
+ */
+export const WEB_APP_URL =
+  import.meta.env.WXT_WEB_APP_URL || 'http://localhost:5173';
+
+/**
  * Type-safe RPC Client for the Gremlin Hono Backend.
  * Automatically transmits browser extension cookies and authentication headers.
  */

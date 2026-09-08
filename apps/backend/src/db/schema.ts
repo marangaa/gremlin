@@ -255,3 +255,22 @@ export const processedWebhooks = pgTable(
   },
   (table) => [index('idx_processed_webhooks_processedAt').on(table.processedAt)],
 );
+
+// ==========================================================
+// 4. Waitlist Table
+// ==========================================================
+
+export const waitlist = pgTable(
+  'waitlist',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    email: text('email').notNull().unique(),
+    source: text('source').notNull().default('website'),
+    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('idx_waitlist_email').on(table.email)],
+);
+
+export type WaitlistEntry = typeof waitlist.$inferSelect;
+export type NewWaitlistEntry = typeof waitlist.$inferInsert;
+
