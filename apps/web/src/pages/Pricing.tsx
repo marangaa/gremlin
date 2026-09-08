@@ -116,6 +116,7 @@ export const Pricing: React.FC = () => {
     openPaddleCheckout({
       priceId: PADDLE_PRO_PRICE_ID,
       userEmail: user?.email,
+      userId: user?.id,
     });
   };
 

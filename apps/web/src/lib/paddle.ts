@@ -51,15 +51,17 @@ export async function getPaddle(): Promise<Paddle | null> {
 export interface OpenCheckoutOptions {
   priceId: string;
   userEmail?: string;
+  userId?: string;
 }
 
 /**
  * Opens the hosted Paddle overlay modal checkout.
- * Passes pre-filled customer email for clean email-bridge webhook reconciliation (per paddle-subscription-sync).
+ * Passes pre-filled customer email and userId in customData for seamless webhook reconciliation.
  */
 export async function openPaddleCheckout({
   priceId,
   userEmail,
+  userId,
 }: OpenCheckoutOptions) {
   const paddle = await getPaddle();
 
@@ -72,6 +74,7 @@ export async function openPaddleCheckout({
   paddle.Checkout.open({
     items: [{ priceId, quantity: 1 }],
     ...(userEmail ? { customer: { email: userEmail } } : {}),
+    ...(userId ? { customData: { userId } } : {}),
     settings: {
       variant: 'one-page',
       theme: 'dark',

@@ -11,6 +11,7 @@ import {
 } from '../lib/db';
 import {
   unmarshalPaddleWebhook,
+  getPaddleInstance,
   createCustomerPortalSession,
   EventName,
   type EventEntity,
@@ -152,7 +153,46 @@ export const billingRoutes = new Hono<AppEnv>()
             if (custRes[0]) {
               matchedUserId = custRes[0].userId;
               customerEmail = custRes[0].email;
+            } else {
+              // Fetch customer from Paddle API if not yet in local cache
+              try {
+                const paddle = getPaddleInstance(apiKey, isSandbox ? 'sandbox' : 'production');
+                const fetchedCustomer = await paddle.customers.get(customerId);
+                if (fetchedCustomer) {
+                  customerEmail = fetchedCustomer.email;
+                  const uRes = await db
+                    .select({ id: userTable.id })
+                    .from(userTable)
+                    .where(eq(sql`LOWER(${userTable.email})`, customerEmail.toLowerCase()))
+                    .limit(1);
+                  matchedUserId = uRes[0]?.id || null;
+
+                  await db
+                    .insert(customers)
+                    .values({
+                      customerId,
+                      userId: matchedUserId,
+                      email: customerEmail,
+                      updatedAt: new Date(),
+                    })
+                    .onConflictDoUpdate({
+                      target: customers.customerId,
+                      set: {
+                        userId: matchedUserId,
+                        email: customerEmail,
+                        updatedAt: new Date(),
+                      },
+                    });
+                }
+              } catch (custErr: any) {
+                logger.warn('Failed to fetch customer from Paddle API', { customerId, error: custErr?.message });
+              }
             }
+          }
+
+          // Check if customData or custom_data passed userId
+          if (!matchedUserId && (sub.customData?.userId || sub.custom_data?.userId)) {
+            matchedUserId = String(sub.customData?.userId || sub.custom_data?.userId);
           }
 
           // If userId not yet bridged, match by email from user table
