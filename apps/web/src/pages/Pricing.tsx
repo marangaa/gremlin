@@ -9,7 +9,7 @@ import { Reveal } from '../components/Reveal';
 
 const PAPER_LABEL = 'inline-flex items-center gap-1.5 px-2.5 py-1 bg-pop-yellow border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-mono text-[11px] font-bold tracking-wider text-coal';
 const PAPER_GHOST_BTN =
-  'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-white font-display font-bold text-sm text-coal tracking-wide shadow-brut-sm transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0 active:translate-y-0 active:shadow-none';
+  'w-full text-center block px-5 py-3 rounded-none border-2 border-coal dark:border-[#3F4740] bg-white dark:bg-[#161914] font-display font-bold text-sm text-coal dark:text-white tracking-wide shadow-brut-sm dark:shadow-[3px_3px_0_0_#A3E635] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0 active:translate-y-0 active:shadow-none';
 
 interface Tier {
   name: string;
@@ -96,15 +96,15 @@ const FAQS: [string, string][] = [
 
 export const Pricing: React.FC = () => {
   return (
-    <main className="min-h-screen bg-paper text-paper-ink">
+    <main className="min-h-screen transition-colors duration-200 text-coal dark:text-white">
       <div className="container-site py-16 lg:py-24">
         <div className="max-w-2xl">
           <Reveal>
             <div className={PAPER_LABEL}>Pricing</div>
-            <h1 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight text-wrap-balance">
+            <h1 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight text-coal dark:text-white text-wrap-balance">
               Start free. Upgrade when the focus pays for itself.
             </h1>
-            <p className="mt-4 text-paper-muted leading-relaxed text-base sm:text-lg">
+            <p className="mt-4 text-[#374151] dark:text-[#D1D5DB] leading-relaxed text-base sm:text-lg">
               The core companion experience is completely free with your own key. Pro exists for
               anyone who wants zero setup and instant cloud sync across devices.
             </p>
@@ -117,8 +117,8 @@ export const Pricing: React.FC = () => {
               <div
                 className={`relative h-full flex flex-col p-7 rounded-none border-2 transition-all duration-200 ${
                   tier.highlight
-                    ? 'bg-base-deep text-ink border-coal shadow-[8px_8px_0_0_#65A30D]'
-                    : 'bg-white border-coal shadow-brut hover:-translate-y-1 hover:shadow-brut-lg'
+                    ? 'bg-base-deep text-ink border-coal dark:border-[#3F4740] shadow-[8px_8px_0_0_#65A30D]'
+                    : 'bg-white dark:bg-[#161914] border-coal dark:border-[#3F4740] text-coal dark:text-white shadow-brut dark:shadow-[4px_4px_0_0_#A3E635] hover:-translate-y-1 hover:shadow-brut-lg'
                 }`}
               >
                 {tier.tag && (
@@ -126,7 +126,7 @@ export const Pricing: React.FC = () => {
                     className={`absolute -top-3 left-6 -rotate-3 font-mono text-[10px] font-bold tracking-wider px-2.5 py-1 border-2 ${
                       tier.highlight
                         ? 'bg-accent text-base-deep border-coal shadow-[3px_3px_0_0_#F5F6F1]'
-                        : 'bg-white border-coal shadow-brut-sm'
+                        : 'bg-white dark:bg-[#161914] border-coal dark:border-[#3F4740] shadow-brut-sm text-coal dark:text-white'
                     }`}
                     style={
                       tier.highlight
@@ -141,7 +141,9 @@ export const Pricing: React.FC = () => {
                 <div className="flex items-center gap-2.5">
                   <span
                     className={`inline-flex w-8 h-8 items-center justify-center border-2 ${
-                      tier.highlight ? 'bg-accent/10 border-accent/30 text-accent-bright' : 'bg-paper border-coal text-[#4D7C0F]'
+                      tier.highlight
+                        ? 'bg-accent/10 border-accent/30 text-accent-bright'
+                        : 'bg-paper dark:bg-[#20261C] border-coal dark:border-[#3F4740] text-[#4D7C0F] dark:text-accent'
                     }`}
                   >
                     {tier.icon}
@@ -151,23 +153,23 @@ export const Pricing: React.FC = () => {
 
                 <div className="mt-5 flex items-baseline gap-2">
                   <span className="font-display text-4xl font-bold tracking-tight">{tier.price}</span>
-                  <span className={`font-mono text-xs ${tier.highlight ? 'text-ink-faint' : 'text-paper-faint'}`}>
+                  <span className={`font-mono text-xs ${tier.highlight ? 'text-ink-faint' : 'text-[#6B7280] dark:text-[#9CA3AF]'}`}>
                     {tier.per}
                   </span>
                 </div>
 
-                <p className={`mt-3 text-sm leading-relaxed min-h-[40px] ${tier.highlight ? 'text-ink-muted' : 'text-paper-muted'}`}>
+                <p className={`mt-3 text-sm leading-relaxed min-h-[40px] ${tier.highlight ? 'text-ink-muted' : 'text-[#4B5563] dark:text-[#D1D5DB]'}`}>
                   {tier.blurb}
                 </p>
 
-                <div className={`mt-6 pt-6 flex-1 space-y-3 ${tier.highlight ? 'border-t border-line/60' : 'border-t border-paper-line'}`}>
-                  <span className={`font-mono text-[11px] tracking-wider ${tier.highlight ? 'text-ink-faint' : 'text-paper-faint'}`}>
+                <div className={`mt-6 pt-6 flex-1 space-y-3 ${tier.highlight ? 'border-t border-line/60' : 'border-t border-coal/10 dark:border-[#262E22]'}`}>
+                  <span className={`font-mono text-[11px] tracking-wider ${tier.highlight ? 'text-ink-faint' : 'text-[#6B7280] dark:text-[#9CA3AF]'}`}>
                     What's included:
                   </span>
-                  <ul className={`space-y-2.5 text-xs sm:text-sm ${tier.highlight ? 'text-ink-muted' : 'text-paper-muted'}`}>
+                  <ul className={`space-y-2.5 text-xs sm:text-sm ${tier.highlight ? 'text-ink-muted' : 'text-[#4B5563] dark:text-[#D1D5DB]'}`}>
                     {tier.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2.5">
-                        <Check className={`w-4 h-4 shrink-0 mt-0.5 ${tier.highlight ? 'text-accent-bright' : 'text-[#65A30D]'}`} />
+                        <Check className={`w-4 h-4 shrink-0 mt-0.5 ${tier.highlight ? 'text-accent-bright' : 'text-[#65A30D] dark:text-accent'}`} />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -179,7 +181,7 @@ export const Pricing: React.FC = () => {
                     href={tier.highlight ? '/auth' : 'https://chromewebstore.google.com'}
                     className={
                       tier.highlight
-                        ? 'w-full text-center block px-5 py-3 rounded-xl bg-accent font-display font-semibold text-sm text-base-deep transition-colors hover:bg-accent-bright active:translate-y-[1px]'
+                        ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0'
                         : PAPER_GHOST_BTN
                     }
                   >
@@ -192,22 +194,22 @@ export const Pricing: React.FC = () => {
         </div>
 
         {/* Frequently Asked Questions */}
-        <section className="mt-24 pt-16 border-t-2 border-dashed border-coal/30">
+        <section className="mt-24 pt-16 border-t-2 border-dashed border-coal/30 dark:border-[#2A2E27]">
           <div className="max-w-xl mb-10">
             <div className={PAPER_LABEL}>FAQ</div>
-            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold tracking-tight">
+            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold tracking-tight text-coal dark:text-white">
               Frequently asked questions.
             </h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {FAQS.map(([q, a], idx) => (
-              <div key={idx} className="p-6 rounded-none bg-white border-2 border-coal shadow-brut-sm space-y-2">
-                <h3 className="font-display font-semibold text-base text-paper-ink flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-[#65A30D]" />
+              <div key={idx} className="p-6 rounded-none bg-white dark:bg-[#161914] border-2 border-coal dark:border-[#3F4740] shadow-brut-sm dark:shadow-[3px_3px_0_0_#A3E635] space-y-2">
+                <h3 className="font-display font-semibold text-base text-coal dark:text-white flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#65A30D] dark:text-accent" />
                   {q}
                 </h3>
-                <p className="text-sm text-paper-muted leading-relaxed">{a}</p>
+                <p className="text-sm text-[#4B5563] dark:text-[#D1D5DB] leading-relaxed">{a}</p>
               </div>
             ))}
           </div>

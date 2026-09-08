@@ -2,9 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/icon.png" />
+    <!-- Inline theme init: apply dark class before first paint to avoid flash -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" type="image/jpeg" href="/gremlin-logo.jpg" />
+    <link rel="apple-touch-icon" href="/gremlin-logo.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gremlin — The AI Browser Desk Companion</title>
+    <title>Gremlin — Brutally honest focus companion.</title>
     <meta name="description" content="A pixel companion that lives in your browser, reads your browsing narrative instead of a blacklist, and roasts you back on task during deep work sprints." />
     <meta name="theme-color" content="#0B0D10" />
     <meta property="og:title" content="Gremlin — The AI Browser Desk Companion" />
@@ -19,7 +31,7 @@
       rel="stylesheet"
     />
   </head>
-  <body class="bg-paper text-coal antialiased">
+  <body class="antialiased selection:bg-accent selection:text-coal">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

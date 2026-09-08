@@ -47,7 +47,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-paper text-coal relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col justify-between relative overflow-x-hidden">
       {/* Clean, Minimalist Linear/Vercel-style Blueprint Grid Background */}
       <CleanGridBackground />
 

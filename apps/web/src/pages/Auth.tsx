@@ -61,7 +61,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
 
   return (
     <main className="container-site py-20 relative z-10 flex flex-col items-center justify-center min-h-[75vh]">
-      <div className="w-full max-w-md bg-white border-2 border-coal rounded-none p-8 shadow-brut-lg relative">
+      <div className="w-full max-w-md bg-white dark:bg-[#161914] border-2 border-coal dark:border-[#3F4740] rounded-none p-8 shadow-brut-lg dark:shadow-[8px_8px_0_0_#A3E635] text-coal dark:text-white relative">
         {/* Glow corner */}
         <div className="absolute -top-3 -right-3 px-2.5 py-1 -rotate-3 bg-accent text-coal text-[11px] font-mono font-bold border-2 border-coal shadow-[3px_3px_0_0_#12151A]">
           GREMLIN CLOUD
@@ -72,10 +72,10 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="font-display text-xl font-bold text-coal">
+            <h1 className="font-display text-xl font-bold text-coal dark:text-white">
               {isSignUp ? 'Create your account' : 'Sign in to Gremlin'}
             </h1>
-            <p className="text-xs text-paper-muted">
+            <p className="text-xs text-[#5D6675] dark:text-[#9CA3AF]">
               {isSignUp ? 'Sync your companion and stats everywhere' : 'Welcome back! Sync your focus streak.'}
             </p>
           </div>
@@ -108,10 +108,10 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
 
             {isSignUp && (
               <div>
-                <label className="block text-xs font-mono text-paper-muted mb-1.5">Your Name</label>
+                <label className="block text-xs font-mono text-[#5D6675] dark:text-[#9CA3AF] mb-1.5">Your Name</label>
                 <input
                   type="text"
-                  className="w-full bg-paper border-2 border-coal rounded-none px-3.5 py-2.5 text-sm text-coal placeholder:text-paper-faint focus:border-[#65A30D] focus:outline-none focus:shadow-brut-sm transition-shadow"
+                  className="w-full bg-paper dark:bg-[#0E100D] border-2 border-coal dark:border-[#3F4740] rounded-none px-3.5 py-2.5 text-sm text-coal dark:text-white placeholder:text-[#9CA3AF] focus:border-[#65A30D] dark:focus:border-accent focus:outline-none focus:shadow-brut-sm transition-shadow"
                   placeholder="e.g. Alex"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -120,12 +120,12 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
             )}
 
             <div>
-              <label className="block text-xs font-mono text-paper-muted mb-1.5">Email Address</label>
+              <label className="block text-xs font-mono text-[#5D6675] dark:text-[#9CA3AF] mb-1.5">Email Address</label>
               <div className="relative">
                 <input
                   type="email"
                   required
-                  className="w-full bg-paper border-2 border-coal rounded-none pl-9 pr-3.5 py-2.5 text-sm text-coal placeholder:text-paper-faint focus:border-[#65A30D] focus:outline-none focus:shadow-brut-sm transition-shadow"
+                  className="w-full bg-paper dark:bg-[#0E100D] border-2 border-coal dark:border-[#3F4740] rounded-none pl-9 pr-3.5 py-2.5 text-sm text-coal dark:text-white placeholder:text-[#9CA3AF] focus:border-[#65A30D] dark:focus:border-accent focus:outline-none focus:shadow-brut-sm transition-shadow"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -135,12 +135,12 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-paper-muted mb-1.5">Password</label>
+              <label className="block text-xs font-mono text-[#5D6675] dark:text-[#9CA3AF] mb-1.5">Password</label>
               <div className="relative">
                 <input
                   type="password"
                   required
-                  className="w-full bg-paper border-2 border-coal rounded-none pl-9 pr-3.5 py-2.5 text-sm text-coal placeholder:text-paper-faint focus:border-[#65A30D] focus:outline-none focus:shadow-brut-sm transition-shadow"
+                  className="w-full bg-paper dark:bg-[#0E100D] border-2 border-coal dark:border-[#3F4740] rounded-none pl-9 pr-3.5 py-2.5 text-sm text-coal dark:text-white placeholder:text-[#9CA3AF] focus:border-[#65A30D] dark:focus:border-accent focus:outline-none focus:shadow-brut-sm transition-shadow"
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -152,7 +152,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-accent hover:bg-accent-bright text-coal font-display font-bold tracking-wide py-2.5 rounded-none border-2 border-coal shadow-brut active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+              className="w-full bg-accent hover:bg-accent-bright text-coal font-display font-bold tracking-wide py-2.5 rounded-none border-2 border-coal shadow-brut active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
             >
               {loading ? 'Syncing…' : isSignUp ? 'Create Cloud Account' : 'Sign In to Cloud'}
               <ArrowRight className="w-4 h-4" />
@@ -160,9 +160,9 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
 
             <div className="relative my-6 text-center">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t-2 border-dashed border-coal/25" />
+                <div className="w-full border-t-2 border-dashed border-coal/25 dark:border-[#3F4740]" />
               </div>
-              <span className="relative px-3 bg-white text-[11px] font-mono text-paper-muted tracking-wider">
+              <span className="relative px-3 bg-white dark:bg-[#161914] text-[11px] font-mono text-[#5D6675] dark:text-[#9CA3AF] tracking-wider">
                 Or continue with
               </span>
             </div>
@@ -171,14 +171,14 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
               <button
                 type="button"
                 onClick={() => alert('Google OAuth sign-in flow')}
-                className="flex items-center justify-center gap-2 bg-white hover:bg-paper border-2 border-coal text-xs font-bold py-2 rounded-none text-coal shadow-brut-sm transition-all hover:-translate-y-0.5"
+                className="flex items-center justify-center gap-2 bg-white dark:bg-[#20261C] hover:bg-paper dark:hover:bg-[#2B3425] border-2 border-coal dark:border-[#3F4740] text-xs font-bold py-2 rounded-none text-coal dark:text-white shadow-brut-sm transition-all hover:-translate-y-0.5 cursor-pointer"
               >
                 <span>Google</span>
               </button>
               <button
                 type="button"
                 onClick={() => alert('GitHub OAuth sign-in flow')}
-                className="flex items-center justify-center gap-2 bg-white hover:bg-paper border-2 border-coal text-xs font-bold py-2 rounded-none text-coal shadow-brut-sm transition-all hover:-translate-y-0.5"
+                className="flex items-center justify-center gap-2 bg-white dark:bg-[#20261C] hover:bg-paper dark:hover:bg-[#2B3425] border-2 border-coal dark:border-[#3F4740] text-xs font-bold py-2 rounded-none text-coal dark:text-white shadow-brut-sm transition-all hover:-translate-y-0.5 cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
@@ -191,7 +191,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-xs text-paper-muted hover:text-accent underline font-mono"
+                className="text-xs text-[#5D6675] dark:text-[#9CA3AF] hover:text-accent underline font-mono cursor-pointer"
               >
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Create one"}
               </button>
@@ -200,7 +200,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
         )}
       </div>
 
-      <div className="mt-8 text-center text-xs text-paper-muted font-mono flex items-center gap-2">
+      <div className="mt-8 text-center text-xs text-[#5D6675] dark:text-[#9CA3AF] font-mono flex items-center gap-2">
         <Sparkles className="w-3.5 h-3.5 text-accent" />
         <span>Prefer local free AI? Switch to BYOK in the extension settings.</span>
       </div>
