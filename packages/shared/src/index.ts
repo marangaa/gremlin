@@ -133,6 +133,7 @@ export interface DigitalSelfAwareness {
   researchMinutes: number;
   productionMinutes: number;
   mirrorInsight: string;
+  psychologicalPattern?: string;
 }
 
 /**

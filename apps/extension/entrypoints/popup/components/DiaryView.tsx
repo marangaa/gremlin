@@ -178,6 +178,18 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
                     “{reflection.digitalSelfAwareness.mirrorInsight}”
                   </p>
                 )}
+
+                {/* Psychological Pattern */}
+                {reflection.digitalSelfAwareness.psychologicalPattern && (
+                  <div className="pt-1.5 border-t border-dashed border-line flex items-start gap-1.5">
+                    <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint shrink-0 mt-0.5">
+                      Pattern:
+                    </span>
+                    <span className="font-mono text-[10px] font-bold text-paper-muted">
+                      {reflection.digitalSelfAwareness.psychologicalPattern}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>

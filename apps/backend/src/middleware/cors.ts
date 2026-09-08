@@ -14,6 +14,7 @@ export function buildAllowedOrigins(env: Partial<AppEnv['Bindings']> = {}): stri
     frontendUrl,
     backendUrl,
     'http://localhost:5173',
+    'http://localhost:3000',
     'http://localhost:8787',
     'chrome-extension://*',
   ]);
