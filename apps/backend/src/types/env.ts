@@ -8,8 +8,10 @@ export interface Bindings {
   DATABASE_URL: string;
   /** Secret key used by Better Auth to sign session cookies and tokens. */
   BETTER_AUTH_SECRET: string;
-  /** Canonical base URL of the backend API (e.g., https://gremlin-backend.rchdmaranga-b12.workers.dev). */
+  /** Canonical base URL of the backend API (e.g., http://localhost:8787). */
   BETTER_AUTH_URL?: string;
+  /** Frontend web app URL (e.g., http://localhost:5173). */
+  FRONTEND_URL?: string;
   /** Google Gemini API Key for server-side AI agent evaluation. */
   GOOGLE_GENERATIVE_AI_API_KEY?: string;
   /** OpenAI API Key for server-side AI agent evaluation. */

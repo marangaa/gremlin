@@ -7,6 +7,8 @@ import {
   Globe,
   Trash2,
   Target,
+  Compass,
+  Shuffle,
 } from 'lucide-react';
 import type { DailyDiary, CompanionDailyReflection } from '@gremlin/shared';
 import { AnimatedSprite } from './AnimatedSprite';
@@ -42,34 +44,45 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
     }
   };
 
+  const currentSwitches = diary.contextSwitches ?? reflection?.digitalSelfAwareness?.contextSwitches ?? 0;
+
   return (
     <div className="text-paper-ink">
-      {/* Metric strip — flat columns, rules instead of boxes */}
-      <div className="grid grid-cols-3 border-y border-dashed border-line">
-        <div className="py-4 pr-3 text-center border-r border-dashed border-line">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint block">
+      {/* Metric strip — 4 columns with context switches */}
+      <div className="grid grid-cols-4 border-y border-dashed border-line">
+        <div className="py-3 pr-2 text-center border-r border-dashed border-line">
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider text-paper-faint block">
             Focus
           </span>
-          <span className="font-display font-bold text-2xl text-paper-ink flex items-center justify-center gap-1.5">
-            <Clock size={15} className="text-paper-muted" />
+          <span className="font-display font-bold text-xl text-paper-ink flex items-center justify-center gap-1">
+            <Clock size={12} className="text-paper-muted" />
             {diary.totalFocusMinutes}m
           </span>
         </div>
-        <div className="py-4 px-3 text-center border-r border-dashed border-line">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint block">
+        <div className="py-3 px-1.5 text-center border-r border-dashed border-line">
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider text-paper-faint block">
+            Switches
+          </span>
+          <span className="font-display font-bold text-xl text-paper-ink flex items-center justify-center gap-1">
+            <Shuffle size={12} className="text-paper-muted" />
+            {currentSwitches}
+          </span>
+        </div>
+        <div className="py-3 px-1.5 text-center border-r border-dashed border-line">
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider text-paper-faint block">
             Detours
           </span>
-          <span className="font-display font-bold text-2xl flex items-center justify-center gap-1.5" style={{ color: accentColor }}>
-            <Flame size={15} />
+          <span className="font-display font-bold text-xl flex items-center justify-center gap-1" style={{ color: accentColor }}>
+            <Flame size={12} />
             {diary.totalDetours}
           </span>
         </div>
-        <div className="py-4 pl-3 text-center">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint block">
+        <div className="py-3 pl-2 text-center">
+          <span className="font-mono text-[8px] font-bold uppercase tracking-wider text-paper-faint block">
             Notes
           </span>
-          <span className="font-display font-bold text-2xl text-paper-ink flex items-center justify-center gap-1.5">
-            <FileText size={15} className="text-paper-muted" />
+          <span className="font-display font-bold text-xl text-paper-ink flex items-center justify-center gap-1">
+            <FileText size={12} className="text-paper-muted" />
             {diary.notes.length}
           </span>
         </div>
@@ -118,6 +131,55 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
             <p className="pl-3 border-l-[3px] font-mono text-[11px] font-bold italic leading-relaxed text-paper-muted" style={{ borderColor: accentColor }}>
               💡 {reflection.advice}
             </p>
+
+            {/* Digital Self-Awareness Behavioral Mirror */}
+            {reflection.digitalSelfAwareness && (
+              <div className="mt-4 p-3 bg-white border-2 border-coal shadow-[2px_2px_0_0_#12151A] space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-coal">
+                    <Compass size={13} style={{ color: accentColor }} />
+                    <span>Digital Self-Awareness</span>
+                  </span>
+                  <span className="font-mono text-[9px] font-bold text-paper-faint">
+                    {reflection.digitalSelfAwareness.contextSwitches} tab switches
+                  </span>
+                </div>
+
+                {/* Research vs Production Ratio */}
+                {(() => {
+                  const res = reflection.digitalSelfAwareness.researchMinutes;
+                  const prod = reflection.digitalSelfAwareness.productionMinutes;
+                  const sum = Math.max(1, res + prod);
+                  const prodPct = Math.round((prod / sum) * 100);
+                  const resPct = 100 - prodPct;
+
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between font-mono text-[10px] font-bold">
+                        <span className="text-paper-muted flex items-center gap-1">
+                          <span className="w-2 h-2 inline-block bg-[#6B7280]" /> Research {res}m ({resPct}%)
+                        </span>
+                        <span className="text-coal flex items-center gap-1">
+                          <span className="w-2 h-2 inline-block" style={{ backgroundColor: accentColor }} /> Production {prod}m ({prodPct}%)
+                        </span>
+                      </div>
+                      <div className="h-2 w-full bg-[#E5E7EB] flex overflow-hidden border border-coal">
+                        <div style={{ width: `${resPct}%` }} className="bg-[#9CA3AF] h-full transition-all" title={`Research: ${res}m`} />
+                        <div style={{ width: `${prodPct}%`, backgroundColor: accentColor }} className="h-full transition-all" title={`Production: ${prod}m`} />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Mirror insight */}
+                {reflection.digitalSelfAwareness.mirrorInsight && (
+                  <p className="font-mono text-[11px] font-bold text-coal leading-snug pt-1 border-t border-dashed border-line">
+                    <span className="text-paper-faint uppercase text-[9px] block mb-0.5">Behavioral Mirror:</span>
+                    “{reflection.digitalSelfAwareness.mirrorInsight}”
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <p className="py-5 text-center font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint">

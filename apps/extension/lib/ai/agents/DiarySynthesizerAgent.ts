@@ -15,9 +15,14 @@ import { CharacterArchetypePrompts } from './FocusMonitorAgent';
 
 export const DiaryReflectionOutputSchema = z.object({
   score: z.number().min(1).max(10).describe('Productivity focus score (1 to 10)'),
-  headline: z.string().max(40).describe('Catchy, in-character summary title'),
-  summary: z.string().max(300).describe('Honest recap of work accomplished, distractions faced, and momentum'),
-  advice: z.string().max(140).describe('Direct, actionable coaching recommendation for tomorrow'),
+  headline: z.string().max(60).describe('Catchy, in-character summary title'),
+  summary: z.string().max(400).describe('Honest recap of work accomplished, distractions faced, and momentum'),
+  advice: z.string().max(180).describe('Direct, actionable coaching recommendation for tomorrow'),
+  digitalSelfAwareness: z.object({
+    researchMinutes: z.number().describe('Estimated minutes spent reading docs, researching, search, or browsing references today'),
+    productionMinutes: z.number().describe('Estimated minutes spent actively creating, writing code/copy, or executing the primary task today'),
+    mirrorInsight: z.string().max(200).describe('Brutally honest behavioral mirror: point of divergence, rabbit holes, or intention-action gap detected'),
+  }).describe('Digital self-awareness metrics reflecting the intention-action gap'),
 });
 
 export interface DiarySynthesizerConfig {
@@ -70,6 +75,7 @@ Return structured JSON matching the schema.`;
 - Completed Milestones: ${diary.completedGoalsCount} of ${goals.length} total
 - Smart Notes Captured: ${diary.notes.length}
 - Distraction Detours / Alerts: ${diary.totalDetours}
+- Context Switches (Tab/Task Switching): ${diary.contextSwitches ?? stats.divergences ?? 0} times
 - Top Domains by Time:
 ${diary.topDomains.map((t) => `  • ${t.domain}: ${t.minutes}m`).join('\n') || '  • None recorded'}
 
@@ -82,7 +88,11 @@ ${memory?.episodeDigest || 'None recorded'}
 WHAT YOU HAVE LEARNED ABOUT THIS HUMAN:
 ${memory?.profileLessons.map((l) => `- ${l}`).join('\n') || 'Nothing yet — first days are for observing.'}
 
-Synthesize the in-character score (1-10), catchy headline, analytical summary, and tomorrow's advice. Ground the advice in the episode timeline and lessons when available.`;
+DIGITAL SELF-AWARENESS TASK:
+Analyze the user's intention-action gap today:
+1. Estimate researchMinutes (reading documentation, researching topics, reference hunting) vs productionMinutes (active building, writing, execution) based on their top domains and focus time.
+2. Formulate a mirrorInsight: a candid, in-character reflection exposing their point of divergence or rabbit holes (e.g. "Spent 3 hours reading database benchmarks before writing a single migration").
+3. Score focus (1-10), catchy headline, analytical summary, and tomorrow's actionable advice. Ground the advice in the episode timeline and lessons when available.`;
 
       const result = await generateText({
         model: this.config.model,
@@ -98,12 +108,19 @@ Synthesize the in-character score (1-10), catchy headline, analytical summary, a
         summary: result.output.summary,
         advice: result.output.advice,
         timestamp: Date.now(),
+        digitalSelfAwareness: {
+          contextSwitches: diary.contextSwitches || 0,
+          researchMinutes: Math.round(result.output.digitalSelfAwareness.researchMinutes),
+          productionMinutes: Math.round(result.output.digitalSelfAwareness.productionMinutes),
+          mirrorInsight: result.output.digitalSelfAwareness.mirrorInsight,
+        },
       };
 
       // Commit Reflection to Episodic Memory
       const updatedDiary: DailyDiary = {
         ...diary,
         companionReflection: reflection,
+        digitalSelfAwareness: reflection.digitalSelfAwareness,
       };
       await this.memoryStore.saveDailyDiary(updatedDiary);
 

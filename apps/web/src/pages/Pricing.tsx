@@ -9,7 +9,6 @@ import { openPaddleCheckout, PADDLE_PRO_PRICE_ID } from '../lib/paddle';
 /* Featured tier inverts back to dark: an island of the night mode.    */
 /* ------------------------------------------------------------------ */
 
-const PAPER_LABEL = 'inline-flex items-center gap-1.5 px-2.5 py-1 bg-pop-yellow border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-mono text-[11px] font-bold tracking-wider text-coal';
 const PAPER_GHOST_BTN =
   'w-full text-center block px-5 py-3 rounded-none border-2 border-coal dark:border-[#3F4740] bg-white dark:bg-[#161914] font-display font-bold text-sm text-coal dark:text-white tracking-wide shadow-brut-sm dark:shadow-[3px_3px_0_0_#A3E635] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0 active:translate-y-0 active:shadow-none';
 
@@ -17,8 +16,6 @@ interface Tier {
   name: string;
   price: string;
   per: string;
-  tag?: string;
-  tagColor?: string;
   icon: React.ReactNode;
   blurb: string;
   features: string[];
@@ -28,17 +25,17 @@ interface Tier {
 
 const TIERS: Tier[] = [
   {
-    name: 'Free BYOK',
+    name: 'Free (Local-first)',
     price: '$0',
     per: 'forever',
     icon: <KeyRound className="w-4 h-4" />,
-    blurb: 'Use your own free API key with 100% private, on-device execution.',
+    blurb: 'You run the code, you bring your own API key, and not a single byte leaves your machine. Free forever.',
     features: [
-      'All 8 focus companion personalities',
-      '100% On-device private execution (0 KB sent to servers)',
-      'Works with free Google Gemini, OpenAI, Claude, Groq, or local Ollama',
-      'Focus timer, distraction checks & procedural audio sound cues',
-      'Daily sprint logs & local streak tracking',
+      'All 8 companion personalities',
+      '100% on-device execution (zero data sent to our servers)',
+      'Works with free Gemini, Claude, OpenAI, Groq, or local Ollama',
+      'Context tracking, distraction intervention & procedural sound effects',
+      'Digital self-awareness diary & local sprint history',
     ],
     cta: 'Add to Chrome — Free',
   },
@@ -46,15 +43,14 @@ const TIERS: Tier[] = [
     name: 'Gremlin Pro',
     price: '$5',
     per: '/ month',
-    tag: 'Most popular',
     icon: <Zap className="w-4 h-4" />,
-    blurb: 'Zero setup required. Hosted fast cloud AI and sync across all your devices.',
+    blurb: "For when you can't be bothered setting up keys. Fast hosted cloud AI and sync across all your devices.",
     features: [
-      'Zero setup — no API keys or configuration needed',
+      'Zero setup — ready to use right after install',
       'Instant cloud AI evaluation & roast engine',
-      'Multi-device focus streak & goal synchronization',
-      'Custom companion personality tuning & roast slider',
-      'Weekly focus insights & distraction trend breakdown',
+      'Multi-device sync for sprint history, diaries & goals',
+      'Custom companion personality tuning & roast sliders',
+      'Priority updates & new companions first',
     ],
     cta: 'Start Pro Trial',
     highlight: true,
@@ -64,19 +60,23 @@ const TIERS: Tier[] = [
 const FAQS: [string, string][] = [
   [
     'Do I need an API key to use Gremlin?',
-    'Only if you choose the free tier! You can grab a free Google Gemini key in 30 seconds and run completely on-device. With Gremlin Pro, we handle the cloud AI so you never have to touch a single key.',
+    'Only if you choose the free version. You can grab a free Google Gemini key in 30 seconds and run completely on-device. With Gremlin Pro, we handle the cloud AI so you never have to touch a key.',
   ],
   [
-    'Does Gremlin sell or read my private browsing data?',
-    'Never. In free BYOK mode, zero data ever touches our servers. When an evaluation happens, only the active page title and domain are checked against your stated goal. Keystrokes, passwords, form inputs, and emails are never accessed or recorded.',
+    'Does Gremlin read or sell my browsing data?',
+    'Never. In free BYOK mode, zero data ever touches our servers. When an evaluation happens, only the active tab title and domain are checked against your stated goal. Keystrokes, passwords, form inputs, and personal emails are never accessed or recorded.',
+  ],
+  [
+    'What is the "intention-action gap"?',
+    'It’s the distance between what you planned to do this morning and what you actually spent the afternoon doing. Gremlin watches your context in real time and gently intervenes the minute you start drifting, before you lose three hours to rabbit holes.',
   ],
   [
     'Can I switch companions whenever I want?',
-    'Yes, anytime! You can switch between Sarge, Waifu, Sherlock, Kuro, Sensei, Byte, Pixel, and Zeta right inside the extension popup mid-session.',
+    'Anytime. You can switch between Sarge, Waifu, Sherlock, Kuro, Sensei, Byte, Pixel, and UFO right inside the extension popup mid-sprint.',
   ],
   [
-    'What if I need help or want to suggest a companion?',
-    'You can email us directly at rchdmaranga@gmail.com or send a message on X/Twitter (@rmarangaa). We read and reply to every message.',
+    'Can I cancel my subscription anytime?',
+    'Yes. One click in the billing portal cancels immediately. No emails, no phone calls, no guilt trips.',
   ],
 ];
 
@@ -125,13 +125,12 @@ export const Pricing: React.FC = () => {
       <div className="container-site py-16 lg:py-24">
         <div className="max-w-2xl">
           <Reveal>
-            <div className={PAPER_LABEL}>Pricing</div>
-            <h1 className="mt-3 font-display text-4xl sm:text-5xl font-bold tracking-tight text-coal dark:text-white text-wrap-balance">
-              Start free. Upgrade when the focus pays for itself.
+            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-coal dark:text-white text-wrap-balance">
+              Close the intention-action gap.
             </h1>
             <p className="mt-4 text-[#374151] dark:text-[#D1D5DB] leading-relaxed text-base sm:text-lg">
-              The core companion experience is completely free with your own key. Pro exists for
-              anyone who wants zero setup and instant cloud sync across devices.
+              You know what you intend to do today. Gremlin makes sure you actually do it. Run it
+              locally for free, or pay $5/month if you'd rather not manage your own keys.
             </p>
           </Reveal>
         </div>
@@ -146,23 +145,6 @@ export const Pricing: React.FC = () => {
                     : 'bg-white dark:bg-[#161914] border-coal dark:border-[#3F4740] text-coal dark:text-white shadow-brut dark:shadow-[4px_4px_0_0_#A3E635] hover:-translate-y-1 hover:shadow-brut-lg'
                 }`}
               >
-                {tier.tag && (
-                  <div
-                    className={`absolute -top-3 left-6 -rotate-3 font-mono text-[10px] font-bold tracking-wider px-2.5 py-1 border-2 ${
-                      tier.highlight
-                        ? 'bg-accent text-base-deep border-coal shadow-[3px_3px_0_0_#F5F6F1]'
-                        : 'bg-white dark:bg-[#161914] border-coal dark:border-[#3F4740] shadow-brut-sm text-coal dark:text-white'
-                    }`}
-                    style={
-                      tier.highlight
-                        ? undefined
-                        : { color: tier.tagColor ?? '#FF7EB0', borderColor: '#12151A' }
-                    }
-                  >
-                    {tier.tag}
-                  </div>
-                )}
-
                 <div className="flex items-center gap-2.5">
                   <span
                     className={`inline-flex w-8 h-8 items-center justify-center border-2 ${
@@ -202,7 +184,7 @@ export const Pricing: React.FC = () => {
                 </div>
 
                 <div className="mt-8 pt-4">
-                  {tier.name === 'Free BYOK' ? (
+                  {tier.price === '$0' ? (
                     <a
                       href="https://chromewebstore.google.com"
                       className={PAPER_GHOST_BTN}
@@ -244,8 +226,7 @@ export const Pricing: React.FC = () => {
         {/* Frequently Asked Questions */}
         <section className="mt-24 pt-16 border-t-2 border-dashed border-coal/30 dark:border-[#2A2E27]">
           <div className="max-w-xl mb-10">
-            <div className={PAPER_LABEL}>FAQ</div>
-            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold tracking-tight text-coal dark:text-white">
+            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-coal dark:text-white">
               Frequently asked questions.
             </h2>
           </div>

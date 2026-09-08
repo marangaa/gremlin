@@ -3,10 +3,12 @@ import {
   notesStorage,
   goalsStorage,
   activityStorage,
+  organismStateStorage,
   type DailyDiary,
   type SmartPageNote,
   type DecomposedGoal,
   type ActivityEntry,
+  type OrganismStateData,
 } from '../storage';
 import { agentOrchestrator } from '../ai/AgentOrchestrator';
 import type { CompanionDailyReflection } from '@gremlin/shared';
@@ -33,6 +35,7 @@ export async function getOrCreateTodayDiary(): Promise<DailyDiary> {
   const notes: SmartPageNote[] = await notesStorage.getValue();
   const goals: DecomposedGoal[] = await goalsStorage.getValue();
   const activities: ActivityEntry[] = await activityStorage.getValue();
+  const state: OrganismStateData = await organismStateStorage.getValue();
 
   const todayNotes = notes.filter((n: SmartPageNote) => {
     const d = new Date(n.timestamp);
@@ -41,6 +44,7 @@ export async function getOrCreateTodayDiary(): Promise<DailyDiary> {
 
   const completedGoals = goals.filter((g: DecomposedGoal) => g.completed);
   const detours = activities.filter((a: ActivityEntry) => a.type === 'divergence' || a.type === 'thrashing').length;
+  const contextSwitches = state.contextSwitchesToday || 0;
 
   if (!diary) {
     diary = {
@@ -48,6 +52,7 @@ export async function getOrCreateTodayDiary(): Promise<DailyDiary> {
       totalFocusMinutes: 0,
       totalDetours: detours,
       completedGoalsCount: completedGoals.length,
+      contextSwitches,
       sessions: [],
       notes: todayNotes,
       topDomains: [],
@@ -57,6 +62,7 @@ export async function getOrCreateTodayDiary(): Promise<DailyDiary> {
     diary.notes = todayNotes;
     diary.completedGoalsCount = completedGoals.length;
     diary.totalDetours = detours;
+    diary.contextSwitches = contextSwitches;
   }
 
   return diary;

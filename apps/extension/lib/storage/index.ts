@@ -6,6 +6,7 @@ import type {
   SmartPageNote,
   DailyDiary,
   CompanionDailyReflection,
+  DigitalSelfAwareness,
   SessionEpisode,
   FocusProfile,
 } from '@gremlin/shared';
@@ -50,6 +51,7 @@ export interface OrganismStateData {
   lastRemarkAt?: number;
   focusMinutesToday: number;
   divergenceCountToday: number;
+  contextSwitchesToday: number;
   lastObservationAt: number;
   /** Escalation ladder position (0 calm → 3 deep spiral). Decays when on-task. */
   escalationLevel?: number;
@@ -82,7 +84,8 @@ export type {
   DecomposedGoal,
   SmartPageNote,
   DailyDiary,
-  CompanionDailyReflection
+  CompanionDailyReflection,
+  DigitalSelfAwareness,
 };
 
 // ================= STORAGE DEFINITIONS =================
@@ -121,7 +124,8 @@ export const organismStateStorage = storage.defineItem<OrganismStateData>('local
     lastRemarkAt: 0,
     focusMinutesToday: 0,
     divergenceCountToday: 0,
-      escalationLevel: 0,
+    contextSwitchesToday: 0,
+    escalationLevel: 0,
     lastObservationAt: 0,
   },
 });

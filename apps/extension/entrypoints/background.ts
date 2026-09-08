@@ -267,6 +267,16 @@ export default defineBackground(() => {
   // Evaluate state with debounce when tabs update or switch
   browser.tabs.onActivated.addListener(async (activeInfo) => {
     debouncedEvaluate();
+    // Increment daily context switches count
+    try {
+      const state = await organismStateStorage.getValue();
+      await organismStateStorage.setValue({
+        ...state,
+        contextSwitchesToday: (state.contextSwitchesToday || 0) + 1,
+      });
+    } catch {
+      // Ignore
+    }
     // Record continuous focus activity log
     try {
       const tab = await browser.tabs.get(activeInfo.tabId);
@@ -367,6 +377,7 @@ export default defineBackground(() => {
       ...state,
       focusMinutesToday: 0,
       divergenceCountToday: 0,
+      contextSwitchesToday: 0,
       escalationLevel: 0,
     });
   });
