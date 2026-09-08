@@ -63,33 +63,12 @@ async function seed() {
   });
   console.log(`✓ Created Price: ${proMonthly.description} (${proMonthly.id})`);
 
-  // 3. Create Founder Pass Product & Price ($49 one-time = 4900 cents)
-  console.log('Creating product: Gremlin Founder Pass...');
-  const founderProduct = await paddleRequest('/products', {
-    name: 'Gremlin Founder Pass',
-    tax_category: 'saas',
-    description: 'Lifetime Pro access for early backers. Focus forever.',
-  });
-  console.log(`✓ Created Product: ${founderProduct.name} (${founderProduct.id})`);
-
-  console.log('Creating price: Founder Pass One-Time ($49)...');
-  const founderPrice = await paddleRequest('/prices', {
-    product_id: founderProduct.id,
-    description: 'Gremlin Founder Pass Lifetime',
-    unit_price: {
-      amount: '4900', // 4900 cents = $49.00 USD
-      currency_code: 'USD',
-    },
-  });
-  console.log(`✓ Created Price: ${founderPrice.description} (${founderPrice.id})`);
-
   console.log('\n======================================================');
   console.log('🎉 PADDLE CATALOG PROVISIONED SUCCESSFULLY!');
   console.log('======================================================');
   console.log(`PADDLE_PRO_PRICE_ID="${proMonthly.id}"`);
-  console.log(`PADDLE_FOUNDER_PRICE_ID="${founderPrice.id}"`);
   console.log('======================================================');
-  console.log('Add these IDs to your apps/backend .env and apps/web .env files.\n');
+  console.log('Add this ID to your apps/backend .env and apps/web .env files.\n');
 }
 
 seed().catch((err) => {

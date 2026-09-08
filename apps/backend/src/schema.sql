@@ -198,19 +198,6 @@ CREATE INDEX IF NOT EXISTS "idx_subscriptions_customerId" ON "subscriptions"("cu
 CREATE INDEX IF NOT EXISTS "idx_subscriptions_userId" ON "subscriptions"("userId");
 CREATE INDEX IF NOT EXISTS "idx_subscriptions_status" ON "subscriptions"("status");
 
-CREATE TABLE IF NOT EXISTS "transactions" (
-  "transactionId" TEXT PRIMARY KEY,     -- "txn_01h..."
-  "customerId" TEXT REFERENCES "customers"("customerId") ON DELETE SET NULL,
-  "userId" TEXT REFERENCES "user"("id") ON DELETE CASCADE,
-  "status" TEXT NOT NULL,               -- 'completed', 'billed', 'paid'
-  "priceId" TEXT NOT NULL,
-  "productId" TEXT NOT NULL,
-  "amount" TEXT NOT NULL DEFAULT '0',
-  "currencyCode" VARCHAR(8) NOT NULL DEFAULT 'USD',
-  "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS "idx_transactions_userId" ON "transactions"("userId");
-
 CREATE TABLE IF NOT EXISTS "processed_webhooks" (
   "eventId" TEXT PRIMARY KEY,           -- Paddle event_id (dedup key)
   "eventType" TEXT NOT NULL,

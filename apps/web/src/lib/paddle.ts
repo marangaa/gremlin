@@ -3,9 +3,6 @@ import { initializePaddle, type Paddle, type Environments } from '@paddle/paddle
 export const PADDLE_PRO_PRICE_ID =
   (import.meta.env.VITE_PADDLE_PRO_PRICE_ID as string | undefined) || '';
 
-export const PADDLE_FOUNDER_PRICE_ID =
-  (import.meta.env.VITE_PADDLE_FOUNDER_PRICE_ID as string | undefined) || '';
-
 const PADDLE_CLIENT_TOKEN =
   (import.meta.env.VITE_PADDLE_CLIENT_TOKEN as string | undefined) || '';
 
@@ -54,19 +51,15 @@ export async function getPaddle(): Promise<Paddle | null> {
 export interface OpenCheckoutOptions {
   priceId: string;
   userEmail?: string;
-  userId?: string;
-  customData?: Record<string, any>;
 }
 
 /**
  * Opens the hosted Paddle overlay modal checkout.
- * Passes pre-filled customer email and userId bridge for server-side webhook reconciliation.
+ * Passes pre-filled customer email for clean email-bridge webhook reconciliation (per paddle-subscription-sync).
  */
 export async function openPaddleCheckout({
   priceId,
   userEmail,
-  userId,
-  customData = {},
 }: OpenCheckoutOptions) {
   const paddle = await getPaddle();
 
@@ -79,10 +72,6 @@ export async function openPaddleCheckout({
   paddle.Checkout.open({
     items: [{ priceId, quantity: 1 }],
     ...(userEmail ? { customer: { email: userEmail } } : {}),
-    customData: {
-      userId,
-      ...customData,
-    },
     settings: {
       variant: 'one-page',
       theme: 'dark',

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Check, KeyRound, Sparkles, Zap, MessageSquare } from 'lucide-react';
+import { Check, KeyRound, Zap, MessageSquare } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 import { authClient, API_URL } from '../lib/auth';
-import { openPaddleCheckout, PADDLE_PRO_PRICE_ID, PADDLE_FOUNDER_PRICE_ID } from '../lib/paddle';
+import { openPaddleCheckout, PADDLE_PRO_PRICE_ID } from '../lib/paddle';
 
 /* ------------------------------------------------------------------ */
 /* Paper theme — the deliberate light route on the dark site.          */
@@ -59,22 +59,6 @@ const TIERS: Tier[] = [
     cta: 'Start Pro Trial',
     highlight: true,
   },
-  {
-    name: 'Founder Pass',
-    price: '$49',
-    per: 'one-time',
-    tag: 'Limited to 200',
-    tagColor: '#FF7EB0',
-    icon: <Sparkles className="w-4 h-4" />,
-    blurb: 'Lifetime Pro access for early backers. One simple payment, focus forever.',
-    features: [
-      'Lifetime access to all future Pro features & updates',
-      'Exclusive “Gold Glitch” pixel mascot skin',
-      'Founder badge & direct chat with the developer',
-      'Early access to new companion personalities',
-    ],
-    cta: 'Claim Founder Pass',
-  },
 ];
 
 const FAQS: [string, string][] = [
@@ -122,29 +106,17 @@ export const Pricing: React.FC = () => {
     }
   };
 
-  const handleCheckout = (tierName: string) => {
-    if (tierName === 'Gremlin Pro') {
-      if (!PADDLE_PRO_PRICE_ID) {
-        alert('Paddle Pro price ID (VITE_PADDLE_PRO_PRICE_ID) is not configured yet. Run the seed script in apps/backend or set it in .env.');
-        return;
-      }
-      openPaddleCheckout({
-        priceId: PADDLE_PRO_PRICE_ID,
-        userEmail: user?.email,
-        userId: user?.id,
-      });
-    } else if (tierName === 'Founder Pass') {
-      if (!PADDLE_FOUNDER_PRICE_ID) {
-        alert('Paddle Founder price ID (VITE_PADDLE_FOUNDER_PRICE_ID) is not configured yet. Run the seed script in apps/backend or set it in .env.');
-        return;
-      }
-      openPaddleCheckout({
-        priceId: PADDLE_FOUNDER_PRICE_ID,
-        userEmail: user?.email,
-        userId: user?.id,
-        customData: { tier: 'founder' },
-      });
+  const handleCheckout = () => {
+    if (!PADDLE_PRO_PRICE_ID) {
+      alert(
+        'Paddle Pro price ID (VITE_PADDLE_PRO_PRICE_ID) is not configured yet. Run the seed script in apps/backend or set it in .env.',
+      );
+      return;
     }
+    openPaddleCheckout({
+      priceId: PADDLE_PRO_PRICE_ID,
+      userEmail: user?.email,
+    });
   };
 
   return (
@@ -163,7 +135,7 @@ export const Pricing: React.FC = () => {
           </Reveal>
         </div>
 
-        <div className="mt-14 grid md:grid-cols-3 gap-6 items-stretch">
+        <div className="mt-14 max-w-4xl mx-auto grid md:grid-cols-2 gap-8 items-stretch">
           {TIERS.map((tier, i) => (
             <Reveal key={tier.name} delay={i * 90} className="h-full">
               <div
@@ -236,7 +208,7 @@ export const Pricing: React.FC = () => {
                     >
                       {tier.cta}
                     </a>
-                  ) : tier.name === 'Gremlin Pro' && (userPlan === 'pro' || userPlan === 'founder') ? (
+                  ) : userPlan === 'pro' ? (
                     <button
                       type="button"
                       onClick={handleManageSubscription}
@@ -249,14 +221,10 @@ export const Pricing: React.FC = () => {
                     >
                       {portalLoading ? 'Opening portal...' : 'Manage Subscription →'}
                     </button>
-                  ) : tier.name === 'Founder Pass' && userPlan === 'founder' ? (
-                    <div className="w-full text-center py-3 border-2 border-[#FF7EB0] bg-[#FF7EB0]/10 font-mono text-xs font-bold text-[#FF7EB0]">
-                      Founder Access Active ✨
-                    </div>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => handleCheckout(tier.name)}
+                      onClick={handleCheckout}
                       className={
                         tier.highlight
                           ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'

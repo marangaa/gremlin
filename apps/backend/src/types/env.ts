@@ -42,8 +42,6 @@ export interface Bindings {
   PADDLE_NOTIFICATION_WEBHOOK_SECRET?: string;
   /** Paddle Price ID for Gremlin Pro subscription ($5/mo). */
   PADDLE_PRO_PRICE_ID?: string;
-  /** Paddle Price ID for Gremlin Founder Pass ($49 one-time). */
-  PADDLE_FOUNDER_PRICE_ID?: string;
   /** Paddle Environment: 'sandbox' (default) or 'production'. */
   PADDLE_ENV?: 'sandbox' | 'production';
 }
