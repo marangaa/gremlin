@@ -195,20 +195,46 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
 
 ---
 
-## 5. Monetization & Payment Processing Architecture
+## 5. Monetization & Payment Processing Architecture (Paddle)
 
 ### Model Strategy
 
 | Tier | Price | Who It's For | Tech Flow |
 | :--- | :--- | :--- | :--- |
-| **Free BYOK** | **$0 forever** | Developers & power users who bring their own API keys (Google Gemini, OpenAI, Claude, Groq, Ollama). | Direct client-side fetch from extension service worker. $0 server/LLM cost to us. |
-| **Gremlin Pro** | **$5 / month** | Non-technical users, students, and professionals wanting 1-click zero-setup focus coaching. | Subscription via Stripe / Lemon Squeezy / Polar. Edge AI proxy on Cloudflare Workers. |
-| **Founder Pass** | **$49 one-time** | Early supporters wanting lifetime cloud access + exclusive companion skins. | One-time checkout with permanent flag in Neon `user` table. |
+| **Free BYOK** | **$0 forever** | Developers & power users who bring their own API keys (Google Gemini, OpenAI, Claude, Groq, Ollama). | Direct client-side fetch from extension service worker. $0 server/LLM cost to us. 100% private, on-device execution. |
+| **Gremlin Pro** | **$5 / month** | Students, knowledge workers, and professionals wanting 1-click zero-setup focus coaching. | Managed cloud evaluation proxy (`/api/sprint/evaluate`), multi-device sync, custom companion tuning. |
 
-### Stripe / Polar Integration Blueprint
-1. Set up a Webhook route in `apps/backend/src/routes/billing.ts` listening for `checkout.session.completed` and `customer.subscription.deleted`.
-2. When a user completes checkout, update `user.tier = 'pro'` in the Neon Postgres database.
-3. Extension checks `/api/auth/get-session` on launch. If `user.tier === 'pro'`, the extension operates in managed cloud mode without requesting an API key.
+### Unit Economics at $5/Month
+* **Paddle Processing Fee**: 5% + $0.50 per transaction = **$0.75 / month**.
+* **Net Revenue Payout**: **$4.25 / month per subscriber**.
+* **Evaluation Workload**: ~15 evaluations per active focused hour × 80 hours/month = **~1,200 evaluations/month**.
+* **LLM Inference Cost (per user/month)**:
+  * **Google Gemini 2.5 Flash**: ~384k input tokens + ~36k output tokens = **~$0.04 (~4¢/mo)**.
+  * **Groq Llama 3.1 8B**: **~$0.02 (~2¢/mo)**.
+  * **OpenAI GPT-4o-mini**: **~$0.08 (~8¢/mo)**.
+* **Infrastructure (Cloudflare Workers + Neon)**: **~$0.02 – $0.05/mo**.
+* **Net Profit Margin**: **~$4.15 / user / month (~83% net margin)**.
+
+### Paddle Integration Architecture
+Adheres strictly to the agent skills (`paddle-webhooks`, `paddle-subscription-sync`, `paddle-checkout-web`, `paddle-customer-portal`):
+
+1. **Client Checkout (`apps/web/src/lib/paddle.ts`)**:
+   - Initialized via `@paddle/paddle-js` (`initializePaddle`) with dark theme and one-page modal checkout.
+   - Pre-fills authenticated customer email for clean server-side bridging.
+2. **Server SDK & Webhook Ingestion (`apps/backend/src/routes/billing.ts` & `src/lib/paddle.ts`)**:
+   - Built on the official `@paddle/paddle-node-sdk` v3 with `nodejs_compat` on Cloudflare Workers.
+   - Verifies HMAC-SHA256 signature and unmarshals typed events via `paddle.webhooks.unmarshal(rawBody, secret, signature)`.
+   - Returns 200 within 5 seconds for processed events; returns 500 on unmarshal/processing failure to trigger Paddle's automated retry schedule.
+   - Deduplicates incoming deliveries against the `processed_webhooks` ledger table in Neon on `eventId`.
+3. **Clean User Bridging (`paddle-subscription-sync`)**:
+   - Bridges Paddle customers to Better Auth users strictly by lowercase **email** (`user.email == customer.email`).
+   - Idempotently mirrors customer and subscription state to Neon PostgreSQL (`customers` and `subscriptions` tables).
+   - Toggles `user.plan` between `'pro'` and `'free'`.
+4. **Self-Service Customer Portal (`paddle-customer-portal`)**:
+   - Server route `POST /api/billing/portal` mints a time-limited Customer Portal session URL via `paddle.customerPortalSessions.create(customerId, subscriptionIds)`.
+   - Allows users to view past invoices, update payment methods, or cancel subscriptions on Paddle's hosted UI.
+5. **Structured Observability (`apps/backend/src/lib/logger.ts`)**:
+   - Structured JSON logging with ISO timestamps, service identification, and severity levels (`debug`, `info`, `warn`, `error`).
 
 ---
 
