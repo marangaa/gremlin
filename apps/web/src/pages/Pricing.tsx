@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check, KeyRound, Sparkles, Zap, MessageSquare } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
+import { authClient, API_URL } from '../lib/auth';
+import { openPaddleCheckout, PADDLE_PRO_PRICE_ID, PADDLE_FOUNDER_PRICE_ID } from '../lib/paddle';
 
 /* ------------------------------------------------------------------ */
 /* Paper theme — the deliberate light route on the dark site.          */
@@ -95,6 +97,56 @@ const FAQS: [string, string][] = [
 ];
 
 export const Pricing: React.FC = () => {
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
+  const userPlan = (user as any)?.plan || 'free';
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/billing/portal`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data: any = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Failed to open customer portal');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to open customer portal');
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const handleCheckout = (tierName: string) => {
+    if (tierName === 'Gremlin Pro') {
+      if (!PADDLE_PRO_PRICE_ID) {
+        alert('Paddle Pro price ID (VITE_PADDLE_PRO_PRICE_ID) is not configured yet. Run the seed script in apps/backend or set it in .env.');
+        return;
+      }
+      openPaddleCheckout({
+        priceId: PADDLE_PRO_PRICE_ID,
+        userEmail: user?.email,
+        userId: user?.id,
+      });
+    } else if (tierName === 'Founder Pass') {
+      if (!PADDLE_FOUNDER_PRICE_ID) {
+        alert('Paddle Founder price ID (VITE_PADDLE_FOUNDER_PRICE_ID) is not configured yet. Run the seed script in apps/backend or set it in .env.');
+        return;
+      }
+      openPaddleCheckout({
+        priceId: PADDLE_FOUNDER_PRICE_ID,
+        userEmail: user?.email,
+        userId: user?.id,
+        customData: { tier: 'founder' },
+      });
+    }
+  };
+
   return (
     <main className="min-h-screen transition-colors duration-200 text-coal dark:text-white">
       <div className="container-site py-16 lg:py-24">
@@ -177,16 +229,43 @@ export const Pricing: React.FC = () => {
                 </div>
 
                 <div className="mt-8 pt-4">
-                  <a
-                    href={tier.highlight ? '/auth' : 'https://chromewebstore.google.com'}
-                    className={
-                      tier.highlight
-                        ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0'
-                        : PAPER_GHOST_BTN
-                    }
-                  >
-                    {tier.cta}
-                  </a>
+                  {tier.name === 'Free BYOK' ? (
+                    <a
+                      href="https://chromewebstore.google.com"
+                      className={PAPER_GHOST_BTN}
+                    >
+                      {tier.cta}
+                    </a>
+                  ) : tier.name === 'Gremlin Pro' && (userPlan === 'pro' || userPlan === 'founder') ? (
+                    <button
+                      type="button"
+                      onClick={handleManageSubscription}
+                      disabled={portalLoading}
+                      className={
+                        tier.highlight
+                          ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-50'
+                          : PAPER_GHOST_BTN
+                      }
+                    >
+                      {portalLoading ? 'Opening portal...' : 'Manage Subscription →'}
+                    </button>
+                  ) : tier.name === 'Founder Pass' && userPlan === 'founder' ? (
+                    <div className="w-full text-center py-3 border-2 border-[#FF7EB0] bg-[#FF7EB0]/10 font-mono text-xs font-bold text-[#FF7EB0]">
+                      Founder Access Active ✨
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleCheckout(tier.name)}
+                      className={
+                        tier.highlight
+                          ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
+                          : PAPER_GHOST_BTN
+                      }
+                    >
+                      {tier.cta}
+                    </button>
+                  )}
                 </div>
               </div>
             </Reveal>

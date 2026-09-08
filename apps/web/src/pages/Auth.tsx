@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
-import { createAuthClient } from 'better-auth/react';
 import { Shield, Sparkles, Check, ArrowRight, Mail, Key } from 'lucide-react';
-
-/**
- * Better Auth client pointed at the Gremlin backend. The session cookie is
- * set on the backend domain and shared with the extension's service worker
- * (which sends the same cookie via credentials: include).
- */
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8787';
-const authClient = createAuthClient({ baseURL: API_URL });
+import { authClient } from '../lib/auth';
 
 interface AuthProps {
   navigate?: (path: string) => void;

@@ -34,6 +34,18 @@ export interface Bindings {
   NODE_ENV?: string;
   /** Optional Cloudflare Workers AI binding for on-edge inference. */
   AI?: unknown;
+
+  // --- Paddle Billing Bindings ---
+  /** Paddle Server-side API Secret Key (e.g. pdl_sdbx_apikey_... or pdl_live_apikey_...). */
+  PADDLE_API_KEY?: string;
+  /** Paddle Webhook Secret (pdl_ntfset_...) for HMAC-SHA256 signature verification. */
+  PADDLE_NOTIFICATION_WEBHOOK_SECRET?: string;
+  /** Paddle Price ID for Gremlin Pro subscription ($5/mo). */
+  PADDLE_PRO_PRICE_ID?: string;
+  /** Paddle Price ID for Gremlin Founder Pass ($49 one-time). */
+  PADDLE_FOUNDER_PRICE_ID?: string;
+  /** Paddle Environment: 'sandbox' (default) or 'production'. */
+  PADDLE_ENV?: 'sandbox' | 'production';
 }
 
 /**
