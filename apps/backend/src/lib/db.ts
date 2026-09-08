@@ -1,12 +1,16 @@
 import { Pool } from '@neondatabase/serverless';
+import { drizzle, type NeonDatabase } from 'drizzle-orm/neon-serverless';
+import * as schema from '../db/schema';
+
+export * from '../db/schema';
 
 /**
- * Memoized Neon Serverless Postgres pool per connection string.
- * One pool instance lives per worker isolate regardless of how many
- * consumers (Better Auth, sprint routes) request it.
+ * Memoized Neon Serverless Postgres pool & Drizzle instance per connection string.
+ * One instance lives per worker isolate regardless of how many consumers request it.
  */
 let cachedPool: Pool | null = null;
 let cachedConnectionString: string | null = null;
+let cachedDb: NeonDatabase<typeof schema> | null = null;
 
 export function getPool(connectionString: string): Pool {
   if (cachedPool && cachedConnectionString === connectionString) {
@@ -15,7 +19,17 @@ export function getPool(connectionString: string): Pool {
 
   cachedPool = new Pool({ connectionString });
   cachedConnectionString = connectionString;
+  cachedDb = drizzle(cachedPool, { schema });
   return cachedPool;
+}
+
+export function getDb(connectionString: string): NeonDatabase<typeof schema> {
+  if (cachedDb && cachedConnectionString === connectionString) {
+    return cachedDb;
+  }
+
+  getPool(connectionString);
+  return cachedDb!;
 }
 
 /**
