@@ -32,7 +32,7 @@ const TIERS: Tier[] = [
     icon: <KeyRound className="w-4 h-4" />,
     blurb: 'Use your own free API key with 100% private, on-device execution.',
     features: [
-      'All 5 focus companion personalities',
+      'All 8 focus companion personalities',
       '100% On-device private execution (0 KB sent to servers)',
       'Works with free Google Gemini, OpenAI, Claude, Groq, or local Ollama',
       'Focus timer, distraction checks & procedural audio sound cues',
@@ -86,7 +86,7 @@ const FAQS: [string, string][] = [
   ],
   [
     'Can I switch companions whenever I want?',
-    'Yes, anytime! You can switch between Sarge, Waifu, Sherlock, Kuro, and Sensei right inside the extension popup mid-session.',
+    'Yes, anytime! You can switch between Sarge, Waifu, Sherlock, Kuro, Sensei, Byte, Pixel, and Zeta right inside the extension popup mid-session.',
   ],
   [
     'What if I need help or want to suggest a companion?',

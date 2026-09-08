@@ -1,4 +1,12 @@
-export type CompanionId = 'Sarge' | 'waifu' | 'sherlock' | 'kuro' | 'sensei';
+export type CompanionId =
+  | 'Sarge'
+  | 'waifu'
+  | 'sherlock'
+  | 'kuro'
+  | 'sensei'
+  | 'byte'
+  | 'pixel'
+  | 'ufo';
 
 export interface Companion {
   id: CompanionId;
@@ -90,6 +98,48 @@ export const COMPANIONS: Companion[] = [
     lore: 'Gentle mindfulness. Will make you feel profoundly disappointed in yourself without ever raising his voice.',
     voice: 'Warm triangle-wave tone',
   },
+  {
+    id: 'byte',
+    name: 'Byte',
+    archetype: 'The rogue hacker',
+    color: '#22D3EE',
+    glow: 'rgba(34, 211, 238, 0.16)',
+    sprites: {
+      idle: ['/sprites/characters/tile_0015.png', '/sprites/characters/tile_0016.png'],
+      action: '/sprites/characters/tile_0017.png',
+    },
+    remark: '> distraction.exe detected. terminating thread.',
+    lore: 'Lives in your terminal. Speaks in sysadmin logs, flags distractions as security intrusions, and terminates doomscroll threads.',
+    voice: 'Modem chirp & 8-bit blip',
+  },
+  {
+    id: 'pixel',
+    name: 'Pixel',
+    archetype: 'The chaotic cat',
+    color: '#FACC15',
+    glow: 'rgba(250, 204, 21, 0.16)',
+    sprites: {
+      idle: ['/sprites/characters/tile_0018.png', '/sprites/characters/tile_0019.png'],
+      action: '/sprites/characters/tile_0020.png',
+    },
+    remark: 'mrrp. caught you. *knocks tab off desk*',
+    lore: 'A judgmental black cat napping on your keyboard. Uses pure feline contempt to shame you back to work.',
+    voice: 'Playful synth meow',
+  },
+  {
+    id: 'ufo',
+    name: 'Zeta',
+    archetype: 'The cosmic abductor',
+    color: '#A78BFA',
+    glow: 'rgba(167, 139, 250, 0.16)',
+    sprites: {
+      idle: ['/sprites/characters/tile_0021.png', '/sprites/characters/tile_0022.png'],
+      action: '/sprites/characters/tile_0023.png',
+    },
+    remark: 'specimen attention span: fragile. beaming up distraction.',
+    lore: 'An alien observer studying fragile human focus from orbit. Beams away distractions before they derail your mission.',
+    voice: 'Cosmic theremin vibrato',
+  },
 ];
 
 export const companionById = (id: CompanionId): Companion =>
@@ -124,6 +174,22 @@ export function playCharacterVoice(id: CompanionId) {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(180, now);
       osc.frequency.exponentialRampToValueAtTime(320, now + 0.12);
+    } else if (id === 'byte') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.setValueAtTime(520, now + 0.05);
+      osc.frequency.setValueAtTime(240, now + 0.10);
+      osc.frequency.setValueAtTime(680, now + 0.15);
+    } else if (id === 'pixel') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(580, now);
+      osc.frequency.exponentialRampToValueAtTime(840, now + 0.12);
+      osc.frequency.exponentialRampToValueAtTime(420, now + 0.22);
+    } else if (id === 'ufo') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(340, now);
+      osc.frequency.linearRampToValueAtTime(560, now + 0.10);
+      osc.frequency.linearRampToValueAtTime(380, now + 0.20);
     } else {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(320, now);

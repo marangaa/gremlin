@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Download, Volume2 } from 'lucide-react';
-import { COMPANIONS, type CompanionId } from '../lib/companions';
+import { COMPANIONS, type CompanionId, playCharacterVoice } from '../lib/companions';
 import { Reveal } from '../components/Reveal';
 import { Sprite } from '../components/Sprite';
 import { CardlessHowItWorks } from '../components/CardlessHowItWorks';
@@ -33,57 +33,15 @@ function useTypewriter(text: string, speed = 16) {
   return { shown, done: shown.length >= text.length };
 }
 
-/* ------------------------------------------------------------------ */
-/* Procedural Audio preview using Web Audio API                        */
-/* ------------------------------------------------------------------ */
-function playCharacterVoice(id: CompanionId) {
-  try {
-    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    const now = ctx.currentTime;
-    if (id === 'Sarge') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(140, now);
-      osc.frequency.exponentialRampToValueAtTime(75, now + 0.18);
-    } else if (id === 'waifu') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.exponentialRampToValueAtTime(780, now + 0.15);
-    } else if (id === 'sherlock') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(220, now);
-      osc.frequency.setValueAtTime(330, now + 0.08);
-      osc.frequency.setValueAtTime(260, now + 0.16);
-    } else if (id === 'kuro') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(320, now + 0.12);
-    } else {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(260, now + 0.25);
-    }
-
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-
-    osc.start(now);
-    osc.stop(now + 0.25);
-  } catch {
-    // Audio context not allowed or supported
-  }
-}
-
 const BEST_FOR_TAGS: Record<CompanionId, string> = {
   Sarge: 'Tight deadlines & zero-excuse focus',
   waifu: 'Friendly, encouraging study sessions',
   sherlock: 'Deep reading & analytical investigation',
   kuro: 'Chronic tab hoarders & meme scrollers',
   sensei: 'Calm, mindful writing & steady pacing',
+  byte: 'Terminal warriors & code sprint marathons',
+  pixel: 'Unforgiving judged tab purges',
+  ufo: 'Cosmic deep work & otherworldly flow',
 };
 
 /* ------------------------------------------------------------------ */

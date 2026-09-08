@@ -188,8 +188,7 @@ export const Sprite: React.FC<SpriteProps> = ({
           break;
         }
 
-        case 'sensei':
-        default: {
+        case 'sensei': {
           // Antennae
           ctx.fillStyle = '#047857';
           ctx.fillRect(36, 16, 4, 10);
@@ -220,6 +219,134 @@ export const Sprite: React.FC<SpriteProps> = ({
             ctx.fillRect(44, 50, 8, 4);
           } else {
             ctx.fillRect(44, 50, 8, 2);
+          }
+          break;
+        }
+
+        case 'byte': {
+          // Hooded Charcoal Cloak
+          ctx.fillStyle = '#1e293b';
+          pixelRect(ctx, 26, 24, 44, 44, 10);
+
+          // Deep Hood Shadow Around The Face
+          ctx.fillStyle = '#0f172a';
+          pixelRect(ctx, 31, 29, 34, 20, 8);
+
+          // Glowing Terminal Glasses
+          if (isBlinking) {
+            ctx.fillStyle = '#22d3ee';
+            ctx.fillRect(34, 38, 12, 2);
+            ctx.fillRect(50, 38, 12, 2);
+          } else {
+            ctx.fillStyle = '#22d3ee';
+            ctx.fillRect(33, 35, 13, 8);
+            ctx.fillRect(50, 35, 13, 8);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(35, 37, 2, 2);
+            ctx.fillRect(52, 37, 2, 2);
+          }
+
+          // Cyan Mouth Line
+          ctx.fillStyle = '#22d3ee';
+          if (state === 'action') {
+            ctx.fillRect(42, 46, 12, 3);
+          } else {
+            ctx.fillRect(44, 47, 8, 2);
+          }
+
+          // Laptop Lid + Base In Front
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(32, 58, 32, 12);
+          ctx.fillRect(28, 70, 40, 7);
+
+          // Flickering Screen Glow
+          ctx.fillStyle = ['#164e63', '#0e7490', '#67e8f9', '#0891b2'][f % 4];
+          ctx.fillRect(36, 61, 24, 6);
+          break;
+        }
+
+        case 'pixel': {
+          // Triangle Ears
+          ctx.fillStyle = '#18181b';
+          ctx.fillRect(28, 22, 12, 5);
+          ctx.fillRect(31, 17, 6, 5);
+          ctx.fillRect(56, 22, 12, 5);
+          ctx.fillRect(59, 17, 6, 5);
+
+          // Sleek Loaf Body
+          ctx.fillStyle = '#18181b';
+          pixelRect(ctx, 22, 26, 52, 44, 14);
+
+          // Highlights
+          ctx.fillStyle = '#27272a';
+          ctx.fillRect(34, 29, 28, 4);
+
+          // Big Yellow Eyes With Vertical Slit Pupils
+          if (isBlinking) {
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(34, 45, 11, 2);
+            ctx.fillRect(51, 45, 11, 2);
+          } else {
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(34, 40, 11, 11);
+            ctx.fillRect(51, 40, 11, 11);
+            ctx.fillStyle = '#18181b';
+            ctx.fillRect(39, 43, 3, 7);
+            ctx.fillRect(56, 43, 3, 7);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(35, 41, 2, 2);
+            ctx.fillRect(52, 41, 2, 2);
+          }
+
+          // Tiny Pink Nose
+          ctx.fillStyle = '#f9a8d4';
+          ctx.fillRect(45, 55, 6, 3);
+
+          // Whiskers
+          ctx.fillStyle = '#a1a1aa';
+          ctx.fillRect(8, 52, 12, 1);
+          ctx.fillRect(8, 56, 12, 1);
+          ctx.fillRect(76, 52, 12, 1);
+          ctx.fillRect(76, 56, 12, 1);
+
+          // Tail Curl
+          ctx.fillStyle = '#27272a';
+          ctx.fillRect(72, 58, 8, 6);
+          break;
+        }
+
+        case 'ufo':
+        default: {
+          const oy = (y: number) => y + (f % 2 === 1 ? 2 : 0);
+
+          // Glass Dome
+          ctx.fillStyle = isBlinking ? '#7cb8d4' : '#bae6fd';
+          ctx.fillRect(38, oy(24), 20, 4);
+          ctx.fillRect(34, oy(28), 28, 6);
+
+          // Alien Pilot Silhouette
+          ctx.fillStyle = '#7c3aed';
+          ctx.fillRect(43, oy(27), 10, 4);
+          ctx.fillRect(41, oy(31), 14, 3);
+
+          // Metallic Hull
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(24, oy(34), 48, 8);
+          ctx.fillRect(18, oy(40), 60, 10);
+
+          // Underside
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(26, oy(50), 44, 6);
+          ctx.fillRect(40, oy(56), 16, 5);
+
+          // Beam Emitter Glow
+          ctx.fillStyle = '#8b5cf6';
+          ctx.fillRect(44, oy(60), 8, 3);
+
+          // Hull Lights
+          for (let i = 0; i < 6; i++) {
+            ctx.fillStyle = i === f % 6 ? '#8b5cf6' : '#334155';
+            ctx.fillRect(23 + i * 9, oy(43), 4, 4);
           }
           break;
         }

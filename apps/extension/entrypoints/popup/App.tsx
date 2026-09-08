@@ -714,9 +714,6 @@ export default function App() {
               {session.isLoggedIn ? (
                 <div className="flex items-center justify-between gap-2">
                   <span className="min-w-0">
-                    <span className="block font-display font-semibold text-[13px] text-paper-ink">
-                      Gremlin Cloud <span className="font-mono text-[9px] font-bold uppercase" style={{ color: config.mode === 'cloud' ? 'var(--skin-accent)' : 'text-paper-faint' }}>{config.mode === 'cloud' ? '· active' : '· idle'}</span>
-                    </span>
                     <span className="block font-mono text-[9px] font-bold truncate text-paper-faint">{session.email}</span>
                   </span>
                   <span className="flex items-center gap-2 shrink-0">

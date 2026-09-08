@@ -25,6 +25,9 @@ export const CardlessHowItWorks: React.FC = () => {
     sherlock: '“We were researching architecture ten minutes ago. Now we are watching cats. Curious.”',
     waifu: '“Are we really looking at memes right now? Do it for me, close the tab 💕”',
     sensei: '“The mind wanders to the algorithm’s feed. Let us gently close the tab.”',
+    byte: '> intrusion detected: reddit.com. terminating thread. back to root.',
+    pixel: 'mrrp. caught you looking at nonsense. *bats cursor off desk*',
+    ufo: 'specimen attention span: failing. beaming up distraction.',
   };
 
   const handleSelectCompanion = (id: CompanionId) => {
