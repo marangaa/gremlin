@@ -1,7 +1,14 @@
 import { Hono } from 'hono';
+import { eq, and, or, inArray, desc, sql } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth';
 import type { AppEnv } from '../types/env';
-import { getPool } from '../lib/db';
+import {
+  getDb,
+  customers,
+  subscriptions,
+  processedWebhooks,
+  user as userTable,
+} from '../lib/db';
 import {
   unmarshalPaddleWebhook,
   createCustomerPortalSession,
@@ -16,8 +23,8 @@ export const billingRoutes = new Hono<AppEnv>()
    * Receives signed events from Paddle notification destinations.
    * Adheres to `paddle-webhooks` and `paddle-subscription-sync` delivery contract:
    * - Validates HMAC-SHA256 signature using official `@paddle/paddle-node-sdk`.
-   * - Deduplicates delivery on `eventId`.
-   * - Idempotently mirrors customer and subscription state to Neon PostgreSQL.
+   * - Deduplicates delivery on `eventId` using Drizzle type-safe ledger.
+   * - Idempotently mirrors customer and subscription state to Neon PostgreSQL via Drizzle.
    * - Bridges users by email without customData dependencies.
    * - Acknowledges with 200 within 5 seconds; non-2xx on failure for Paddle retry.
    */
@@ -60,15 +67,16 @@ export const billingRoutes = new Hono<AppEnv>()
 
     const eventId = event.eventId;
     const eventType = event.eventType;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
-    // 1. Idempotency check via processed_webhooks ledger
-    const existing = await pool.query(
-      `SELECT 1 FROM processed_webhooks WHERE "eventId" = $1`,
-      [eventId],
-    );
+    // 1. Idempotency check via processed_webhooks ledger with Drizzle
+    const existing = await db
+      .select({ eventId: processedWebhooks.eventId })
+      .from(processedWebhooks)
+      .where(eq(processedWebhooks.eventId, eventId))
+      .limit(1);
 
-    if (existing.rowCount && existing.rowCount > 0) {
+    if (existing.length > 0) {
       logger.info('Paddle webhook duplicate skipped', { eventId, eventType });
       return c.json({ received: true, deduplicated: true });
     }
@@ -84,22 +92,32 @@ export const billingRoutes = new Hono<AppEnv>()
 
           if (customerId && email) {
             // Resolve userId from "user" table via clean email bridge
-            const userRes = await pool.query<{ id: string }>(
-              `SELECT id FROM "user" WHERE LOWER(email) = $1 LIMIT 1`,
-              [email],
-            );
-            const userId = userRes.rows[0]?.id || null;
+            const existingUser = await db
+              .select({ id: userTable.id })
+              .from(userTable)
+              .where(eq(sql`LOWER(${userTable.email})`, email))
+              .limit(1);
 
-            await pool.query(
-              `INSERT INTO customers ("customerId", "userId", email, "updatedAt")
-               VALUES ($1, $2, $3, NOW())
-               ON CONFLICT ("customerId") DO UPDATE SET
-                 "userId" = COALESCE(EXCLUDED."userId", customers."userId"),
-                 email = EXCLUDED.email,
-                 "updatedAt" = NOW()`,
-              [customerId, userId, email],
-            );
-            logger.info('Customer mirrored successfully', { customerId, email, userId });
+            const matchedUserId = existingUser[0]?.id || null;
+
+            await db
+              .insert(customers)
+              .values({
+                customerId,
+                userId: matchedUserId,
+                email,
+                updatedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: customers.customerId,
+                set: {
+                  userId: sql`COALESCE(EXCLUDED."userId", ${customers.userId})`,
+                  email: sql`EXCLUDED.email`,
+                  updatedAt: new Date(),
+                },
+              });
+
+            logger.info('Customer mirrored successfully', { customerId, email, userId: matchedUserId });
           }
           break;
         }
@@ -121,69 +139,74 @@ export const billingRoutes = new Hono<AppEnv>()
             : null;
 
           // Lookup customer record to link userId and email
-          let userId: string | null = null;
+          let matchedUserId: string | null = null;
           let customerEmail: string = '';
 
           if (customerId) {
-            const custRes = await pool.query<{ userId: string | null; email: string }>(
-              `SELECT "userId", email FROM customers WHERE "customerId" = $1 LIMIT 1`,
-              [customerId],
-            );
-            if (custRes.rows[0]) {
-              userId = custRes.rows[0].userId;
-              customerEmail = custRes.rows[0].email;
+            const custRes = await db
+              .select({ userId: customers.userId, email: customers.email })
+              .from(customers)
+              .where(eq(customers.customerId, customerId))
+              .limit(1);
+
+            if (custRes[0]) {
+              matchedUserId = custRes[0].userId;
+              customerEmail = custRes[0].email;
             }
           }
 
-          // If userId not yet bridged, match by email from customer table
-          if (!userId && customerEmail) {
-            const uRes = await pool.query<{ id: string }>(
-              `SELECT id FROM "user" WHERE LOWER(email) = $1 LIMIT 1`,
-              [customerEmail.toLowerCase()],
-            );
-            userId = uRes.rows[0]?.id || null;
+          // If userId not yet bridged, match by email from user table
+          if (!matchedUserId && customerEmail) {
+            const uRes = await db
+              .select({ id: userTable.id })
+              .from(userTable)
+              .where(eq(sql`LOWER(${userTable.email})`, customerEmail.toLowerCase()))
+              .limit(1);
+
+            matchedUserId = uRes[0]?.id || null;
           }
 
           if (subscriptionId && customerId) {
-            await pool.query(
-              `INSERT INTO subscriptions (
-                 "subscriptionId", "customerId", "userId", status,
-                 "priceId", "productId", "scheduledChange", "currentBillingPeriodEnd", "updatedAt"
-               ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-               ON CONFLICT ("subscriptionId") DO UPDATE SET
-                 "userId" = COALESCE(EXCLUDED."userId", subscriptions."userId"),
-                 status = EXCLUDED.status,
-                 "priceId" = EXCLUDED."priceId",
-                 "productId" = EXCLUDED."productId",
-                 "scheduledChange" = EXCLUDED."scheduledChange",
-                 "currentBillingPeriodEnd" = EXCLUDED."currentBillingPeriodEnd",
-                 "updatedAt" = NOW()`,
-              [
+            await db
+              .insert(subscriptions)
+              .values({
                 subscriptionId,
                 customerId,
-                userId,
+                userId: matchedUserId,
                 status,
                 priceId,
                 productId,
                 scheduledChange,
                 currentBillingPeriodEnd,
-              ],
-            );
+                updatedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                target: subscriptions.subscriptionId,
+                set: {
+                  userId: sql`COALESCE(EXCLUDED."userId", ${subscriptions.userId})`,
+                  status: sql`EXCLUDED.status`,
+                  priceId: sql`EXCLUDED."priceId"`,
+                  productId: sql`EXCLUDED."productId"`,
+                  scheduledChange: sql`EXCLUDED."scheduledChange"`,
+                  currentBillingPeriodEnd: sql`EXCLUDED."currentBillingPeriodEnd"`,
+                  updatedAt: new Date(),
+                },
+              });
 
             // Update user plan entitlement (strictly 'pro' vs 'free')
-            if (userId) {
+            if (matchedUserId) {
               if (status === 'active' || status === 'trialing') {
-                await pool.query(
-                  `UPDATE "user" SET plan = 'pro', "updatedAt" = NOW() WHERE id = $1`,
-                  [userId],
-                );
-                logger.info('User upgraded to Pro', { userId, subscriptionId, status });
+                await db
+                  .update(userTable)
+                  .set({ plan: 'pro', updatedAt: new Date() })
+                  .where(eq(userTable.id, matchedUserId));
+                logger.info('User upgraded to Pro', { userId: matchedUserId, subscriptionId, status });
               } else if (status === 'canceled' || status === 'paused') {
-                await pool.query(
-                  `UPDATE "user" SET plan = 'free', "updatedAt" = NOW() WHERE id = $1`,
-                  [userId],
-                );
-                logger.info('User downgraded to Free', { userId, subscriptionId, status });
+                await db
+                  .update(userTable)
+                  .set({ plan: 'free', updatedAt: new Date() })
+                  .where(eq(userTable.id, matchedUserId));
+                logger.info('User downgraded to Free', { userId: matchedUserId, subscriptionId, status });
               }
             }
           }
@@ -195,13 +218,15 @@ export const billingRoutes = new Hono<AppEnv>()
           break;
       }
 
-      // 3. Mark event processed in ledger
-      await pool.query(
-        `INSERT INTO processed_webhooks ("eventId", "eventType", "processedAt")
-         VALUES ($1, $2, NOW())
-         ON CONFLICT ("eventId") DO NOTHING`,
-        [eventId, eventType],
-      );
+      // 3. Mark event processed in ledger with Drizzle
+      await db
+        .insert(processedWebhooks)
+        .values({
+          eventId,
+          eventType,
+          processedAt: new Date(),
+        })
+        .onConflictDoNothing();
 
       return c.json({ received: true });
     } catch (err) {
@@ -224,15 +249,21 @@ export const billingRoutes = new Hono<AppEnv>()
       return c.json({ error: 'Paddle API key is not configured on server' }, 500);
     }
 
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
     // Look up user's Paddle customer record
-    const custRes = await pool.query<{ customerId: string }>(
-      `SELECT "customerId" FROM customers WHERE "userId" = $1 OR LOWER(email) = LOWER($2) LIMIT 1`,
-      [user.id, user.email],
-    );
+    const custRes = await db
+      .select({ customerId: customers.customerId })
+      .from(customers)
+      .where(
+        or(
+          eq(customers.userId, user.id),
+          eq(sql`LOWER(${customers.email})`, user.email.toLowerCase()),
+        ),
+      )
+      .limit(1);
 
-    const customerId = custRes.rows[0]?.customerId;
+    const customerId = custRes[0]?.customerId;
     if (!customerId) {
       return c.json(
         { error: 'No Paddle customer record found for this account. Please subscribe first.' },
@@ -241,13 +272,17 @@ export const billingRoutes = new Hono<AppEnv>()
     }
 
     // Look up active subscription IDs for deep-linking
-    const subRes = await pool.query<{ subscriptionId: string }>(
-      `SELECT "subscriptionId" FROM subscriptions
-       WHERE "customerId" = $1 AND status IN ('active', 'trialing', 'past_due')`,
-      [customerId],
-    );
+    const subRes = await db
+      .select({ subscriptionId: subscriptions.subscriptionId })
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.customerId, customerId),
+          inArray(subscriptions.status, ['active', 'trialing', 'past_due']),
+        ),
+      );
 
-    const subscriptionIds = subRes.rows.map((r) => r.subscriptionId);
+    const subscriptionIds = subRes.map((r) => r.subscriptionId);
     const isSandbox = (c.env.PADDLE_ENV || 'sandbox') === 'sandbox';
 
     try {
@@ -271,27 +306,16 @@ export const billingRoutes = new Hono<AppEnv>()
    */
   .get('/status', requireAuth, async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
-    const subRes = await pool.query<{
-      subscriptionId: string;
-      customerId: string;
-      status: string;
-      priceId: string;
-      productId: string;
-      scheduledChange: Date | null;
-      currentBillingPeriodEnd: Date | null;
-    }>(
-      `SELECT s."subscriptionId", s."customerId", s.status, s."priceId", s."productId",
-              s."scheduledChange", s."currentBillingPeriodEnd"
-       FROM subscriptions s
-       WHERE s."userId" = $1
-       ORDER BY s."createdAt" DESC
-       LIMIT 1`,
-      [user.id],
-    );
+    const subRes = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, user.id))
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(1);
 
-    const sub = subRes.rows[0] || null;
+    const sub = subRes[0] || null;
 
     return c.json({
       success: true,

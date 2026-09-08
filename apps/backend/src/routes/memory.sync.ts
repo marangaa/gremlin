@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { eq, desc } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth';
 import type { AppEnv } from '../types/env';
-import { getPool } from '../lib/db';
+import { getDb, syncGoals, syncNotes, syncDiaries } from '../lib/db';
 
 /**
  * Full account sync — goals, smart notes, and diaries mirror server-side for
@@ -40,71 +41,103 @@ export const syncRoutes = new Hono<AppEnv>()
 
   .post('/goals', zValidator('json', z.object({ goals: z.array(goalSchema).max(300) })), async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
     const { goals } = c.req.valid('json');
+
     for (const g of goals) {
-      await pool.query(
-        `INSERT INTO "sync_goals"
-           ("userId","id","title","category","estimatedMinutes","isActive","completed","createdAt","completedAt")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-         ON CONFLICT ("userId","id") DO UPDATE SET
-           "title"=$3, "category"=$4, "estimatedMinutes"=$5, "isActive"=$6,
-           "completed"=$7, "completedAt"=$9`,
-        [user.id, g.id, g.title, g.category, g.estimatedMinutes ?? null, g.isActive, g.completed, g.createdAt, g.completedAt ?? null],
-      );
+      await db
+        .insert(syncGoals)
+        .values({
+          userId: user.id,
+          id: g.id,
+          title: g.title,
+          category: g.category,
+          estimatedMinutes: g.estimatedMinutes ?? null,
+          isActive: g.isActive,
+          completed: g.completed,
+          createdAt: g.createdAt,
+          completedAt: g.completedAt ?? null,
+        })
+        .onConflictDoUpdate({
+          target: [syncGoals.userId, syncGoals.id],
+          set: {
+            title: g.title,
+            category: g.category,
+            estimatedMinutes: g.estimatedMinutes ?? null,
+            isActive: g.isActive,
+            completed: g.completed,
+            completedAt: g.completedAt ?? null,
+          },
+        });
     }
     return c.json({ success: true, stored: goals.length });
   })
 
   .post('/notes', zValidator('json', z.object({ notes: z.array(noteSchema).max(200) })), async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
     const { notes } = c.req.valid('json');
-    for (const n of notes) {
-      await pool.query(
-        `INSERT INTO "sync_notes"
-           ("userId","id","content","url","domain","pageTitle","snippet","goalId","goalTitle","companionId","timestamp")
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-         ON CONFLICT ("userId","id") DO NOTHING`,
-        [user.id, n.id, n.content, n.url, n.domain, n.pageTitle, n.snippet ?? null, n.goalId ?? null, n.goalTitle ?? null, n.companionId, n.timestamp],
-      );
+
+    if (notes.length > 0) {
+      await db
+        .insert(syncNotes)
+        .values(
+          notes.map((n) => ({
+            userId: user.id,
+            id: n.id,
+            content: n.content,
+            url: n.url,
+            domain: n.domain,
+            pageTitle: n.pageTitle,
+            snippet: n.snippet ?? null,
+            goalId: n.goalId ?? null,
+            goalTitle: n.goalTitle ?? null,
+            companionId: n.companionId,
+            timestamp: n.timestamp,
+          }))
+        )
+        .onConflictDoNothing({ target: [syncNotes.userId, syncNotes.id] });
     }
     return c.json({ success: true, stored: notes.length });
   })
 
   .put('/diary', zValidator('json', z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), data: z.record(z.string(), z.unknown()) })), async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
     const { date, data } = c.req.valid('json');
-    await pool.query(
-      `INSERT INTO "sync_diaries" ("userId","date","data","updatedAt")
-       VALUES ($1,$2,$3,NOW())
-       ON CONFLICT ("userId","date") DO UPDATE SET "data"=$3, "updatedAt"=NOW()`,
-      [user.id, date, JSON.stringify(data)],
-    );
+
+    await db
+      .insert(syncDiaries)
+      .values({
+        userId: user.id,
+        date,
+        data,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [syncDiaries.userId, syncDiaries.date],
+        set: {
+          data,
+          updatedAt: new Date(),
+        },
+      });
+
     return c.json({ success: true });
   })
 
   .get('/all', async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
-    const goalRows = await pool.query(
-      `SELECT * FROM "sync_goals" WHERE "userId"=$1`,
-      [user.id],
-    );
-    const noteRows = await pool.query(
-      `SELECT * FROM "sync_notes" WHERE "userId"=$1 ORDER BY "timestamp" DESC LIMIT 200`,
-      [user.id],
-    );
-    const diaryRows = await pool.query(
-      `SELECT "date","data" FROM "sync_diaries" WHERE "userId"=$1 ORDER BY "date" DESC LIMIT 30`,
-      [user.id],
-    );
+    const [goalRows, noteRows, diaryRows] = await Promise.all([
+      db.select().from(syncGoals).where(eq(syncGoals.userId, user.id)),
+      db.select().from(syncNotes).where(eq(syncNotes.userId, user.id)).orderBy(desc(syncNotes.timestamp)).limit(200),
+      db.select({ date: syncDiaries.date, data: syncDiaries.data }).from(syncDiaries).where(eq(syncDiaries.userId, user.id)).orderBy(desc(syncDiaries.date)).limit(30),
+    ]);
 
     return c.json({
       success: true,
-      goals: goalRows.rows.map((r: Record<string, unknown>) => ({
+      goals: goalRows.map((r) => ({
         id: r.id,
         title: r.title,
         category: r.category,
@@ -114,7 +147,7 @@ export const syncRoutes = new Hono<AppEnv>()
         createdAt: Number(r.createdAt),
         completedAt: r.completedAt != null ? Number(r.completedAt) : undefined,
       })),
-      notes: noteRows.rows.map((r: Record<string, unknown>) => ({
+      notes: noteRows.map((r) => ({
         id: r.id,
         content: r.content,
         url: r.url,
@@ -126,7 +159,7 @@ export const syncRoutes = new Hono<AppEnv>()
         companionId: r.companionId,
         timestamp: Number(r.timestamp),
       })),
-      diaries: diaryRows.rows.map((r: Record<string, unknown>) => ({
+      diaries: diaryRows.map((r) => ({
         ...((r.data as object) ?? {}),
         date: r.date,
       })),

@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { eq, and, gte, desc } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth';
 import type { AppEnv } from '../types/env';
-import { getPool } from '../lib/db';
+import { getDb, memoryEpisodes, focusProfiles } from '../lib/db';
 
 /**
  * Memory sync API — mirrors the companion's episode log and focus profile
@@ -45,18 +46,7 @@ const focusProfileSchema = z.object({
   updatedAt: z.number().int().positive(),
 });
 
-interface EpisodeRow {
-  id: string;
-  ts: string | number;
-  type: string;
-  domain: string | null;
-  detail: string;
-  goalTitle: string | null;
-  interventionKind: string | null;
-  interventionLevel: number | null;
-  outcomeEffective: boolean | null;
-  returnedWithinMin: number | null;
-}
+type EpisodeRow = typeof memoryEpisodes.$inferSelect;
 
 function mapEpisodeRow(row: EpisodeRow) {
   return {
@@ -90,80 +80,89 @@ export const memoryRoutes = new Hono<AppEnv>()
 
   .post('/episodes', zValidator('json', pushEpisodesSchema), async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
     const { episodes } = c.req.valid('json');
 
-    let stored = 0;
-    for (const ep of episodes) {
-      await pool.query(
-        `INSERT INTO "memory_episodes"
-           ("id", "userId", "ts", "type", "domain", "detail", "goalTitle", "interventionKind", "interventionLevel", "outcomeEffective", "returnedWithinMin")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         ON CONFLICT ("id") DO NOTHING`,
-        [
-          ep.id,
-          user.id,
-          ep.ts,
-          ep.type,
-          ep.domain ?? null,
-          ep.detail,
-          ep.goalTitle ?? null,
-          ep.intervention?.kind ?? null,
-          ep.intervention?.level ?? null,
-          ep.outcome?.effective ?? null,
-          ep.outcome?.returnedWithinMin ?? null,
-        ],
-      );
-      stored += 1;
+    if (episodes.length > 0) {
+      await db
+        .insert(memoryEpisodes)
+        .values(
+          episodes.map((ep) => ({
+            id: ep.id,
+            userId: user.id,
+            ts: ep.ts,
+            type: ep.type,
+            domain: ep.domain ?? null,
+            detail: ep.detail,
+            goalTitle: ep.goalTitle ?? null,
+            interventionKind: ep.intervention?.kind ?? null,
+            interventionLevel: ep.intervention?.level ?? null,
+            outcomeEffective: ep.outcome?.effective ?? null,
+            returnedWithinMin: ep.outcome?.returnedWithinMin ?? null,
+          }))
+        )
+        .onConflictDoNothing({ target: memoryEpisodes.id });
     }
 
-    return c.json({ success: true, stored });
+    return c.json({ success: true, stored: episodes.length });
   })
 
   .get('/episodes', async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
     const since = Number(c.req.query('since') ?? 0);
     const limit = Math.min(200, Math.max(1, Number(c.req.query('limit') ?? 100)));
 
-    const { rows } = await pool.query<EpisodeRow>(
-      `SELECT * FROM "memory_episodes"
-        WHERE "userId" = $1 AND "ts" >= $2
-        ORDER BY "ts" DESC
-        LIMIT $3`,
-      [user.id, since, limit],
-    );
+    const rows = await db
+      .select()
+      .from(memoryEpisodes)
+      .where(
+        and(
+          eq(memoryEpisodes.userId, user.id),
+          gte(memoryEpisodes.ts, since)
+        )
+      )
+      .orderBy(desc(memoryEpisodes.ts))
+      .limit(limit);
 
     return c.json({ success: true, episodes: rows.map(mapEpisodeRow) });
   })
 
   .get('/profile', async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
-    const { rows } = await pool.query<{ data: unknown }>(
-      `SELECT "data" FROM "focus_profiles" WHERE "userId" = $1`,
-      [user.id],
-    );
+    const [row] = await db
+      .select({ data: focusProfiles.data })
+      .from(focusProfiles)
+      .where(eq(focusProfiles.userId, user.id))
+      .limit(1);
 
-    if (rows.length === 0) {
+    if (!row) {
       return c.json({ success: true, profile: null });
     }
-    return c.json({ success: true, profile: rows[0]!.data });
+    return c.json({ success: true, profile: row.data });
   })
 
   .put('/profile', zValidator('json', focusProfileSchema), async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
     const profile = c.req.valid('json');
 
-    await pool.query(
-      `INSERT INTO "focus_profiles" ("userId", "data", "updatedAt")
-       VALUES ($1, $2, NOW())
-       ON CONFLICT ("userId") DO UPDATE SET "data" = $2, "updatedAt" = NOW()`,
-      [user.id, JSON.stringify(profile)],
-    );
+    await db
+      .insert(focusProfiles)
+      .values({
+        userId: user.id,
+        data: profile,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: focusProfiles.userId,
+        set: {
+          data: profile,
+          updatedAt: new Date(),
+        },
+      });
 
     return c.json({ success: true });
   });
-

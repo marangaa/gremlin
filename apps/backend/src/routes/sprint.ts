@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { eq, and, desc } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth';
 import type { AppEnv } from '../types/env';
 import { runAgentEvaluation } from '../lib/agent';
-import { getPool, mapSprintRow, type SprintRow } from '../lib/db';
+import { getDb, sprints, mapSprintRow } from '../lib/db';
 
 /**
  * Runtime-validated request schemas. These preserve full RPC type inference
@@ -121,17 +122,16 @@ export const sprintRoutes = new Hono<AppEnv>()
    */
   .get('/current', async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
-    const result = await pool.query<SprintRow>(
-      `SELECT * FROM sprints
-       WHERE "userId" = $1 AND status = 'active'
-       ORDER BY "startedAt" DESC
-       LIMIT 1`,
-      [user.id],
-    );
+    const result = await db
+      .select()
+      .from(sprints)
+      .where(and(eq(sprints.userId, user.id), eq(sprints.status, 'active')))
+      .orderBy(desc(sprints.startedAt))
+      .limit(1);
 
-    const sprint = result.rows[0] ? mapSprintRow(result.rows[0]) : null;
+    const sprint = result[0] ? mapSprintRow(result[0] as any) : null;
 
     return c.json({
       success: true as const,
@@ -146,31 +146,35 @@ export const sprintRoutes = new Hono<AppEnv>()
   .post('/start', zValidator('json', startSprintSchema), async (c) => {
     const user = c.get('user')!;
     const body = c.req.valid('json');
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
     const goal = (body.goal || 'Deep Work Sprint').slice(0, 100);
     const targetMinutes = Math.min(Math.max(1, body.targetMinutes || 25), 180);
     const organismId = body.organismId || 'Sarge';
 
-    await pool.query(
-      `UPDATE sprints SET status = 'superseded', "endedAt" = NOW()
-       WHERE "userId" = $1 AND status = 'active'`,
-      [user.id],
-    );
+    await db
+      .update(sprints)
+      .set({ status: 'superseded', endedAt: new Date() })
+      .where(and(eq(sprints.userId, user.id), eq(sprints.status, 'active')));
 
-    const inserted = await pool.query<SprintRow>(
-      `INSERT INTO sprints ("userId", goal, "targetMinutes", "startedAt", status, organismId)
-       VALUES ($1, $2, $3, NOW(), 'active', $4)
-       RETURNING *`,
-      [user.id, goal, targetMinutes, organismId],
-    );
+    const inserted = await db
+      .insert(sprints)
+      .values({
+        userId: user.id,
+        goal,
+        targetMinutes,
+        startedAt: new Date(),
+        status: 'active',
+        organismId,
+      })
+      .returning();
 
     return c.json(
       {
         success: true as const,
-        data: mapSprintRow(inserted.rows[0]!),
+        data: mapSprintRow(inserted[0] as any),
       },
-      201
+      201,
     );
   })
 
@@ -179,16 +183,15 @@ export const sprintRoutes = new Hono<AppEnv>()
    */
   .post('/complete', async (c) => {
     const user = c.get('user')!;
-    const pool = getPool(c.env.DATABASE_URL);
+    const db = getDb(c.env.DATABASE_URL);
 
-    const updated = await pool.query<SprintRow>(
-      `UPDATE sprints SET status = 'completed', "endedAt" = NOW()
-       WHERE "userId" = $1 AND status = 'active'
-       RETURNING *`,
-      [user.id],
-    );
+    const updated = await db
+      .update(sprints)
+      .set({ status: 'completed', endedAt: new Date() })
+      .where(and(eq(sprints.userId, user.id), eq(sprints.status, 'active')))
+      .returning();
 
-    const sprint = updated.rows[0] ? mapSprintRow(updated.rows[0]) : null;
+    const sprint = updated[0] ? mapSprintRow(updated[0] as any) : null;
 
     return c.json({
       success: true as const,
