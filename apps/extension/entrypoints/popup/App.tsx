@@ -335,7 +335,11 @@ export default function App() {
     return (
       <div className="w-[380px] bg-paper p-5 pb-4 flex flex-col text-paper-ink">
         <div className="flex items-center gap-2.5">
-          <span className="w-7 h-7 shrink-0 bg-accent border-2 border-coal shadow-[2px_2px_0_0_#12151A]" />
+          <img
+            src="/icon/48.png"
+            alt="Gremlin"
+            className="w-8 h-8 shrink-0 object-contain border-2 border-coal shadow-[2px_2px_0_0_#12151A] bg-accent p-0.5"
+          />
           <h1 className="font-display font-bold text-lg tracking-tight">Welcome to Gremlin</h1>
         </div>
         <p className="mt-2 text-xs text-paper-muted leading-relaxed">The legal bit, in plain English:</p>
