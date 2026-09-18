@@ -50,7 +50,7 @@ const TIERS: Tier[] = [
       'Custom companion personality tuning & roast sliders',
       'Priority updates & new companions first',
     ],
-    cta: 'Start Pro Trial',
+    cta: 'Upgrade to Pro',
     highlight: true,
   },
 ];
@@ -105,6 +105,15 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
   };
 
   const handleCheckout = () => {
+    if (!user) {
+      if (navigate) {
+        navigate('/auth');
+      } else {
+        window.location.href = '/auth';
+      }
+      return;
+    }
+
     if (!PADDLE_PRO_PRICE_ID) {
       alert(
         'Paddle Pro price ID (VITE_PADDLE_PRO_PRICE_ID) is not configured yet. Run the seed script in apps/backend or set it in .env.',
@@ -214,17 +223,28 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
                       {portalLoading ? 'Opening portal...' : 'Manage Subscription →'}
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={handleCheckout}
-                      className={
-                        tier.highlight
-                          ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
-                          : PAPER_GHOST_BTN
-                      }
-                    >
-                      {tier.cta}
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleCheckout}
+                        className={
+                          tier.highlight
+                            ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
+                            : PAPER_GHOST_BTN
+                        }
+                      >
+                        {!user ? 'Sign in to get Pro' : 'Upgrade to Pro — $5/mo'}
+                      </button>
+                      {!user ? (
+                        <p className="text-[11px] font-mono text-center text-[#5D6675] dark:text-[#9CA3AF]">
+                          Sign in or create account to activate Pro
+                        </p>
+                      ) : (
+                        <p className="text-[11px] font-mono text-center text-[#5D6675] dark:text-[#9CA3AF]">
+                          Signed in as: {user.email}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
