@@ -43,6 +43,92 @@ function buildTrustedOrigins(env: Partial<Bindings> = {}): string[] {
   return [...origins];
 }
 
+/**
+ * Resolves user identifier from a Polar webhook payload and upgrades their plan to 'pro'.
+ */
+async function handlePolarUpgrade(databaseUrl: string, payload: any, eventType: string) {
+  try {
+    const db = getDb(databaseUrl);
+    const customer = payload?.data?.customer;
+    const externalId =
+      customer?.external_id ||
+      customer?.externalId ||
+      payload?.data?.metadata?.userId ||
+      payload?.data?.metadata?.referenceId ||
+      payload?.data?.custom_field_data?.userId;
+
+    const email =
+      customer?.email ||
+      payload?.data?.customer_email ||
+      payload?.data?.email;
+
+    if (externalId) {
+      await db
+        .update(userTable)
+        .set({ plan: 'pro', updatedAt: new Date() })
+        .where(eq(userTable.id, String(externalId)));
+      logger.info(`User upgraded to Pro via Polar ${eventType} (by externalId)`, {
+        userId: externalId,
+      });
+    } else if (email) {
+      await db
+        .update(userTable)
+        .set({ plan: 'pro', updatedAt: new Date() })
+        .where(eq(sql`LOWER(${userTable.email})`, String(email).toLowerCase().trim()));
+      logger.info(`User upgraded to Pro via Polar ${eventType} (by email)`, {
+        email,
+      });
+    } else {
+      logger.warn(`Polar ${eventType} webhook received without identifiable user or email`, {
+        dataId: payload?.data?.id,
+      });
+    }
+  } catch (err) {
+    logger.error(`Failed to handle Polar ${eventType} webhook`, err);
+  }
+}
+
+/**
+ * Resolves user identifier from a Polar webhook payload and downgrades their plan to 'free'.
+ */
+async function handlePolarDowngrade(databaseUrl: string, payload: any, eventType: string) {
+  try {
+    const db = getDb(databaseUrl);
+    const customer = payload?.data?.customer;
+    const externalId =
+      customer?.external_id ||
+      customer?.externalId ||
+      payload?.data?.metadata?.userId ||
+      payload?.data?.metadata?.referenceId ||
+      payload?.data?.custom_field_data?.userId;
+
+    const email =
+      customer?.email ||
+      payload?.data?.customer_email ||
+      payload?.data?.email;
+
+    if (externalId) {
+      await db
+        .update(userTable)
+        .set({ plan: 'free', updatedAt: new Date() })
+        .where(eq(userTable.id, String(externalId)));
+      logger.info(`User downgraded to Free via Polar ${eventType} (by externalId)`, {
+        userId: externalId,
+      });
+    } else if (email) {
+      await db
+        .update(userTable)
+        .set({ plan: 'free', updatedAt: new Date() })
+        .where(eq(sql`LOWER(${userTable.email})`, String(email).toLowerCase().trim()));
+      logger.info(`User downgraded to Free via Polar ${eventType} (by email)`, {
+        email,
+      });
+    }
+  } catch (err) {
+    logger.error(`Failed to handle Polar ${eventType} webhook`, err);
+  }
+}
+
 export function createBetterAuthInstance(env?: Partial<Bindings>) {
   const pool = getPool(
     env?.DATABASE_URL || process.env.DATABASE_URL || 'postgresql://localhost:5432/gremlin',
@@ -70,86 +156,23 @@ export function createBetterAuthInstance(env?: Partial<Bindings>) {
             portal(),
             webhooks({
               secret: env.POLAR_WEBHOOK_SECRET || '',
-              onSubscriptionActive: async (payload: any) => {
-                try {
-                  const db = getDb(env.DATABASE_URL!);
-                  const externalId = payload?.data?.customer?.external_id;
-                  const email = payload?.data?.customer?.email;
-
-                  if (externalId) {
-                    await db
-                      .update(userTable)
-                      .set({ plan: 'pro', updatedAt: new Date() })
-                      .where(eq(userTable.id, externalId));
-                    logger.info('User upgraded to Pro via Polar subscription.active (by externalId)', {
-                      userId: externalId,
-                    });
-                  } else if (email) {
-                    await db
-                      .update(userTable)
-                      .set({ plan: 'pro', updatedAt: new Date() })
-                      .where(eq(sql`LOWER(${userTable.email})`, email.toLowerCase().trim()));
-                    logger.info('User upgraded to Pro via Polar subscription.active (by email)', {
-                      email,
-                    });
-                  }
-                } catch (err) {
-                  logger.error('Failed to handle Polar onSubscriptionActive webhook', err);
+              onSubscriptionCreated: async (payload: any) => {
+                const status = payload?.data?.status;
+                if (status === 'active' || status === 'trialing') {
+                  await handlePolarUpgrade(env.DATABASE_URL!, payload, 'subscription.created');
                 }
+              },
+              onSubscriptionActive: async (payload: any) => {
+                await handlePolarUpgrade(env.DATABASE_URL!, payload, 'subscription.active');
+              },
+              onOrderPaid: async (payload: any) => {
+                await handlePolarUpgrade(env.DATABASE_URL!, payload, 'order.paid');
               },
               onSubscriptionCanceled: async (payload: any) => {
-                try {
-                  const db = getDb(env.DATABASE_URL!);
-                  const externalId = payload?.data?.customer?.external_id;
-                  const email = payload?.data?.customer?.email;
-
-                  if (externalId) {
-                    await db
-                      .update(userTable)
-                      .set({ plan: 'free', updatedAt: new Date() })
-                      .where(eq(userTable.id, externalId));
-                    logger.info('User downgraded to Free via Polar subscription.canceled (by externalId)', {
-                      userId: externalId,
-                    });
-                  } else if (email) {
-                    await db
-                      .update(userTable)
-                      .set({ plan: 'free', updatedAt: new Date() })
-                      .where(eq(sql`LOWER(${userTable.email})`, email.toLowerCase().trim()));
-                    logger.info('User downgraded to Free via Polar subscription.canceled (by email)', {
-                      email,
-                    });
-                  }
-                } catch (err) {
-                  logger.error('Failed to handle Polar onSubscriptionCanceled webhook', err);
-                }
+                await handlePolarDowngrade(env.DATABASE_URL!, payload, 'subscription.canceled');
               },
               onSubscriptionRevoked: async (payload: any) => {
-                try {
-                  const db = getDb(env.DATABASE_URL!);
-                  const externalId = payload?.data?.customer?.external_id;
-                  const email = payload?.data?.customer?.email;
-
-                  if (externalId) {
-                    await db
-                      .update(userTable)
-                      .set({ plan: 'free', updatedAt: new Date() })
-                      .where(eq(userTable.id, externalId));
-                    logger.info('User downgraded to Free via Polar subscription.revoked (by externalId)', {
-                      userId: externalId,
-                    });
-                  } else if (email) {
-                    await db
-                      .update(userTable)
-                      .set({ plan: 'free', updatedAt: new Date() })
-                      .where(eq(sql`LOWER(${userTable.email})`, email.toLowerCase().trim()));
-                    logger.info('User downgraded to Free via Polar subscription.revoked (by email)', {
-                      email,
-                    });
-                  }
-                } catch (err) {
-                  logger.error('Failed to handle Polar onSubscriptionRevoked webhook', err);
-                }
+                await handlePolarDowngrade(env.DATABASE_URL!, payload, 'subscription.revoked');
               },
             }),
           ],
