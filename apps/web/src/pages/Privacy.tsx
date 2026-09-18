@@ -158,18 +158,18 @@ const sections: DocSection[] = [
     id: 'limited-use',
     title: 'Chrome Web Store Limited Use disclosure',
     body: (
-      <div className="not-prose rounded-none border-2 border-coal bg-base-deep p-5 shadow-brut">
+      <div className="not-prose border-2 border-coal bg-white dark:bg-[#161914] p-5 shadow-brut">
         <div className="flex items-center gap-2">
           <Lock size={14} className="text-accent" />
           <Label>Limited use commitment</Label>
         </div>
-        <p className="mt-2 text-[15px] leading-[1.75] text-coal">
+        <p className="mt-2 text-sm leading-relaxed text-coal dark:text-white">
           The use of information received from Chrome Web Store users will adhere to the{' '}
           <a
             href="https://developer.chrome.com/docs/webstore/program-policies/limited-use"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent hover:underline font-mono"
+            className="text-accent-deep dark:text-accent font-bold hover:underline font-mono"
           >
             Chrome Web Store User Data Policy
           </a>
