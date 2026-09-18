@@ -6,7 +6,7 @@ import type { AppType } from '@gremlin/backend';
  * defaulting to the local development server if not set.
  */
 export const API_BASE_URL =
-  import.meta.env.WXT_API_URL || 'http://localhost:8787';
+  import.meta.env.WXT_API_URL || 'http://localhost:8700';
 
 /**
  * Resolves the frontend web app URL (e.g. for /auth, /pricing, /privacy).

@@ -8,13 +8,14 @@ import type { AppEnv } from '../types/env';
  */
 export function buildAllowedOrigins(env: Partial<AppEnv['Bindings']> = {}): string[] {
   const frontendUrl = env.FRONTEND_URL || 'http://localhost:5173';
-  const backendUrl = env.BETTER_AUTH_URL || 'http://localhost:8787';
+  const backendUrl = env.BETTER_AUTH_URL || 'http://localhost:8700';
 
   const origins = new Set<string>([
     frontendUrl,
     backendUrl,
     'http://localhost:5173',
     'http://localhost:3000',
+    'http://localhost:8700',
     'http://localhost:8787',
     'chrome-extension://*',
   ]);

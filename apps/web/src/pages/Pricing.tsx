@@ -88,7 +88,10 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
     setPortalLoading(true);
     try {
       if ((authClient as any).customer?.portal) {
-        await (authClient as any).customer.portal();
+        const res = await (authClient as any).customer.portal();
+        if (res?.data?.url) {
+          window.location.href = res.data.url;
+        }
       } else {
         alert('Customer portal is not available yet.');
       }
@@ -112,9 +115,12 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
     setCheckoutLoading(true);
     try {
       if ((authClient as any).checkout) {
-        await (authClient as any).checkout({
+        const res = await (authClient as any).checkout({
           slug: 'pro',
         });
+        if (res?.data?.url) {
+          window.location.href = res.data.url;
+        }
       } else {
         alert('Checkout service is currently initializing. Please try again in a moment.');
       }

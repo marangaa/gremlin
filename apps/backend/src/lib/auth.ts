@@ -14,6 +14,7 @@ import { logger } from './logger';
 let cachedAuth: ReturnType<typeof createBetterAuthInstance> | null = null;
 let cachedDbUrl: string | null = null;
 let cachedPolarToken: string | null = null;
+let cachedPolarSecret: string | null = null;
 
 function parseList(value?: string): string[] {
   if (!value) return [];
@@ -159,7 +160,7 @@ export function createBetterAuthInstance(env?: Partial<Bindings>) {
   return betterAuth({
     database: pool,
     secret: env?.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET || 'development_secret_key_minimum_32_characters_long',
-    baseURL: env?.BETTER_AUTH_URL || process.env.BETTER_AUTH_URL || 'http://localhost:8787',
+    baseURL: env?.BETTER_AUTH_URL || process.env.BETTER_AUTH_URL || 'http://localhost:8700',
     basePath: '/api/auth',
     plugins: [
       anonymous(),
@@ -224,7 +225,8 @@ export function getAuth(env: Bindings) {
   if (
     cachedAuth &&
     cachedDbUrl === env.DATABASE_URL &&
-    cachedPolarToken === (env.POLAR_ACCESS_TOKEN || null)
+    cachedPolarToken === (env.POLAR_ACCESS_TOKEN || null) &&
+    cachedPolarSecret === (env.POLAR_WEBHOOK_SECRET || null)
   ) {
     return cachedAuth;
   }
@@ -233,6 +235,7 @@ export function getAuth(env: Bindings) {
   cachedAuth = authInstance;
   cachedDbUrl = env.DATABASE_URL;
   cachedPolarToken = env.POLAR_ACCESS_TOKEN || null;
+  cachedPolarSecret = env.POLAR_WEBHOOK_SECRET || null;
   return authInstance;
 }
 

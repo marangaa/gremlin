@@ -9,12 +9,10 @@
   "workers_dev": true,
   "preview_urls": true,
   "dev": {
-    "port": 8787
+    "port": 8700
   },
   "vars": {
     "BETTER_AUTH_URL": "https://gremlin-backend.rchdmaranga-b12.workers.dev",
-    "PADDLE_ENV": "production",
-    "PADDLE_PRO_PRICE_ID": "pri_01m2trj0f36nygj860s07rzn8a",
     "NODE_ENV": "production",
     "POLAR_ENV": "production",
     "ALLOWED_ORIGINS": "https://gremlin.fasihi.xyz,http://localhost:5173"
