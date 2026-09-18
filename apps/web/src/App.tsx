@@ -38,7 +38,7 @@ export function App() {
       case '/terms':
         return <Terms />;
       case '/pricing':
-        return <Pricing />;
+        return <Pricing navigate={navigate} />;
       case '/':
         return <Home navigate={navigate} />;
       default:

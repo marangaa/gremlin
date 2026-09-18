@@ -195,7 +195,7 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
           </div>
         ) : (
           <p className="py-5 text-center font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint">
-            Hit synthesize — your companion reviews the day.
+            Hit synthesize to have your companion review the day.
           </p>
         )}
       </section>
@@ -238,7 +238,7 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
 
         {diary.notes.length === 0 ? (
           <p className="py-6 text-center font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint">
-            Nothing yet — jot thoughts while browsing.
+            Nothing yet. Jot thoughts while browsing.
           </p>
         ) : (
           <div className="divide-y divide-dashed divide-line">

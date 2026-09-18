@@ -4,10 +4,8 @@ import { Reveal } from '../components/Reveal';
 import { authClient, API_URL } from '../lib/auth';
 import { openPaddleCheckout, PADDLE_PRO_PRICE_ID } from '../lib/paddle';
 
-/* ------------------------------------------------------------------ */
-/* Paper theme — the deliberate light route on the dark site.          */
-/* Featured tier inverts back to dark: an island of the night mode.    */
-/* ------------------------------------------------------------------ */
+/* Paper theme: the deliberate light route on the dark site. */
+/* Featured tier inverts back to dark: an island of the night mode. */
 
 const PAPER_GHOST_BTN =
   'w-full text-center block px-5 py-3 rounded-none border-2 border-coal dark:border-[#3F4740] bg-white dark:bg-[#161914] font-display font-bold text-sm text-coal dark:text-white tracking-wide shadow-brut-sm dark:shadow-[3px_3px_0_0_#A3E635] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut active:translate-x-0 active:translate-y-0 active:shadow-none';
@@ -37,7 +35,7 @@ const TIERS: Tier[] = [
       'Context tracking, distraction intervention & procedural sound effects',
       'Digital self-awareness diary & local sprint history',
     ],
-    cta: 'Add to Chrome — Free',
+    cta: 'Join Free Waitlist',
   },
   {
     name: 'Gremlin Pro',
@@ -46,7 +44,7 @@ const TIERS: Tier[] = [
     icon: <Zap className="w-4 h-4" />,
     blurb: "For when you can't be bothered setting up keys. Fast hosted cloud AI and sync across all your devices.",
     features: [
-      'Zero setup — ready to use right after install',
+      'No setup needed, ready right after install',
       'Instant cloud AI evaluation & roast engine',
       'Multi-device sync for sprint history, diaries & goals',
       'Custom companion personality tuning & roast sliders',
@@ -67,8 +65,8 @@ const FAQS: [string, string][] = [
     'Never. In free BYOK mode, zero data ever touches our servers. When an evaluation happens, only the active tab title and domain are checked against your stated goal. Keystrokes, passwords, form inputs, and personal emails are never accessed or recorded.',
   ],
   [
-    'What is the "intention-action gap"?',
-    'It’s the distance between what you planned to do this morning and what you actually spent the afternoon doing. Gremlin watches your context in real time and gently intervenes the minute you start drifting, before you lose three hours to rabbit holes.',
+    'What does Gremlin help with?',
+    'It bridges the difference between what you planned to do this morning and what you actually spent the afternoon doing. Gremlin watches your context in real time and gently intervenes the minute you start drifting, before you lose three hours to rabbit holes.',
   ],
   [
     'Can I switch companions whenever I want?',
@@ -76,11 +74,11 @@ const FAQS: [string, string][] = [
   ],
   [
     'Can I cancel my subscription anytime?',
-    'Yes. One click in the billing portal cancels immediately. No emails, no phone calls, no guilt trips.',
+    'Yes. One click in the billing portal cancels immediately. You can cancel at any time with no hassle.',
   ],
 ];
 
-export const Pricing: React.FC = () => {
+export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navigate }) => {
   const { data: session } = authClient.useSession();
   const user = session?.user;
   const userPlan = (user as any)?.plan || 'free';
@@ -126,7 +124,7 @@ export const Pricing: React.FC = () => {
         <div className="max-w-2xl">
           <Reveal>
             <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-coal dark:text-white text-wrap-balance">
-              Close the intention-action gap.
+              Do what you set out to do.
             </h1>
             <p className="mt-4 text-[#374151] dark:text-[#D1D5DB] leading-relaxed text-base sm:text-lg">
               You know what you intend to do today. Gremlin makes sure you actually do it. Run it
@@ -185,12 +183,23 @@ export const Pricing: React.FC = () => {
 
                 <div className="mt-8 pt-4">
                   {tier.price === '$0' ? (
-                    <a
-                      href="https://chromewebstore.google.com"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (navigate) {
+                          navigate('/');
+                        } else {
+                          window.location.href = '/';
+                        }
+                        window.setTimeout(() => {
+                          document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+                          document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth' });
+                        }, 120);
+                      }}
                       className={PAPER_GHOST_BTN}
                     >
                       {tier.cta}
-                    </a>
+                    </button>
                   ) : userPlan === 'pro' ? (
                     <button
                       type="button"

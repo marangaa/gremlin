@@ -35,14 +35,14 @@ function useTypewriter(text: string, speed = 16) {
 }
 
 const BEST_FOR_TAGS: Record<CompanionId, string> = {
-  Sarge: 'Tight deadlines & zero-excuse focus',
-  waifu: 'Friendly, encouraging study sessions',
-  sherlock: 'Deep reading & analytical investigation',
-  kuro: 'Chronic tab hoarders & meme scrollers',
-  sensei: 'Calm, mindful writing & steady pacing',
-  byte: 'Terminal warriors & code sprint marathons',
-  pixel: 'Unforgiving judged tab purges',
-  ufo: 'Cosmic deep work & otherworldly flow',
+  Sarge: 'Deadlines and blunt wake-up calls',
+  waifu: 'Encouraging study sessions',
+  sherlock: 'Research and deep reading',
+  kuro: 'Tab hoarders and endless scrollers',
+  sensei: 'Quiet writing and steady pacing',
+  byte: 'Long coding sessions',
+  pixel: 'Cleaning up distracting tabs',
+  ufo: 'Uninterrupted deep work',
 };
 
 /* ------------------------------------------------------------------ */
@@ -75,7 +75,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
 
               <Reveal delay={160}>
                 <p className="mt-6 text-base sm:text-lg text-[#374151] dark:text-[#D1D5DB] leading-relaxed max-w-md font-medium">
-                  A personal AI organism that lives in your browser, catches you when you drift, and closes the intention-action gap.
+                  A companion in your browser that catches you when you get sidetracked and nudges you back on task.
                 </p>
               </Reveal>
 
@@ -93,14 +93,6 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
                     Meet the companions
                     <ArrowRight className="w-4 h-4" />
                   </button>
-                  <a
-                    href="https://github.com/marangaa/gremlin"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-xs text-[#5D6675] dark:text-[#9CA3AF] hover:text-coal dark:hover:text-white underline underline-offset-4"
-                  >
-                    Open Source (GitHub)
-                  </a>
                 </div>
               </Reveal>
             </div>
@@ -128,7 +120,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
               Pick your accountability style.
             </h2>
             <p className="mt-3 text-base sm:text-lg text-[#374151] dark:text-[#D1D5DB] leading-relaxed font-medium">
-              Choose the companion that matches your wavelength — from tough love to calm mindfulness.
+              Pick the companion that fits how you work, whether you need blunt roasts or quiet nudges.
             </p>
           </Reveal>
         </div>
@@ -244,7 +236,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
                 Three steps to effortless focus.
               </h2>
               <p className="mt-3 text-base sm:text-lg text-[#374151] dark:text-[#D1D5DB] leading-relaxed font-medium">
-                No complex rules, no rigid domain blacklists, no setup friction.
+                Set your goal, start working, and let Gremlin keep you honest while you browse.
               </p>
             </Reveal>
           </div>
@@ -275,7 +267,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
               </button>
             </div>
             <p className="mt-6 font-mono text-xs font-bold tracking-wide text-[#4B5563] dark:text-[#9CA3AF]">
-              Local-first · 100% on-device private option · Open source
+              Local-first · 100% on-device private option · Zero data sold
             </p>
           </Reveal>
         </div>

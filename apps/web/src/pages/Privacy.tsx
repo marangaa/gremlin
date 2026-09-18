@@ -74,7 +74,7 @@ const sections: DocSection[] = [
   },
   {
     id: 'data',
-    title: 'What we capture — and what we never touch',
+    title: 'What we capture and what we never touch',
     body: (
       <>
         <p>
@@ -126,8 +126,8 @@ const sections: DocSection[] = [
             </div>
             <p className="mt-2 text-sm leading-relaxed text-paper-muted">
               All AI reasoning happens directly on your device inside your browser, using the API key
-              you supply. Page context is transmitted only to the provider <em>you</em> choose — Google
-              (Gemini), OpenAI, Anthropic, Groq, or a local Ollama instance — and never to Gremlin
+              you supply. Page context is transmitted only to the provider <em>you</em> choose (such as Google
+              Gemini, OpenAI, Anthropic, Groq, or a local Ollama instance) and never to Gremlin
               servers.
             </p>
           </div>
@@ -227,7 +227,7 @@ const sections: DocSection[] = [
     body: (
       <p>
         If we change what we collect or how we handle it, we will update this page, bump the
-        "Last updated" date above, and — for any material change — ask for your consent again inside
+        "Last updated" date above, and, for any material change, ask for your consent again inside
         the extension before the new practices take effect.
       </p>
     ),

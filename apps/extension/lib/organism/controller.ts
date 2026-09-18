@@ -5,6 +5,7 @@ import { soundSynth } from '../audio/soundEngine';
 import { ORGANISM_MODELS, type OrganismId, type OrganismState } from '../personalities/types';
 import { configStorage, type OrganismConfig } from '../storage';
 import { sendMessage } from '../messaging';
+import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 
 const AVATAR_SIZE = 96;
 
@@ -21,6 +22,9 @@ export interface ControllerOptions {
   volume?: number;
   effectsEnabled?: boolean;
   effectsIntensity?: number;
+  /** WXT content-script context from `main(ctx)` in content.ts; forwarded
+   * into effects so heist timers auto-cancel on script invalidation. */
+  ctx: ContentScriptContext;
   initialState?: OrganismState;
 }
 
@@ -38,14 +42,21 @@ export class OrganismController {
   private effectsEnabled: boolean = true;
   private effectsIntensity: number = 0.45;
 
-  // Viewport Coordinates (in pixels)
+  /** Viewport coordinates of the avatar's top-left corner, in pixels. */
   private x: number = 0;
   private y: number = 0;
   private xFrac: number = 0.90;
   private yFrac: number = 0.80;
 
-  // Dragging State
+  /** Active glide animation back from a heist target to the docked spot. */
+  private glideRafId: number = 0;
+  /** Docked spot to return to after a glide; null while not gliding. */
+  private glideReturn: { x: number; y: number } | null = null;
+
+  /** Dragging state. */
   private isDragging: boolean = false;
+  /** WXT content-script context; lifecycle-safe timers for the effects. */
+  private ctx: ContentScriptContext;
   private dragStartX: number = 0;
   private dragStartY: number = 0;
   private initialDragX: number = 0;
@@ -55,6 +66,7 @@ export class OrganismController {
   private cursorX: number = window.innerWidth / 2;
   private cursorY: number = window.innerHeight / 2;
   private speechTimeoutId: number | null = null;
+  private pendingRemark: string | null = null;
   private destroyed: boolean = false;
   private rafId: number = 0;
   private lastTime: number = 0;
@@ -71,6 +83,7 @@ export class OrganismController {
     this.soundEnabled = options.soundEnabled ?? true;
     this.effectsEnabled = options.effectsEnabled ?? true;
     this.effectsIntensity = Math.max(0, Math.min(1, options.effectsIntensity ?? 0.45));
+    this.ctx = options.ctx;
 
     soundSynth.setVolume(options.volume ?? 0.6);
     soundSynth.setMuted(!this.soundEnabled);
@@ -81,7 +94,16 @@ export class OrganismController {
   public mount() {
     this.adoptStyles();
     this.renderDOM();
-    this.screenEffects = new ScreenEffectsManager(this.shadowRoot);
+    this.screenEffects = new ScreenEffectsManager(
+      this.shadowRoot,
+      {
+        glideAvatarTo: (tx, ty, dur, onArrive) => this.glideAvatarTo(tx, ty, dur, onArrive),
+        returnAvatarToDock: (dur) => this.returnAvatarToDock(dur),
+        setBeaming: (beaming) => this.setBeaming(beaming),
+        getSaucerEmitterPoint: () => this.getSaucerEmitterPoint(),
+      },
+      this.ctx,
+    );
     this.bindEvents();
     this.updateTransform();
 
@@ -149,8 +171,10 @@ export class OrganismController {
     }
 
     if (this.effectsEnabled) {
-      // AI-flagged effects always fire; at high chaos the companion also
-      // improvises on any state change.
+      /**
+       * AI-flagged effects always fire; at high chaos the companion also
+       * improvises on any state change.
+       */
       const ambientChance = triggerScreenFx ? 1 : this.effectsIntensity * 0.22;
       if (Math.random() < ambientChance) {
         this.screenEffects.triggerEffect(this.organismId, this.effectsIntensity);
@@ -162,6 +186,56 @@ export class OrganismController {
     if (this.screenEffects) {
       this.screenEffects.triggerEffect(organismId || this.organismId);
     }
+  }
+
+  /**
+   * TEST HOOK — fires a character effect on demand (popup "Preview heist"
+   * button → background relay → content script). Temporarily forces FX on
+   * and drives intensity to max so the heist is visible even when the user
+   * has Screen FX toggled off, then restores their settings. Never throws:
+   * resolves the stored intensity (chaos slider) with a 0.85 floor so the
+   * full sentence lifts instead of a single word.
+   */
+  public testEffect(organismId?: OrganismId) {
+    if (this.destroyed || !this.screenEffects) return;
+    const id = organismId || this.organismId;
+    const wasEnabled = this.effectsEnabled;
+    const wasIntensity = this.effectsIntensity;
+
+    const testState: Record<OrganismId, OrganismState> = {
+      ufo: 'curious',
+      Sarge: 'annoyed',
+      byte: 'thinking',
+      pixel: 'celebrating',
+      sherlock: 'curious',
+      kuro: 'shocked',
+      sensei: 'thinking',
+      waifu: 'celebrating',
+    };
+    this.setState(testState[id] ?? 'curious', false);
+    // Suppress speech bubble during intervention effects — the physical effect is the message!
+    this.hideRemark();
+
+    void configStorage.getValue().then((cfg) => {
+      if (this.destroyed || !this.screenEffects) return;
+      const stored = Math.max(0, Math.min(1, cfg.effectsIntensity ?? wasIntensity));
+      this.effectsEnabled = true;
+      this.effectsIntensity = Math.max(stored, 0.85);
+      try {
+        this.screenEffects.triggerEffect(id, this.effectsIntensity);
+      } finally {
+        this.effectsEnabled = wasEnabled;
+        this.effectsIntensity = wasIntensity;
+      }
+    });
+  }
+
+  public hideRemark(): void {
+    if (this.speechTimeoutId) {
+      clearTimeout(this.speechTimeoutId);
+      this.speechTimeoutId = null;
+    }
+    this.thoughtPill?.classList.remove('is-visible');
   }
 
   public showRemark(message: string, durationMs = 6500) {
@@ -179,9 +253,11 @@ export class OrganismController {
       <div class="pill-body">${message}</div>
     `;
 
-    // Viewport-anchored placement: measure the laid-out pill (opacity-0 still
-    // occupies space), clamp its center so it never leaves the screen, and
-    // flip above/below depending on the room available near the companion.
+    /**
+     * Viewport-anchored placement: measure the laid-out pill (opacity-0 still
+     * occupies space), clamp its center so it never leaves the screen, and
+     * flip above/below depending on the room available near the companion.
+     */
     const margin = 8;
     const gap = 12;
     const w = pill.offsetWidth || 220;
@@ -192,7 +268,7 @@ export class OrganismController {
 
     pill.style.left = `${Math.round(clampedCenterX - w / 2)}px`;
     pill.style.top = `${Math.round(placeAbove ? this.y - h - gap : this.y + 96 + gap)}px`;
-    // Tail slides toward the companion when the bubble gets edge-clamped.
+    /** Tail slides toward the companion when the bubble gets edge-clamped. */
     const tailX = Math.max(14, Math.min(w - 14, avatarCenterX - (clampedCenterX - w / 2)));
     pill.style.setProperty('--tail-x', `${Math.round(tailX)}px`);
     pill.classList.toggle('tail-below', placeAbove);
@@ -200,12 +276,12 @@ export class OrganismController {
 
     pill.classList.add('is-visible');
 
-    // Synthesize Animalese speech chirps
+    /** Synthesize Animalese speech chirps. */
     if (this.soundEnabled) {
       soundSynth.playAnimalese(message, this.organismId);
     }
 
-    this.speechTimeoutId = window.setTimeout(() => {
+    this.speechTimeoutId = this.ctx.setTimeout(() => {
       pill.classList.remove('is-visible');
       this.speechTimeoutId = null;
     }, durationMs);
@@ -235,7 +311,7 @@ export class OrganismController {
       </div>
     `;
 
-    // Same clamped, viewport-anchored placement as the speech bubble.
+    /** Same clamped, viewport-anchored placement as the speech bubble. */
     hud.classList.add('is-visible');
     const margin = 8;
     const gap = 12;
@@ -249,9 +325,9 @@ export class OrganismController {
     hud.style.top = `${Math.round(placeAbove ? Math.max(margin, this.y - h - gap) : this.y + 96 + gap)}px`;
 
     const textarea = hud.querySelector('.note-hud-textarea') as HTMLTextAreaElement;
-    setTimeout(() => textarea?.focus(), 50);
+    this.ctx.setTimeout(() => textarea?.focus(), 50);
 
-    // Event listeners
+    /** Wire up the note HUD action buttons. */
     this.noteHudEl.querySelector('.note-hud-close')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.noteHudEl.classList.remove('is-visible');
@@ -280,7 +356,7 @@ export class OrganismController {
         if (this.soundEnabled) soundSynth.playChime('complete');
         this.showRemark('Note saved to Daily Diary! 📝', 3000);
       } catch {
-        // Fallback
+        /** Save failures are non-fatal; the note stays editable. */
       }
     });
   }
@@ -308,10 +384,132 @@ export class OrganismController {
     this.y = clamp(this.yFrac * window.innerHeight, 8, maxY);
   }
 
+  /**
+   * Applies the current position to the avatar transform.
+   *
+   * Runs every frame and during glides/drags, keeping the avatar exactly
+   * where the effects engine expects the beam origin to be.
+   */
   private updateTransform() {
     if (this.rootEl) {
       this.rootEl.style.transform = `translate3d(${Math.round(this.x)}px, ${Math.round(this.y)}px, 0)`;
     }
+  }
+
+  /**
+   * Glides the real companion avatar to the target so the beam appears to
+   * originate from it — no second character is ever rendered.
+   *
+   * @param targetX Viewport X of the glide destination (beam origin center).
+   * @param targetY Viewport Y of the glide destination.
+   * @param durationMs Flight time to the target; the return leg is fixed.
+   * @param onArrive Fired once the avatar is hovering over the target.
+   */
+  public glideAvatarTo(targetX: number, targetY: number, durationMs: number, onArrive: () => void): void {
+    if (this.destroyed || this.isDragging) return;
+    this.cancelGlide();
+    const startX = this.x;
+    const startY = this.y;
+    const maxX = Math.max(8, window.innerWidth - AVATAR_SIZE - 8);
+    const maxY = Math.max(8, window.innerHeight - AVATAR_SIZE - 8);
+    const destX = clamp(targetX - AVATAR_SIZE / 2, 8, maxX);
+    const destY = clamp(targetY, 8, maxY);
+    /** Snapshot of the user's dock so the avatar can return home exactly. */
+    this.glideReturn = { x: startX, y: startY };
+    const start = performance.now();
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const step = (now: number) => {
+      if (this.destroyed) return;
+      const t = Math.min(1, (now - start) / durationMs);
+      const k = ease(t);
+      this.x = startX + (destX - startX) * k;
+      this.y = startY + (destY - startY) * k;
+      this.updateTransform();
+      if (t < 1) {
+        this.glideRafId = window.requestAnimationFrame(step);
+      } else {
+        this.glideRafId = 0;
+        onArrive();
+      }
+    };
+    this.glideRafId = window.requestAnimationFrame(step);
+  }
+
+  /**
+   * Queues an AI remark/roast to be delivered after an in-flight intervention
+   * effect completes and the companion avatar glides back to dock.
+   */
+  public queueRemark(message: string): void {
+    this.pendingRemark = message;
+  }
+
+  /**
+   * Flies the avatar back to the spot it was occupying before the heist.
+   *
+   * @param durationMs Return flight time; defaults to a brisk 620ms.
+   */
+  public returnAvatarToDock(durationMs = 620): void {
+    this.setBeaming(false);
+    const home = this.glideReturn;
+    if (!home || this.destroyed || this.isDragging) {
+      this.cancelGlide();
+      if (this.pendingRemark) {
+        const msg = this.pendingRemark;
+        this.pendingRemark = null;
+        this.showRemark(msg);
+      }
+      return;
+    }
+    const startX = this.x;
+    const startY = this.y;
+    this.glideReturn = null;
+    const start = performance.now();
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const step = (now: number) => {
+      if (this.destroyed) return;
+      const t = Math.min(1, (now - start) / durationMs);
+      const k = ease(t);
+      this.x = startX + (home.x - startX) * k;
+      this.y = startY + (home.y - startY) * k;
+      this.updateTransform();
+      if (t < 1) {
+        this.glideRafId = window.requestAnimationFrame(step);
+      } else {
+        this.glideRafId = 0;
+        if (this.pendingRemark) {
+          const msg = this.pendingRemark;
+          this.pendingRemark = null;
+          this.showRemark(msg);
+        }
+      }
+    };
+    this.glideRafId = window.requestAnimationFrame(step);
+  }
+
+  /** Halts any in-flight glide immediately; the avatar stays where it is. */
+  public cancelGlide(): void {
+    if (this.glideRafId) {
+      window.cancelAnimationFrame(this.glideRafId);
+      this.glideRafId = 0;
+    }
+    this.glideReturn = null;
+    this.setBeaming(false);
+  }
+
+  /** Freezes the avatar's idle bobbing and triggers beaming glow while firing effects. */
+  public setBeaming(beaming: boolean): void {
+    const avatar = this.rootEl?.querySelector('.organism-avatar');
+    if (avatar) {
+      avatar.classList.toggle('is-beaming', beaming);
+    }
+  }
+
+  /** Returns viewport coordinates of the UFO saucer's bottom beam emitter. */
+  public getSaucerEmitterPoint(): { x: number; y: number } {
+    return {
+      x: Math.round(this.x + 48),
+      y: Math.round(this.y + 62),
+    };
   }
 
   private adoptStyles() {
@@ -348,7 +546,7 @@ export class OrganismController {
       this.thoughtPill.classList.remove('is-visible');
     });
 
-    // Pointer Drag handlers
+    /** Pointer drag handlers. */
     avatar.addEventListener('pointerdown', this.onPointerDown);
   }
 
@@ -359,6 +557,8 @@ export class OrganismController {
 
   private onPointerDown = (e: PointerEvent) => {
     e.stopPropagation();
+    /** A user grab always wins over an active effect glide. */
+    this.cancelGlide();
     this.isDragging = true;
     this.hasDragged = false;
     this.dragStartX = e.clientX;
@@ -402,7 +602,7 @@ export class OrganismController {
     try {
       avatar.releasePointerCapture(e.pointerId);
     } catch {
-      // Ignored
+      /** releasePointerCapture can throw if the pointer already left. */
     }
 
     avatar.removeEventListener('pointermove', this.onAvatarPointerMove);
@@ -421,7 +621,7 @@ export class OrganismController {
         });
       });
     } else {
-      // Click without drag: open in-page note & action sheet
+      /** Click without drag: open in-page note & action sheet. */
       this.openNoteSheet();
     }
   };
@@ -429,11 +629,14 @@ export class OrganismController {
   private onGlobalPointerMove = (e: PointerEvent) => {
     this.cursorX = e.clientX;
     this.cursorY = e.clientY;
+    this.screenEffects?.setCursorPoint(e.clientX, e.clientY);
   };
 
   private onWindowResize = () => {
     this.calculatePixelCoords();
     this.updateTransform();
+    /** Resize invalidates any glide target measured against the old viewport. */
+    this.cancelGlide();
   };
 
   private tick = (now: number) => {

@@ -20,14 +20,14 @@ export const CardlessHowItWorks: React.FC = () => {
   const [activeRoastCompanion, setActiveRoastCompanion] = useState<CompanionId>('kuro');
 
   const ROAST_OPTIONS: Record<CompanionId, string> = {
-    kuro: '“Bro you were studying Roman concrete, why are we looking at Reddit?! 💀 Back to Caesar!”',
-    Sarge: '“That essay will not write itself. Put the phone down. Hands on keyboard. Move!”',
-    sherlock: '“We were researching architecture ten minutes ago. Now we are watching cats. Curious.”',
-    waifu: '“Are we really looking at memes right now? Do it for me, close the tab 💕”',
-    sensei: '“The mind wanders to the algorithm’s feed. Let us gently close the tab.”',
-    byte: '> intrusion detected: reddit.com. terminating thread. back to root.',
-    pixel: 'mrrp. caught you looking at nonsense. *bats cursor off desk*',
-    ufo: 'specimen attention span: failing. beaming up distraction.',
+    kuro: '“You went from debugging a payment flow to reading about medieval siege weapons in under six clicks. Tragic.”',
+    Sarge: '“You have twelve minutes left on this sprint and you\'re reading about watches. Hands on keyboard. Move.”',
+    sherlock: '“We began with API documentation ten minutes ago, and have arrived at vintage keyboards. Fascinating evasion.”',
+    waifu: '“Changing your Notion font for forty minutes isn\'t work. We both know it. Write the first line.”',
+    sensei: '“A wandering mind searches for truth; your mind searches for memes about bread. Return to your purpose.”',
+    byte: '> err: attention buffer exhausted on cat videos. allocating sigkill to non-essential threads.',
+    pixel: '“I sleep eighteen hours a day and still contribute more to this household than you did this afternoon.”',
+    ufo: '“Telemetry confirms specimen abandoned primary survival task to view compressed footage of stranger\'s lunch.”',
   };
 
   const handleSelectCompanion = (id: CompanionId) => {
@@ -147,7 +147,7 @@ export const CardlessHowItWorks: React.FC = () => {
               Declare what "done" looks like.
             </h3>
             <p className="text-base text-[#374151] dark:text-[#D1D5DB] leading-relaxed font-medium">
-              Forget setting up forty domain rules or fragile regex filters. Just tell Gremlin what you're trying to get done in plain English. That single goal becomes your compass.
+              Forget setting up complicated blocklists or URL filters. Just type what you want to work on in plain English. Gremlin uses that goal to check if you stay on task.
             </p>
             <div className="pt-2 font-mono text-xs text-coal dark:text-white font-bold">
               <div className="flex items-center gap-2.5">
@@ -218,7 +218,7 @@ export const CardlessHowItWorks: React.FC = () => {
               Research without dumb brick walls.
             </h3>
             <p className="text-base text-[#374151] dark:text-[#D1D5DB] leading-relaxed font-medium">
-              Real work requires Reddit threads, video walk-throughs, and documentation. Traditional blockers treat them like contraband. Gremlin reads the actual page narrative—so legitimate research is never interrupted.
+              Real work often needs Reddit threads, video walkthroughs, and documentation. Standard blockers shut them down automatically. Gremlin understands what the page is actually about, so legitimate research stays open.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-coal dark:text-white font-bold">
               <div className="flex items-center gap-2.5">
@@ -410,7 +410,7 @@ export const CardlessHowItWorks: React.FC = () => {
               Intervention right when you slip.
             </h3>
             <p className="text-base text-[#374151] dark:text-[#D1D5DB] leading-relaxed font-medium">
-              Post-mortem productivity apps tell you at 6 PM that you wasted three hours. Gremlin intervenes the moment you drift into an algorithmic spiral—calling you out in character before your afternoon is gone.
+              Most productivity apps give you a report at 6 PM showing hours lost. Gremlin catches you the minute you start doomscrolling, calling you out in character before your day slips away.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono text-xs text-coal dark:text-white font-bold">
               <div className="flex items-center gap-2.5">

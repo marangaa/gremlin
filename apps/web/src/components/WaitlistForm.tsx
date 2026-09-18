@@ -31,7 +31,11 @@ export const WaitlistForm: React.FC<WaitlistFormProps> = ({ className = '', sour
       if (res.ok && data.success) {
         setSubmitted(true);
       } else {
-        setError(data.error || 'Could not join the waitlist. Please try again.');
+        const errorMsg =
+          typeof data.error === 'string'
+            ? data.error
+            : data.error?.issues?.[0]?.message || data.message || 'Could not join the waitlist. Please check your email and try again.';
+        setError(errorMsg);
       }
     } catch {
       setError('Network error. Please try again in a moment.');

@@ -13,7 +13,7 @@ export default defineContentScript({
   cssInjectionMode: 'ui',
   runAt: 'document_idle',
   async main(ctx) {
-    // Only mount on top-level window, never inside embedded iframes
+    /** Only mount on top-level window, never inside embedded iframes */
     if (window.self !== window.top) return;
 
     let controller: OrganismController | null = null;
@@ -53,7 +53,7 @@ export default defineContentScript({
         anchor: 'html',
         append: 'last',
         onMount: (_container: HTMLElement, shadow: ShadowRoot, host: HTMLElement) => {
-          // Enforce absolute viewport attachment in light DOM so document scrolling NEVER moves the host
+          /** Enforce absolute viewport attachment in light DOM so document scrolling NEVER moves the host */
           host.style.cssText = `
             position: fixed !important;
             top: 0px !important;
@@ -69,6 +69,7 @@ export default defineContentScript({
           `;
 
           controller = new OrganismController(shadow, host, {
+            ctx,
             organismId: config.organismId,
             name: config.name,
             xFrac: config.xFrac,
@@ -114,26 +115,38 @@ export default defineContentScript({
       };
       pushPageSignal();
 
-      // Native WXT SPA Navigation detection (e.g. YouTube, GitHub, Twitter)
+      /** Native WXT SPA Navigation detection (e.g. YouTube, GitHub, Twitter) */
       ctx.addEventListener(window, 'wxt:locationchange', () => {
         if (ctx.isInvalid) return;
         pushPageSignal();
       });
 
-      // Handle live reactive messaging from background service worker. The
-      // returned unsubscribe closures are intentionally discarded — see the
-      // teardown JSDoc above.
+      /**
+       * Handle live reactive messaging from background service worker. The
+       * returned unsubscribe closures are intentionally discarded — see the
+       * teardown JSDoc above.
+       */
       onMessage('triggerReaction', ({ data }) => {
         if (!controller || ctx.isInvalid) return;
-        controller.setState(data.state, Boolean(data.triggerEffect));
+        const hasEffect = Boolean(data.triggerEffect);
+        controller.setState(data.state, hasEffect);
         if (data.message) {
-          controller.showRemark(data.message);
+          if (hasEffect) {
+            // Queue roast to deliver after character finishes physical heist and docks
+            controller.queueRemark(data.message);
+          } else {
+            controller.showRemark(data.message);
+          }
         }
       });
 
       onMessage('testScreenEffect', ({ data }) => {
         if (!controller || ctx.isInvalid) return;
-        controller.triggerCustomEffect(data.organismId);
+        try {
+          controller.testEffect(data.organismId);
+        } catch {
+          /** Test hooks must never throw into the messaging layer. */
+        }
       });
 
       const applyConfig = (newConfig: OrganismConfig) => {
@@ -163,7 +176,7 @@ export default defineContentScript({
         }
       });
 
-      // Handle live configuration changes from WXT storage across all open tabs
+      /** Handle live configuration changes from WXT storage across all open tabs */
       configStorage.watch((newConfig: OrganismConfig | null) => {
         if (newConfig) {
           applyConfig(newConfig);
@@ -180,8 +193,10 @@ export default defineContentScript({
      */
     const onboarded = await onboardedStorage.getValue();
     if (!onboarded) {
-      // One-shot self-removal while the context is still alive; if consent
-      // never arrives, the listener simply dies with the page.
+      /**
+       * One-shot self-removal while the context is still alive; if consent
+       * never arrives, the listener simply dies with the page.
+       */
       const unwatchOnboarding = onboardedStorage.watch((value) => {
         if (value === true) {
           unwatchOnboarding();

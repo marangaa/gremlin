@@ -3,7 +3,7 @@ import React from 'react';
 export const CleanGridBackground: React.FC = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-      {/* Fine blueprint grid — fades out toward the bottom of the viewport */}
+      {/* Fine blueprint grid: fades out toward the bottom of the viewport */}
       <div
         className="absolute inset-0 bg-[linear-gradient(to_right,rgba(18,21,26,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(18,21,26,0.05)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:48px_48px]"
         style={{

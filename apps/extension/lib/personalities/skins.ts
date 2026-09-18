@@ -39,9 +39,9 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
   Sarge: {
     id: 'Sarge',
     name: 'Sarge',
-    tagline: 'Pain is temporary. Quitting is forever.',
-    greeting: 'No surrender. No scrolling. Lock in and execute.',
-    pokeNotice: 'Sarge stared right through you. "Get back to work!"',
+    tagline: 'Zero excuses. Lock in on the objective.',
+    greeting: 'Twelve minutes left on this sprint. Hands on keyboard. Move.',
+    pokeNotice: 'Sarge glared: "Do not touch the coach. Finish the objective."',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(249, 115, 22, 0.4)',
@@ -51,10 +51,10 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
   },
   waifu: {
     id: 'waifu',
-    name: 'Waifu',
-    tagline: 'Sweet, loving, and cheering you on with cute energy.',
-    greeting: 'Yay! Let’s do our best today! I believe in you! 🌸',
-    pokeNotice: 'Waifu blushed and cheered: "Lock in, anata! 💕"',
+    name: 'Momo',
+    tagline: 'Honest accountability disguised as sweet encouragement.',
+    greeting: "Let's make real progress today. Pick one task and see it through. ✨",
+    pokeNotice: 'Momo tapped your screen: "No procrastination pokes. Let\'s finish this! ♡"',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(236, 72, 153, 0.4)',
@@ -67,7 +67,7 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
     name: 'Sherlock',
     tagline: 'Sharp analytical deduction of your digital footprint.',
     greeting: 'The digital clues reveal an ambitious goal. Proceed.',
-    pokeNotice: 'Sherlock adjusted his magnifying glass and took notes.',
+    pokeNotice: 'Sherlock raised an eyebrow: "Prodding me will not solve your bug."',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(59, 130, 246, 0.4)',
@@ -78,9 +78,9 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
   kuro: {
     id: 'kuro',
     name: 'Kuro',
-    tagline: 'Direct accountability when you start wandering.',
-    greeting: 'Caught in 4K if you slack. Let’s see what you’ve got.',
-    pokeNotice: 'Kuro rolled eyes: "Stop poking me and finish your task!"',
+    tagline: 'Cheeky chaos gremlin with zero tolerance for fake productivity.',
+    greeting: "Let's see if you can work for thirty minutes without falling down a rabbit hole.",
+    pokeNotice: 'Kuro dodged your click: "Click the code editor, not me! 💀"',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(239, 68, 68, 0.4)',
@@ -92,8 +92,8 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
     id: 'sensei',
     name: 'Sensei',
     tagline: 'Tranquil wisdom, deep breaths, and deliberate action.',
-    greeting: 'Breathe. One keystroke at a time. Enter the flow.',
-    pokeNotice: 'Sensei bowed in serene silence.',
+    greeting: 'Breathe. One keystroke at a time. The work awaits your presence.',
+    pokeNotice: 'Sensei smiled calmly: "Peace is found in completing the task, not in poking."',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(16, 185, 129, 0.4)',
@@ -104,9 +104,9 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
   byte: {
     id: 'byte',
     name: 'Byte',
-    tagline: 'Your focus has been flagged. Patching now.',
-    greeting: '> gremlin daemon online. monitoring.',
-    pokeNotice: 'Byte logged the intrusion: "poke attempt. traced."',
+    tagline: 'Your focus daemon. Terminating rogue distraction threads.',
+    greeting: '> focus_daemon online. monitoring sprint execution.',
+    pokeNotice: '> err: cursor input dropped. target socket locked on task.',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(34, 211, 238, 0.4)',
@@ -117,9 +117,9 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
   pixel: {
     id: 'pixel',
     name: 'Pixel',
-    tagline: 'Not judging. Just knocking your tabs off the table.',
-    greeting: 'mrrp. *slow blink*',
-    pokeNotice: 'Pixel knocked your cursor off the desk.',
+    tagline: 'Pure feline contempt to shame you back to work.',
+    greeting: 'mrrp. you promised you would work. sit down.',
+    pokeNotice: 'Pixel swatted your cursor away: "Get back to work."',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(250, 204, 21, 0.4)',
@@ -130,9 +130,9 @@ export const CHARACTER_SKINS: Record<OrganismId, CharacterSkin> = {
   ufo: {
     id: 'ufo',
     name: 'Zeta',
-    tagline: 'Beaming up your productivity. One word at a time.',
-    greeting: 'specimen logged. observing human.',
-    pokeNotice: 'Zeta scanned you. Findings: "still distracted."',
+    tagline: 'Studying fragile human focus from orbit. Abducting distractions.',
+    greeting: 'specimen focus tracking initiated. mission clock active.',
+    pokeNotice: 'Zeta logged the probe: "Tactile disturbance recorded. Specimen still off-task."',
     colors: {
       ...BASE_NEUTRAL_DARK,
       step8: 'rgba(139, 92, 246, 0.4)',

@@ -92,8 +92,55 @@ const DEFAULT_ORGANISM_STATE: OrganismStateData = {
   lastRemarkAt: 0,
   focusMinutesToday: 0,
   divergenceCountToday: 0,
-      escalationLevel: 0,
+  contextSwitchesToday: 0,
+  escalationLevel: 0,
   lastObservationAt: 0,
+};
+
+const CHARACTER_PREVIEW_INFO: Record<
+  OrganismId,
+  { label: string; firingLabel: string; description: string }
+> = {
+  ufo: {
+    label: '▶ Preview Zeta Abduction',
+    firingLabel: '◈ Abducting text… look at page',
+    description: 'Zeta deploys a tractor vortex, swirling letters into its saucer hatch.',
+  },
+  Sarge: {
+    label: '▶ Preview Sarge Redaction',
+    firingLabel: '◈ Redacting… look at page',
+    description: 'Sarge marches to distraction text and blacks it out with solid redaction bars.',
+  },
+  byte: {
+    label: '▶ Preview Byte De-Rezz',
+    firingLabel: '◈ De-rezzing… look at page',
+    description: 'Byte sweeps an analytical laser, glitching and de-rezzing letters into machine code.',
+  },
+  pixel: {
+    label: '▶ Preview Pixel Mischief',
+    firingLabel: '◈ Swiping… look at page',
+    description: 'Pixel swats text off the line to tumble to the floor or 8-bit shatters it.',
+  },
+  sherlock: {
+    label: '▶ Preview Sherlock Investigation',
+    firingLabel: '◈ Investigating… look at page',
+    description: 'Sherlock inspects text with an optical lens, flash, and hazard cordon.',
+  },
+  kuro: {
+    label: '▶ Preview Kuro Severance',
+    firingLabel: '◈ Slashing… look at page',
+    description: 'Kuro dashes across the text, slicing it apart with an RGB razor blade cut.',
+  },
+  sensei: {
+    label: '▶ Preview Sensei Dissolution',
+    firingLabel: '◈ Calming… look at page',
+    description: 'Sensei radiates ensō water ripples, dissolving words into tranquil mist.',
+  },
+  waifu: {
+    label: '▶ Preview Momo Sticky Note',
+    firingLabel: '◈ Pinning note… look at page',
+    description: 'Momo flutters down and pins a reminder sticky note over distraction text.',
+  },
 };
 
 export default function App() {
@@ -111,6 +158,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<TabId>('focus');
   const [goalInput, setGoalInput] = useState('');
+  const [goalRequiredNotice, setGoalRequiredNotice] = useState(false);
   const [isDecomposing, setIsDecomposing] = useState(false);
 
   const [selectedProvider, setSelectedProvider] = useState<SupportedAiProvider>('google');
@@ -119,6 +167,8 @@ export default function App() {
   const [modelInput, setModelInput] = useState('gemini-2.5-flash');
   const [testStatus, setTestStatus] = useState<{ loading: boolean; ok?: boolean; message?: string } | null>(null);
   const [saveFeedback, setSaveFeedback] = useState(false);
+  const [fxPreview, setFxPreview] = useState<'idle' | 'firing' | 'fired'>('idle');
+  const [settingsTab, setSettingsTab] = useState<'cloud' | 'byok'>('byok');
 
   const [now, setNow] = useState(() => Date.now());
 
@@ -144,9 +194,13 @@ export default function App() {
       soundSynth.setMuted(!cfg.soundEnabled);
       setSprint(s.value as FocusSprint);
       setOrganismState(st.value as OrganismStateData);
-      setSession(u.value as UserSession);
+      const userSess = u.value as UserSession;
+      setSession(userSess);
       setHasOnboarded(o.value as boolean);
       setGoals(g.value as DecomposedGoal[]);
+      if (cfg.mode === 'cloud' || userSess?.isLoggedIn) {
+        setSettingsTab('cloud');
+      }
     });
 
     const unwatchConfig = configStorage.watch((c: OrganismConfig | null) => c && setConfig(c));
@@ -156,10 +210,12 @@ export default function App() {
     const unwatchOnboard = onboardedStorage.watch((o: boolean | null) => o !== null && setHasOnboarded(o));
     const unwatchGoals = goalsStorage.watch((g: DecomposedGoal[] | null) => g && setGoals(g));
 
-    // Shared-cookie auto-detect: the extension's service worker sends the
-    // browser's cookie jar to the backend, so a session created on the WEBSITE
-    // is visible here too. Probe once per popup open and adopt it silently —
-    // this makes web sign-in effectively sign the extension in.
+    /**
+     * Shared-cookie auto-detect: the extension's service worker sends the
+     * browser's cookie jar to the backend, so a session created on the
+     * WEBSITE is visible here too. Probe once per popup open and adopt it
+     * silently — this makes web sign-in effectively sign the extension in.
+     */
     void authClient
       .getSession()
       .then(({ data }) => {
@@ -221,7 +277,13 @@ export default function App() {
   };
 
   const handleStartSprint = async () => {
-    const g = goalInput.trim() || 'Open-ended focus';
+    const g = goalInput.trim();
+    if (!g) {
+      setGoalRequiredNotice(true);
+      setTimeout(() => setGoalRequiredNotice(false), 2800);
+      return;
+    }
+    setGoalRequiredNotice(false);
     await sendMessage('startSprint', { goal: g, targetMinutes: 0 });
     soundSynth.playChime('start');
   };
@@ -330,7 +392,7 @@ export default function App() {
   const isSprintActive = sprint.status === 'active';
   const elapsedSecs = isSprintActive ? Math.max(0, Math.floor((now - sprint.startedAt) / 1000)) : 0;
 
-  // ================= FIRST-RUN CONSENT =================
+  /** FIRST-RUN CONSENT — gates the whole popup until the user opts in. */
   if (!hasOnboarded) {
     return (
       <div className="w-[380px] bg-paper p-5 pb-4 flex flex-col text-paper-ink">
@@ -355,7 +417,7 @@ export default function App() {
           <div className="flex gap-2.5 pb-3 border-b border-dashed border-paper-line">
             <Sparkles size={16} className="shrink-0 mt-0.5 text-paper-muted" />
             <p>
-              It goes to the <strong>AI provider you configure</strong> — or Gremlin Cloud if signed in — only
+              It goes only to the <strong>AI provider you configure</strong> (or Gremlin Cloud if signed in)
               to judge whether you're on task. Never sold, never used for ads.
             </p>
           </div>
@@ -380,7 +442,7 @@ export default function App() {
           onClick={handleCompleteOnboarding}
           className="mt-5 w-full py-2.5 text-sm font-bold bg-accent text-coal border-2 border-coal shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
         >
-          Got it — enable companion
+          Got it: enable companion
         </button>
         <button
           onClick={() => window.close()}
@@ -392,7 +454,7 @@ export default function App() {
     );
   }
 
-  // ================= MAIN INTERFACE =================
+  /** MAIN INTERFACE. */
   return (
     <div
       className="w-[380px] min-h-[520px] bg-paper p-4 flex flex-col gap-3.5 relative overflow-hidden text-paper-ink"
@@ -441,14 +503,18 @@ export default function App() {
             {config.soundEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
           </button>
           <button
-            className={`w-9 h-5 rounded-full border-2 relative cursor-pointer transition-colors ${config.enabled ? 'border-coal' : 'border-line'}`}
+            className={`w-9 h-5 rounded-full border-2 relative cursor-pointer transition-colors shrink-0 flex items-center p-0.5 ${config.enabled ? 'border-coal' : 'border-line'}`}
             style={config.enabled ? { backgroundColor: 'var(--skin-accent)' } : { backgroundColor: '#E4E7DE' }}
             onClick={handleToggleEnabled}
             title={config.enabled ? 'Sleep' : 'Wake'}
             role="switch"
             aria-checked={config.enabled}
           >
-            <span className={`absolute top-[-1px] w-3.5 h-3.5 rounded-full bg-white border-2 transition-transform ${config.enabled ? 'border-coal left-[16px]' : 'border-line left-[-1px]'}`} />
+            <span
+              className={`w-3 h-3 rounded-full bg-white border border-coal shadow-xs transition-transform duration-150 ease-out ${
+                config.enabled ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
           </button>
         </div>
       </header>
@@ -509,7 +575,7 @@ export default function App() {
                 onClick={() => setActiveTab('settings')}
                 className="text-left font-mono font-bold text-[10px] uppercase tracking-wider text-red-600 hover:text-red-700 cursor-pointer"
               >
-                ⚠ Not configured — fix →
+                ⚠ Not configured (fix) →
               </button>
             )}
 
@@ -533,11 +599,36 @@ export default function App() {
                   </div>
                   <input
                     type="text"
-                    className="mt-1 w-full bg-transparent border-0 border-b-2 border-coal pb-1.5 text-paper-ink font-mono text-sm placeholder:text-paper-faint focus:outline-none"
-                    placeholder="What are we working on?"
+                    className={`mt-1 w-full bg-transparent border-0 border-b-2 pb-1.5 text-paper-ink font-mono text-sm placeholder:text-paper-faint focus:outline-none transition-colors ${
+                      goalRequiredNotice ? 'border-red-500 placeholder:text-red-400' : 'border-coal'
+                    }`}
+                    placeholder={goalRequiredNotice ? 'Enter your goal or pick a tag below!' : 'What are we working on?'}
                     value={goalInput}
-                    onChange={(e) => setGoalInput(e.target.value)}
+                    onChange={(e) => {
+                      setGoalInput(e.target.value);
+                      if (goalRequiredNotice) setGoalRequiredNotice(false);
+                    }}
                   />
+                  {goalRequiredNotice && (
+                    <p className="mt-1 font-mono text-[10px] font-bold text-red-600 animate-fade-in">
+                      Please enter a goal so your companion knows what to keep you focused on.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {['Coding', 'Debugging', 'Writing', 'Research'].map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          setGoalInput(tag);
+                          setGoalRequiredNotice(false);
+                        }}
+                        className="px-2 py-0.5 font-mono text-[9px] font-bold border border-line bg-paper-card text-paper-muted hover:border-coal hover:text-coal cursor-pointer transition-colors"
+                      >
+                        + {tag}
+                      </button>
+                    ))}
+                  </div>
                   <p className="mt-1.5 font-mono text-[9px] text-paper-faint">
                     No timers. Your companion watches and speaks when it matters.
                   </p>
@@ -679,106 +770,196 @@ export default function App() {
                   className="w-5 h-5 accent-[#A3E635] cursor-pointer"
                 />
               </div>
-              {config.effectsEnabled && (
-                <div className="flex items-center gap-3 mt-3">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint w-12 shrink-0">Chaos</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={Math.round((config.effectsIntensity ?? 0.45) * 100)}
-                    onChange={async (e) => {
-                      const intensity = parseInt(e.target.value, 10) / 100;
-                      const next = { ...config, effectsIntensity: intensity };
-                      setConfig(next);
-                      await configStorage.setValue(next);
-                    }}
-                    className="flex-1 cursor-pointer accent-[#A3E635] h-1.5 bg-paper-line appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-coal"
-                  />
-                  <span className="font-mono text-[10px] font-bold text-paper-muted w-9 shrink-0 text-right">
-                    {Math.round((config.effectsIntensity ?? 0.45) * 100)}%
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-3 mt-3">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint w-12 shrink-0">Chaos</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={Math.round((config.effectsIntensity ?? 0.45) * 100)}
+                  onChange={async (e) => {
+                    const intensity = parseInt(e.target.value, 10) / 100;
+                    const next = { ...config, effectsIntensity: intensity };
+                    setConfig(next);
+                    await configStorage.setValue(next);
+                  }}
+                  className="flex-1 cursor-pointer accent-[#A3E635] h-1.5 bg-paper-line appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-coal"
+                />
+                <span className="font-mono text-[10px] font-bold text-paper-muted w-9 shrink-0 text-right">
+                  {Math.round((config.effectsIntensity ?? 0.45) * 100)}%
+                </span>
+              </div>
+              {(() => {
+                const previewInfo = CHARACTER_PREVIEW_INFO[config.organismId] ?? CHARACTER_PREVIEW_INFO.ufo;
+                return (
+                  <>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setFxPreview(fxPreview === 'firing' ? 'fired' : 'firing');
+                        try {
+                          await sendMessage('testScreenEffect', { organismId: config.organismId });
+                        } catch {
+                          /** Non-injectable tab (chrome://, store, PDF) — no stage to fire on. */
+                        } finally {
+                          window.setTimeout(() => setFxPreview('idle'), 5200);
+                        }
+                      }}
+                      className="mt-3 w-full border-2 border-dashed border-line px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted hover:text-paper-ink hover:border-coal transition-colors cursor-pointer"
+                      title={previewInfo.description}
+                    >
+                      {fxPreview === 'firing' ? previewInfo.firingLabel : previewInfo.label}
+                    </button>
+                    <p className="mt-1.5 font-mono text-[9px] leading-relaxed text-paper-faint">
+                      {previewInfo.description}
+                    </p>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
 
-        {/* ============ MODEL ============ */}
+        {/* ============ MODEL / SETTINGS ============ */}
         {activeTab === 'settings' && (
           <div className="flex-1 flex flex-col pt-1 min-h-0 overflow-y-auto">
-            {!isConfigured && (
-              <p className="pb-2 font-mono font-bold text-[10px] uppercase tracking-wider text-red-600">
-                ⚠ Pick a provider & save
-              </p>
-            )}
+            {/* Segmented Mode Switcher: Cloud vs. BYOK */}
+            <div className="grid grid-cols-2 gap-1 p-1 bg-paper-line/30 border-2 border-coal mb-3 shadow-[2px_2px_0_0_#12151A]">
+              <button
+                type="button"
+                onClick={async () => {
+                  setSettingsTab('cloud');
+                  if (session.isLoggedIn && config.mode !== 'cloud') {
+                    const next = { ...config, mode: 'cloud' as OperatingMode };
+                    setConfig(next);
+                    await configStorage.setValue(next);
+                  }
+                }}
+                className={`py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  settingsTab === 'cloud'
+                    ? 'bg-coal text-white shadow-sm'
+                    : 'text-paper-muted hover:text-paper-ink'
+                }`}
+              >
+                <span>☁ Gremlin Cloud</span>
+                {session.isLoggedIn && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                )}
+              </button>
 
-            {/* Gremlin Cloud */}
-            <div className="pb-3 mb-1 border-b-2 border-dashed border-line">
-              {session.isLoggedIn ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="min-w-0">
-                    <span className="block font-mono text-[9px] font-bold truncate text-paper-faint">{session.email}</span>
-                  </span>
-                  <span className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const next = { ...config, mode: config.mode === 'cloud' ? 'self-hosted' as OperatingMode : 'cloud' as OperatingMode };
-                        setConfig(next);
-                        await configStorage.setValue(next);
-                      }}
-                      className={`font-mono text-[9px] font-bold uppercase px-2 py-1 border-2 border-coal transition-colors cursor-pointer ${config.mode === 'cloud' ? 'text-white' : 'bg-white text-paper-muted hover:text-paper-ink'}`}
-                      style={config.mode === 'cloud' ? { backgroundColor: 'var(--skin-accent)' } : {}}
-                    >
-                      {config.mode === 'cloud' ? 'On' : 'Off'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await authClient.signOut();
-                        const nextSession: UserSession = { plan: 'free', isLoggedIn: false };
-                        await userSessionStorage.setValue(nextSession);
-                        setSession(nextSession);
-                        if (config.mode === 'cloud') {
-                          const next = { ...config, mode: 'self-hosted' as OperatingMode };
-                          setConfig(next);
-                          await configStorage.setValue(next);
-                        }
-                      }}
-                      className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-paper-ink cursor-pointer"
-                    >
-                      Sign out
-                    </button>
-                  </span>
+              <button
+                type="button"
+                onClick={async () => {
+                  setSettingsTab('byok');
+                  if (config.mode !== 'self-hosted') {
+                    const next = { ...config, mode: 'self-hosted' as OperatingMode };
+                    setConfig(next);
+                    await configStorage.setValue(next);
+                  }
+                }}
+                className={`py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  settingsTab === 'byok'
+                    ? 'bg-coal text-white shadow-sm'
+                    : 'text-paper-muted hover:text-paper-ink'
+                }`}
+              >
+                <span>🔑 BYOK (Local AI)</span>
+              </button>
+            </div>
+
+            {/* View 1: Gremlin Cloud */}
+            {settingsTab === 'cloud' && (
+              <div className="flex-1 flex flex-col gap-3">
+                <div className="p-2.5 bg-paper-subtle border border-line space-y-1">
+                  <div className="font-display font-bold text-xs text-paper-ink">Hosted AI & Cross-Browser Sync</div>
+                  <p className="font-mono text-[9px] text-paper-faint leading-relaxed">
+                    Zero setup required. We host the fast cloud AI evaluations and keep your focus goals and daily diaries synced across all your devices.
+                  </p>
                 </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-display font-semibold text-[13px] text-paper-ink">Gremlin Cloud</span>
-                    <a href={`${WEB_APP_URL}/auth`} target="_blank" rel="noreferrer" className="font-mono text-[9px] font-bold uppercase underline underline-offset-2" style={{ color: 'var(--skin-accent)' }}>
-                      Create account
-                    </a>
+
+                {session.isLoggedIn ? (
+                  <div className="p-3 bg-white dark:bg-[#161914] border-2 border-coal space-y-3 shadow-brut-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint block">Signed in as</span>
+                        <span className="font-mono text-xs font-bold text-paper-ink truncate block">{session.email}</span>
+                      </div>
+                      <span className="px-2 py-0.5 bg-accent/20 border border-accent text-[#4d7c0f] dark:text-accent font-mono text-[10px] font-bold uppercase">
+                        {session.plan === 'pro' ? 'Pro Active' : 'Free Account'}
+                      </span>
+                    </div>
+
+                    <div className="pt-2 border-t border-dashed border-line flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] font-bold uppercase text-paper-muted">Cloud Engine</span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const next = { ...config, mode: config.mode === 'cloud' ? 'self-hosted' as OperatingMode : 'cloud' as OperatingMode };
+                            setConfig(next);
+                            await configStorage.setValue(next);
+                          }}
+                          className={`font-mono text-[9px] font-bold uppercase px-2.5 py-1 border-2 border-coal transition-colors cursor-pointer ${config.mode === 'cloud' ? 'text-white' : 'bg-white text-paper-muted hover:text-paper-ink'}`}
+                          style={config.mode === 'cloud' ? { backgroundColor: 'var(--skin-accent)' } : {}}
+                        >
+                          {config.mode === 'cloud' ? 'Enabled' : 'Paused'}
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await authClient.signOut();
+                          const nextSession: UserSession = { plan: 'free', isLoggedIn: false };
+                          await userSessionStorage.setValue(nextSession);
+                          setSession(nextSession);
+                          if (config.mode === 'cloud') {
+                            const next = { ...config, mode: 'self-hosted' as OperatingMode };
+                            setConfig(next);
+                            await configStorage.setValue(next);
+                          }
+                        }}
+                        className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-red-600 cursor-pointer"
+                      >
+                        Sign out
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-1.5">
-                    <input
-                      type="email"
-                      placeholder="email"
-                      value={cloudEmail}
-                      onChange={(e) => setCloudEmail(e.target.value)}
-                      className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
-                    />
-                    <input
-                      type="password"
-                      placeholder="password"
-                      value={cloudPassword}
-                      onChange={(e) => setCloudPassword(e.target.value)}
-                      className="flex-1 min-w-0 bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9px] text-red-600">{cloudError ?? ''}</span>
+                ) : (
+                  <div className="p-3 bg-white dark:bg-[#161914] border-2 border-coal space-y-3 shadow-brut-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-display font-bold text-xs text-paper-ink">Sign into Gremlin Cloud</span>
+                      <a href={`${WEB_APP_URL}/auth`} target="_blank" rel="noreferrer" className="font-mono text-[9px] font-bold uppercase underline underline-offset-2" style={{ color: 'var(--skin-accent)' }}>
+                        Create account →
+                      </a>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Email</span>
+                        <input
+                          type="email"
+                          placeholder="you@example.com"
+                          value={cloudEmail}
+                          onChange={(e) => setCloudEmail(e.target.value)}
+                          className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Password</span>
+                        <input
+                          type="password"
+                          placeholder="••••••••"
+                          value={cloudPassword}
+                          onChange={(e) => setCloudPassword(e.target.value)}
+                          className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {cloudError && <p className="font-mono text-[9.5px] text-red-600">{cloudError}</p>}
+
                     <button
                       type="button"
                       disabled={cloudBusy || !cloudEmail.trim() || !cloudPassword}
@@ -806,118 +987,132 @@ export default function App() {
                           setCloudBusy(false);
                         }
                       }}
-                      className="font-mono text-[10px] font-bold uppercase tracking-wider disabled:opacity-40 hover:opacity-75 transition-opacity cursor-pointer"
-                      style={{ color: 'var(--skin-accent)' }}
+                      className="w-full py-2 bg-coal text-white font-display font-bold text-xs shadow-brut-sm hover:-translate-y-0.5 transition-transform cursor-pointer disabled:opacity-50"
                     >
-                      {cloudBusy ? '…' : 'Sign in →'}
+                      {cloudBusy ? 'Signing in…' : 'Sign in to Gremlin Cloud'}
                     </button>
                   </div>
-                  <p className="font-mono text-[8.5px] text-paper-faint leading-snug">
-                    Zero setup · memory synced across devices · episodes mirrored to your account.
+                )}
+              </div>
+            )}
+
+            {/* View 2: BYOK (Bring Your Own Key) */}
+            {settingsTab === 'byok' && (
+              <div className="flex-1 flex flex-col pt-0.5 min-h-0">
+                <div className="p-2.5 bg-paper-subtle border border-line mb-3 space-y-1">
+                  <div className="font-display font-bold text-xs text-paper-ink">Local & Private Execution</div>
+                  <p className="font-mono text-[9px] text-paper-faint leading-relaxed">
+                    Zero data leaves your machine to our servers. Use your own free API key directly from Google Gemini, OpenAI, Claude, Groq, or local Ollama.
                   </p>
                 </div>
-              )}
-            </div>
 
-            <div className="divide-y divide-dashed divide-line">
-              {PROVIDER_ORDER.map((p) => {
-                const prov = SUPPORTED_PROVIDERS[p];
-                const isSelected = selectedProvider === p;
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => handleProviderSelect(p)}
-                    aria-pressed={isSelected}
-                    className="w-full text-left py-2 flex items-center gap-2.5 cursor-pointer group"
-                  >
-                    <span
-                      className="w-3.5 h-3.5 shrink-0 rounded-full border-2 flex items-center justify-center"
-                      style={{ borderColor: isSelected ? 'var(--skin-accent)' : '#C9CEB8' }}
+                {!isConfigured && config.mode === 'self-hosted' && (
+                  <p className="pb-2 font-mono font-bold text-[10px] uppercase tracking-wider text-red-600">
+                    ⚠ Enter your API key below and save
+                  </p>
+                )}
+
+                <div className="divide-y divide-dashed divide-line">
+                  {PROVIDER_ORDER.map((p) => {
+                    const prov = SUPPORTED_PROVIDERS[p];
+                    const isSelected = selectedProvider === p;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => handleProviderSelect(p)}
+                        aria-pressed={isSelected}
+                        className="w-full text-left py-2 flex items-center gap-2.5 cursor-pointer group"
+                      >
+                        <span
+                          className="w-3.5 h-3.5 shrink-0 rounded-full border-2 flex items-center justify-center"
+                          style={{ borderColor: isSelected ? 'var(--skin-accent)' : '#C9CEB8' }}
+                        >
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--skin-accent)' }} />}
+                        </span>
+                        <span className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
+                          <span className={`font-display font-semibold text-[13px] leading-tight truncate transition-colors ${isSelected ? 'text-paper-ink' : 'text-paper-muted group-hover:text-paper-ink'}`}>
+                            {prov.name}
+                          </span>
+                          <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
+                            {PROVIDER_META[p].blurb}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-3 space-y-3.5">
+                  {currentProviderConfig.requiresKey && (
+                    <div>
+                      <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Key</span>
+                      <input
+                        type="password"
+                        placeholder={currentProviderConfig.placeholderKey}
+                        value={apiKeyInput}
+                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
+                      />
+                    </div>
+                  )}
+
+                  {(selectedProvider === 'ollama' || selectedProvider === 'custom') && (
+                    <div>
+                      <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Endpoint</span>
+                      <input
+                        type="text"
+                        placeholder={currentProviderConfig.defaultEndpoint || 'http://localhost:8000/v1'}
+                        value={endpointInput}
+                        onChange={(e) => setEndpointInput(e.target.value)}
+                        className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Model ID</span>
+                    <input
+                      type="text"
+                      placeholder={currentProviderConfig.defaultModel}
+                      value={modelInput}
+                      onChange={(e) => setModelInput(e.target.value)}
+                      className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 pb-2">
+                    {!canSaveSettings && (
+                      <span className="font-mono text-[10px] font-bold text-red-600">
+                        {currentProviderConfig.requiresKey && !apiKeyInput.trim() ? 'Key required' : 'Endpoint required'}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSaveSettings}
+                      disabled={!canSaveSettings}
+                      className="border-2 border-coal px-5 py-1.5 font-display font-bold text-xs text-white shadow-brut-sm transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none cursor-pointer disabled:opacity-40 disabled:shadow-none disabled:hover:translate-y-0"
+                      style={{ backgroundColor: 'var(--skin-accent)' }}
                     >
-                      {isSelected && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--skin-accent)' }} />}
-                    </span>
-                    <span className="flex-1 min-w-0 flex items-baseline justify-between gap-2">
-                      <span className={`font-display font-semibold text-[13px] leading-tight truncate transition-colors ${isSelected ? 'text-paper-ink' : 'text-paper-muted group-hover:text-paper-ink'}`}>
-                        {prov.name}
+                      {saveFeedback ? 'Saved ✓' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleTestConnection}
+                      disabled={testStatus?.loading || !canSaveSettings}
+                      className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted hover:text-paper-ink transition-colors cursor-pointer disabled:opacity-40"
+                    >
+                      {testStatus?.loading ? 'Testing…' : 'Test connection'}
+                    </button>
+                    {testStatus && !testStatus.loading && (
+                      <span className={`font-mono text-[10px] font-bold ${testStatus.ok ? 'text-green-700' : 'text-red-600'}`}>
+                        {testStatus.ok ? '✓ OK' : '✕ failed'}
                       </span>
-                      <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
-                        {PROVIDER_META[p].blurb}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="pt-3 space-y-3.5">
-              {currentProviderConfig.requiresKey && (
-                <div>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Key</span>
-                  <input
-                    type="password"
-                    placeholder={currentProviderConfig.placeholderKey}
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
-                  />
+                    )}
+                  </div>
                 </div>
-              )}
-
-              {(selectedProvider === 'ollama' || selectedProvider === 'custom') && (
-                <div>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Endpoint</span>
-                  <input
-                    type="text"
-                    placeholder={currentProviderConfig.defaultEndpoint || 'http://localhost:8000/v1'}
-                    value={endpointInput}
-                    onChange={(e) => setEndpointInput(e.target.value)}
-                    className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
-                  />
-                </div>
-              )}
-
-              <div>
-                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Model ID</span>
-                <input
-                  type="text"
-                  placeholder={currentProviderConfig.defaultModel}
-                  value={modelInput}
-                  onChange={(e) => setModelInput(e.target.value)}
-                  className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
-                />
               </div>
-
-              <div className="flex items-center gap-3 pb-2">
-                {!canSaveSettings && (
-                  <span className="font-mono text-[10px] font-bold text-red-600">
-                    {currentProviderConfig.requiresKey && !apiKeyInput.trim() ? 'Key required' : 'Endpoint required'}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={handleSaveSettings}
-                  disabled={!canSaveSettings}
-                  className="border-2 border-coal px-5 py-1.5 font-display font-bold text-xs text-white shadow-brut-sm transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none cursor-pointer disabled:opacity-40 disabled:shadow-none disabled:hover:translate-y-0"
-                  style={{ backgroundColor: 'var(--skin-accent)' }}
-                >
-                  {saveFeedback ? 'Saved ✓' : 'Save'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleTestConnection}
-                  disabled={testStatus?.loading || !canSaveSettings}
-                  className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted hover:text-paper-ink transition-colors cursor-pointer disabled:opacity-40"
-                >
-                  {testStatus?.loading ? 'Testing…' : 'Test connection'}
-                </button>
-                {testStatus && !testStatus.loading && (
-                  <span className={`font-mono text-[10px] font-bold ${testStatus.ok ? 'text-green-700' : 'text-red-600'}`}>
-                    {testStatus.ok ? '✓ OK' : '✕ failed'}
-                  </span>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         )}
       </main>

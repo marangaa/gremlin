@@ -57,7 +57,8 @@ export const SidepanelApp: React.FC = () => {
     lastRemarkAt: 0,
     focusMinutesToday: 0,
     divergenceCountToday: 0,
-      escalationLevel: 0,
+    contextSwitchesToday: 0,
+    escalationLevel: 0,
     lastObservationAt: 0,
   });
 
@@ -72,7 +73,7 @@ export const SidepanelApp: React.FC = () => {
     topDomains: [],
   });
 
-  // Quick note form state
+  /** Quick note form state. */
   const [newNoteText, setNewNoteText] = useState('');
   const [activeTabInfo, setActiveTabInfo] = useState<{ title: string; url: string; domain: string }>({
     title: 'Loading tab…',
@@ -111,7 +112,7 @@ export const SidepanelApp: React.FC = () => {
           });
         }
       } catch {
-        // Restricted tab
+        /** Restricted tab (chrome://, store) - nothing to read. */
       }
     };
 

@@ -23,7 +23,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
     setErrorMsg(null);
 
     try {
-      // Real Better Auth call against the backend — creates the Neon user
+      // Real Better Auth call against the backend: creates the Neon user
       // row and sets a session cookie scoped to the backend domain.
       const result = isSignUp
         ? await authClient.signUp.email({ email, password, name: name || email.split('@')[0] })
@@ -34,7 +34,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
       }
       setSuccess(true);
 
-      // Legacy handoff signal — kept for any opener that listens.
+      // Legacy handoff signal: kept for any opener that listens.
       if (window.opener) {
         window.opener.postMessage(
           {
@@ -163,7 +163,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
               <button
                 type="button"
                 disabled
-                title="Social login coming soon — sign in with email & password"
+                title="Social login coming soon: sign in with email and password"
                 className="flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#1a1e17] border-2 border-dashed border-gray-300 dark:border-[#3F4740] text-xs font-medium py-2 rounded-none text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed"
               >
                 <span>Google</span>
@@ -171,7 +171,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
               <button
                 type="button"
                 disabled
-                title="Social login coming soon — sign in with email & password"
+                title="Social login coming soon: sign in with email and password"
                 className="flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#1a1e17] border-2 border-dashed border-gray-300 dark:border-[#3F4740] text-xs font-medium py-2 rounded-none text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed"
               >
                 <svg className="w-3.5 h-3.5 fill-current opacity-50" viewBox="0 0 24 24">

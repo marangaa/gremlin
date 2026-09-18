@@ -64,7 +64,7 @@ async function mirrorAccountData(): Promise<void> {
     await pushNotes(notes.slice(0, 200));
     if (diaries[0]) await pushDiary(diaries[0].date, diaries[0]);
   } catch {
-    // Best-effort mirror — local-first continues on any failure.
+    /** Best-effort mirror — local-first continues on any failure. */
   }
 }
 
@@ -115,7 +115,7 @@ async function maybeRunNightlyDistill(): Promise<void> {
       await bumpLessons(result.data.lessons);
     }
   } catch {
-    // Distillation is opportunistic — never block evaluations on it.
+    /** Distillation is opportunistic — never block evaluations on it. */
   }
 }
 
@@ -130,10 +130,10 @@ function debouncedEvaluate(force = false) {
 }
 
 export default defineBackground(() => {
-  // Initialize browser event tracking
+  /** Initialize browser event tracking */
   eventTracker.init();
 
-  // 1. Programmatically inject content scripts into all already-open tabs on install/reload
+  /** 1. Programmatically inject content scripts into all already-open tabs on install/reload */
   browser.runtime.onInstalled.addListener(async () => {
     try {
       const tabs = await browser.tabs.query({ url: ['http://*/*', 'https://*/*'] });
@@ -145,16 +145,16 @@ export default defineBackground(() => {
               files: ['/content-scripts/content.js'],
             });
           } catch {
-            // Ignore restricted tabs
+            /** Ignore restricted tabs */
           }
         }
       }
     } catch {
-      // Ignore
+      /** Ignore */
     }
   });
 
-  // 2. Global keyboard shortcut listener for Side Panel
+  /** 2. Global keyboard shortcut listener for Side Panel */
   browser.commands?.onCommand.addListener(async (command) => {
     if (command === 'open_side_panel') {
       try {
@@ -168,7 +168,7 @@ export default defineBackground(() => {
     }
   });
 
-  // 3. Broadcast live configuration changes to ALL open tabs immediately
+  /** 3. Broadcast live configuration changes to ALL open tabs immediately */
   configStorage.watch(async (newConfig: OrganismConfig | null) => {
     if (!newConfig) return;
     try {
@@ -178,20 +178,22 @@ export default defineBackground(() => {
           try {
             await sendMessage('configUpdated', { config: newConfig }, tab.id);
           } catch {
-            // Tab might not be injectable or sleeping
+            /** Tab might not be injectable or sleeping */
           }
         }
       }
     } catch {
-      // Ignore
+      /** Ignore */
     }
   });
 
-  // Periodic heartbeat: presence checks + safety-net evaluation cadence
+  /** Periodic heartbeat: presence checks + safety-net evaluation cadence */
   browser.alarms.create('organismTick', { periodInMinutes: 0.5 });
 
-  // Boot-time cloud merge: adopt anything the account holds that this device
-  // is missing (profile by freshness; goals/notes/diaries union-by-id/date).
+  /**
+   * Boot-time cloud merge: adopt anything the account holds that this device
+   * is missing (profile by freshness; goals/notes/diaries union-by-id/date).
+   */
   void (async () => {
     try {
       if (!(await isAccountSyncActive())) return;
@@ -221,7 +223,7 @@ export default defineBackground(() => {
       const missingDiaries = all.diaries.filter((d) => !diaries.some((l) => l.date === d.date));
       if (missingDiaries.length > 0) await diaryStorage.setValue([...diaries, ...missingDiaries]);
     } catch {
-      // Cloud unreachable — local-first continues unaffected.
+      /** Cloud unreachable — local-first continues unaffected. */
     }
   })();
 
@@ -230,8 +232,10 @@ export default defineBackground(() => {
     const prev = presence;
     presence = (newState as Presence) === 'locked' ? 'locked' : newState === 'idle' ? 'idle' : 'active';
 
-    // Welcome-back flow: after a long idle gap during an active sprint, greet
-    // the human warmly on return — once per gap, zero guilt attached.
+    /**
+     * Welcome-back flow: after a long idle gap during an active sprint, greet
+     * the human warmly on return — once per gap, zero guilt attached.
+     */
     if (prev !== 'active' && presence === 'active' && wentIdleAt) {
       const gapMin = (Date.now() - wentIdleAt) / 60000;
       if (gapMin >= 15 && welcomedBackForGap !== wentIdleAt) {
@@ -248,7 +252,7 @@ export default defineBackground(() => {
               tab.id,
             );
           } catch {
-            // Tab not injectable — skip the greeting
+            /** Tab not injectable — skip the greeting */
           }
         })();
       }
@@ -264,10 +268,10 @@ export default defineBackground(() => {
     }
   });
 
-  // Evaluate state with debounce when tabs update or switch
+  /** Evaluate state with debounce when tabs update or switch */
   browser.tabs.onActivated.addListener(async (activeInfo) => {
     debouncedEvaluate();
-    // Increment daily context switches count
+    /** Increment daily context switches count */
     try {
       const state = await organismStateStorage.getValue();
       await organismStateStorage.setValue({
@@ -275,9 +279,9 @@ export default defineBackground(() => {
         contextSwitchesToday: (state.contextSwitchesToday || 0) + 1,
       });
     } catch {
-      // Ignore
+      /** Ignore */
     }
-    // Record continuous focus activity log
+    /** Record continuous focus activity log */
     try {
       const tab = await browser.tabs.get(activeInfo.tabId);
       if (tab?.url) {
@@ -288,7 +292,7 @@ export default defineBackground(() => {
         }
       }
     } catch {
-      // Ignore
+      /** Ignore */
     }
   });
 
@@ -303,13 +307,13 @@ export default defineBackground(() => {
             await logActivity('focus', domain, `Navigated to ${domain}`);
           }
         } catch {
-          // Ignore
+          /** Ignore */
         }
       }
     }
   });
 
-  // Handle Typed RPC Messaging
+  /** Handle Typed RPC Messaging */
   onMessage('pageSignal', async ({ data }) => {
     eventTracker.recordPageSignal(data.signal);
   });
@@ -336,7 +340,7 @@ export default defineBackground(() => {
           activeTab.id,
         );
       } catch {
-        // Tab not injectable
+        /** Tab not injectable */
       }
     }
   });
@@ -369,6 +373,28 @@ export default defineBackground(() => {
     return await evaluateCurrentState(true);
   });
 
+  /**
+   * TEST RELAY — popup/sidepanel can't reach content scripts directly
+   * (tabs can't message tabs), so they send here and the worker re-sends
+   * targeted at the tab. Two hops, both typed via ProtocolMap:
+   *   1. UI -> background: 'testScreenEffect' (worker resolves active tab)
+   *   2. background -> tab: 'testScreenEffect' with tabId (content script
+   *      fires controller.testEffect, bypassing the AI throttle entirely).
+   * NOTE: a single onMessage listener per type per context — background owns
+   * 'testScreenEffect' here, content.ts owns it in tabs. Same name, different
+   * JS worlds, no conflict (one listener each).
+   */
+  onMessage('testScreenEffect', async ({ data }) => {
+    try {
+      const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (activeTab?.id != null) {
+        await sendMessage('testScreenEffect', { organismId: data.organismId }, activeTab.id);
+      }
+    } catch {
+      /** Non-injectable tab (chrome://, webstore, PDF) — silently skip. */
+    }
+  });
+
   onMessage('clearActivityLog', async () => {
     eventTracker.clearHistory();
     await activityStorage.setValue([]);
@@ -382,7 +408,7 @@ export default defineBackground(() => {
     });
   });
 
-  // ================= NEW WORKDAY ENGINE RPCs =================
+  /** ================= NEW WORKDAY ENGINE RPCs ================= */
   onMessage('decomposeGoals', async ({ data }) => {
     const decomposed = await decomposeUserIntent(data.intent);
     const existing: DecomposedGoal[] = await goalsStorage.getValue();
@@ -477,7 +503,7 @@ export default defineBackground(() => {
       try {
         await sendMessage('triggerReaction', { state: 'curious', message: 'Note Sheet open' }, activeTab.id);
       } catch {
-        // Tab not injectable
+        /** Tab not injectable */
       }
     }
   });
@@ -507,7 +533,7 @@ async function evaluateCurrentState(force = false): Promise<{
     const organismState = await organismStateStorage.getValue();
     const ctx = eventTracker.getContext();
 
-    // Check if sprint completed
+    /** Check if sprint completed */
     if (sprint.status === 'active' && sprint.startedAt > 0) {
       const elapsedMinutes = (Date.now() - sprint.startedAt) / 60000;
       if (elapsedMinutes >= sprint.targetMinutes) {
@@ -524,22 +550,26 @@ async function evaluateCurrentState(force = false): Promise<{
       }
     }
 
-    // Only run AI evaluation during an active sprint or when poked
+    /** Only run AI evaluation during an active sprint or when poked */
     const shouldEvaluate = sprint.status === 'active' || force;
     if (!shouldEvaluate) {
       return { triggered: false };
     }
 
-    // Throttle: skip redundant LLM calls when the last evaluation is recent.
-    // Manual pokes and the 30s alarm still pass through completion logic above.
+    /**
+     * Throttle: skip redundant LLM calls when the last evaluation is recent.
+     * Manual pokes and the 30s alarm still pass through completion logic above.
+     */
     if (!force && Date.now() - organismState.lastObservationAt < EVALUATION_THROTTLE_MS) {
       return { triggered: false };
     }
 
     const decision = await decideOrganismReaction(ctx, sprint, config, force);
 
-    // Record that an observation cycle ran regardless of reaction outcome,
-    // so throttling reflects real evaluation cadence.
+    /**
+     * Record that an observation cycle ran regardless of reaction outcome,
+     * so throttling reflects real evaluation cadence.
+     */
     organismState.lastObservationAt = Date.now();
 
     const onTask =
@@ -566,8 +596,10 @@ async function evaluateCurrentState(force = false): Promise<{
         await logActivity('focus', ctx.currentDomain, 'Focus streak milestone');
       }
 
-      // MEMORY LOOP — the judge spoke: open an intervention episode and
-      // remember its kind so outcomes can close it later.
+      /**
+       * MEMORY LOOP — the judge spoke: open an intervention episode and
+       * remember its kind so outcomes can close it later.
+       */
       const kind = decision.intervention ?? 'nudge';
       const level = organismState.escalationLevel ?? 0;
       if (kind !== 'observe') {
@@ -615,7 +647,7 @@ async function evaluateCurrentState(force = false): Promise<{
             activeTab.id,
           );
         } catch {
-          // Tab might not be injectable
+          /** Tab might not be injectable */
         }
       }
 
@@ -626,8 +658,10 @@ async function evaluateCurrentState(force = false): Promise<{
       };
     }
 
-    // OUTCOME WATCHER — the judge stayed silent this cycle; if that silence
-    // follows an intervention and the human is back on task, close the loop.
+    /**
+     * OUTCOME WATCHER — the judge stayed silent this cycle; if that silence
+     * follows an intervention and the human is back on task, close the loop.
+     */
     if (onTask) {
       const closed = await closeOpenOutcomes({ effective: true });
       if (closed > 0) {
@@ -635,8 +669,10 @@ async function evaluateCurrentState(force = false): Promise<{
       }
     }
 
-    // Persist observation timestamp even when no reaction fires so the
-    // throttle window reflects actual evaluation cadence.
+    /**
+     * Persist observation timestamp even when no reaction fires so the
+     * throttle window reflects actual evaluation cadence.
+     */
     await organismStateStorage.setValue(organismState);
     return { triggered: false };
   } catch (err) {
@@ -661,7 +697,7 @@ async function logActivity(
     };
     await activityStorage.setValue([entry, ...current.slice(0, 49)]);
   } catch {
-    // Storage error fallback
+    /** Storage error fallback */
   }
 }
 

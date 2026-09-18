@@ -45,7 +45,7 @@ export class DiarySynthesizerAgent {
   ): Promise<AgentResult<CompanionDailyReflection>> {
     const startTime = performance.now();
 
-    // Zero Fallback: Enforce Model Configuration
+    /** Zero Fallback: Enforce Model Configuration */
     if (!this.config.model) {
       return {
         success: false,
@@ -76,7 +76,7 @@ Return structured JSON matching the schema.`;
 - Completed Milestones: ${diary.completedGoalsCount} of ${goals.length} total
 - Smart Notes Captured: ${diary.notes.length}
 - Distraction Detours / Alerts: ${diary.totalDetours}
-- Context Switches (Tab/Task Switching): ${diary.contextSwitches ?? stats.divergences ?? 0} times
+- Context Switches (Tab/Task Switching): ${diary.contextSwitches ?? stats.detours ?? 0} times
 - Top Domains by Time:
 ${diary.topDomains.map((t) => `  • ${t.domain}: ${t.minutes}m`).join('\n') || '  • None recorded'}
 
@@ -119,7 +119,7 @@ Analyze the user's intention-action gap today:
         },
       };
 
-      // Commit Reflection to Episodic Memory
+      /** Commit Reflection to Episodic Memory */
       const updatedDiary: DailyDiary = {
         ...diary,
         companionReflection: reflection,

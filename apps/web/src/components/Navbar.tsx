@@ -60,15 +60,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
 
         {/* Right controls */}
         <div className="flex items-center gap-2">
-          <a
-            href="https://chromewebstore.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-accent border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-display font-bold text-xs text-coal transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none"
+          <button
+            onClick={() => {
+              if (currentPath !== '/') {
+                navigate('/');
+              }
+              window.setTimeout(() => {
+                document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+                document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth' });
+              }, 120);
+            }}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-accent border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-display font-bold text-xs text-coal transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            Add to Chrome
-          </a>
+            Get Early Access
+          </button>
 
           <button
             className="md:hidden w-9 h-9 flex items-center justify-center border-2 border-coal dark:border-[#3F4740] bg-white dark:bg-[#1A1D18] text-coal dark:text-white cursor-pointer"
@@ -93,10 +99,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
                 {link.label}
               </button>
             ))}
-            <a href="https://chromewebstore.google.com" target="_blank" rel="noopener noreferrer" className="btn-primary mt-1">
+            <button
+              onClick={() => {
+                setOpen(false);
+                if (currentPath !== '/') {
+                  navigate('/');
+                }
+                window.setTimeout(() => {
+                  document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+                  document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth' });
+                }, 120);
+              }}
+              className="btn-primary mt-1 flex items-center justify-center gap-2 cursor-pointer"
+            >
               <Download className="w-4 h-4" />
-              Add to Chrome — Free
-            </a>
+              Get Early Access
+            </button>
           </nav>
         </div>
       )}

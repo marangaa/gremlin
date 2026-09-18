@@ -14,8 +14,21 @@ export const waitlistRoutes = new Hono<AppEnv>()
   /**
    * Submit email to join the waitlist.
    */
-  .post('/', zValidator('json', joinWaitlistSchema), async (c) => {
-    const { email, source } = c.req.valid('json');
+  .post(
+    '/',
+    zValidator('json', joinWaitlistSchema, (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            success: false as const,
+            error: result.error.issues[0]?.message || 'Please enter a valid email address',
+          },
+          400,
+        );
+      }
+    }),
+    async (c) => {
+      const { email, source } = c.req.valid('json');
     const normalizedEmail = email.toLowerCase().trim();
     const db = getDb(c.env.DATABASE_URL);
 

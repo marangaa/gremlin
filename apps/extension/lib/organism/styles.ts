@@ -55,6 +55,12 @@ export const ORGANISM_SHADOW_CSS = /* css */ `
   transform: scale(1.08);
 }
 
+.organism-avatar.is-beaming {
+  animation: none !important;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.75));
+  transform: scale(1.04);
+}
+
 .organism-canvas {
   display: block;
   width: 96px;

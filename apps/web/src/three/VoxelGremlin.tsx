@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { Sprite } from '../components/Sprite';
 
 /**
- * Procedurally-built voxel gremlin — no model files.
+ * Procedurally-built voxel gremlin: no model files.
  * The creature floats, sways toward the cursor, and blinks.
  */
 export const VoxelGremlin: React.FC = () => {
@@ -77,7 +77,7 @@ export const VoxelGremlin: React.FC = () => {
     fill.position.set(0, 2, 8);
     scene.add(fill);
 
-    /* Voxel meshes — one InstancedMesh per part color */
+    /* Voxel meshes: one InstancedMesh per part color */
     const creature = new THREE.Group();
     scene.add(creature);
 

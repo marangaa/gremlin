@@ -20,6 +20,12 @@ export interface ProtocolMap {
   stopSprint(): void;
   pokeOrganism(): { triggered: boolean; message?: string; state?: OrganismState };
   clearActivityLog(): void;
+  /**
+   * Dev/test hook: asks the ACTIVE tab's content script to fire a character
+   * effect immediately (bypasses the AI throttle). Popup/sidepanel resolve
+   * the active tabId and background relays it — tabs can't message tabs
+   * directly, so this goes through the service worker.
+   */
   testScreenEffect(data: { organismId: OrganismId }): void;
   configUpdated(data: { config: OrganismConfig }): void;
   /**
