@@ -871,26 +871,26 @@ export default function App() {
             {/* View 1: Gremlin Cloud */}
             {settingsTab === 'cloud' && (
               <div className="flex-1 flex flex-col gap-3">
-                <div className="p-2.5 bg-paper-subtle border border-line space-y-1">
-                  <div className="font-display font-bold text-xs text-paper-ink">Hosted AI & Cross-Browser Sync</div>
-                  <p className="font-mono text-[9px] text-paper-faint leading-relaxed">
+                <div className="p-2.5 bg-[#FAFBF7] border-2 border-dashed border-coal/20 space-y-1">
+                  <div className="font-display font-bold text-xs text-coal">Hosted AI & Cross-Browser Sync</div>
+                  <p className="font-mono text-[9.5px] text-paper-muted leading-relaxed">
                     Zero setup required. We host the fast cloud AI evaluations and keep your focus goals and daily diaries synced across all your devices.
                   </p>
                 </div>
 
                 {session.isLoggedIn ? (
-                  <div className="p-3 bg-white dark:bg-[#161914] border-2 border-coal space-y-3 shadow-brut-sm">
+                  <div className="p-3.5 bg-white border-2 border-coal space-y-3 shadow-brut">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint block">Signed in as</span>
-                        <span className="font-mono text-xs font-bold text-paper-ink truncate block">{session.email}</span>
+                        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-muted block">Signed in as</span>
+                        <span className="font-mono text-xs font-bold text-coal truncate block">{session.email}</span>
                       </div>
-                      <span className="px-2 py-0.5 bg-accent/20 border border-accent text-[#4d7c0f] dark:text-accent font-mono text-[10px] font-bold uppercase">
+                      <span className="px-2 py-0.5 bg-accent border border-coal text-coal font-mono text-[10px] font-bold uppercase shadow-[1px_1px_0_0_#12151A]">
                         {session.plan === 'pro' ? 'Pro Active' : 'Free Account'}
                       </span>
                     </div>
 
-                    <div className="pt-2 border-t border-dashed border-line flex items-center justify-between gap-2">
+                    <div className="pt-2 border-t-2 border-dashed border-coal/15 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[10px] font-bold uppercase text-paper-muted">Cloud Engine</span>
                         <button
@@ -900,8 +900,11 @@ export default function App() {
                             setConfig(next);
                             await configStorage.setValue(next);
                           }}
-                          className={`font-mono text-[9px] font-bold uppercase px-2.5 py-1 border-2 border-coal transition-colors cursor-pointer ${config.mode === 'cloud' ? 'text-white' : 'bg-white text-paper-muted hover:text-paper-ink'}`}
-                          style={config.mode === 'cloud' ? { backgroundColor: 'var(--skin-accent)' } : {}}
+                          className={`font-mono text-[9px] font-bold uppercase px-2.5 py-1 border-2 border-coal transition-all cursor-pointer shadow-[1px_1px_0_0_#12151A] ${
+                            config.mode === 'cloud'
+                              ? 'bg-accent text-coal'
+                              : 'bg-paper text-paper-muted hover:text-coal'
+                          }`}
                         >
                           {config.mode === 'cloud' ? 'Enabled' : 'Paused'}
                         </button>
@@ -920,45 +923,58 @@ export default function App() {
                             await configStorage.setValue(next);
                           }
                         }}
-                        className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-red-600 cursor-pointer"
+                        className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-red-600 transition-colors cursor-pointer"
                       >
                         Sign out
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3 bg-white dark:bg-[#161914] border-2 border-coal space-y-3 shadow-brut-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="font-display font-bold text-xs text-paper-ink">Sign into Gremlin Cloud</span>
-                      <a href={`${WEB_APP_URL}/auth`} target="_blank" rel="noreferrer" className="font-mono text-[9px] font-bold uppercase underline underline-offset-2" style={{ color: 'var(--skin-accent)' }}>
+                  <div className="p-3.5 bg-white border-2 border-coal space-y-3.5 shadow-brut">
+                    <div className="flex items-center justify-between pb-2 border-b-2 border-coal/10">
+                      <span className="font-display font-bold text-xs text-coal">Sign into Gremlin Cloud</span>
+                      <a
+                        href={`${WEB_APP_URL}/auth`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-[10px] font-bold uppercase underline underline-offset-2 text-coal hover:text-accent transition-colors"
+                      >
                         Create account →
                       </a>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       <div>
-                        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Email</span>
+                        <label className="font-mono text-[10px] font-bold uppercase tracking-wider text-coal block mb-1">
+                          Email address
+                        </label>
                         <input
                           type="email"
                           placeholder="you@example.com"
                           value={cloudEmail}
                           onChange={(e) => setCloudEmail(e.target.value)}
-                          className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
+                          className="w-full bg-[#FAFBF7] border-2 border-coal px-2.5 py-1.5 font-mono text-xs text-coal placeholder:text-[#8C94A0] focus:outline-none focus:bg-white focus:shadow-[2px_2px_0_0_#12151A] transition-all"
                         />
                       </div>
                       <div>
-                        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Password</span>
+                        <label className="font-mono text-[10px] font-bold uppercase tracking-wider text-coal block mb-1">
+                          Password
+                        </label>
                         <input
                           type="password"
                           placeholder="••••••••"
                           value={cloudPassword}
                           onChange={(e) => setCloudPassword(e.target.value)}
-                          className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
+                          className="w-full bg-[#FAFBF7] border-2 border-coal px-2.5 py-1.5 font-mono text-xs text-coal placeholder:text-[#8C94A0] focus:outline-none focus:bg-white focus:shadow-[2px_2px_0_0_#12151A] transition-all"
                         />
                       </div>
                     </div>
 
-                    {cloudError && <p className="font-mono text-[9.5px] text-red-600">{cloudError}</p>}
+                    {cloudError && (
+                      <p className="font-mono text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 p-2">
+                        {cloudError}
+                      </p>
+                    )}
 
                     <button
                       type="button"
@@ -982,12 +998,36 @@ export default function App() {
                             setConfig(next);
                             await configStorage.setValue(next);
                             setCloudPassword('');
+
+                            // Instant remote sync merge on login
+                            try {
+                              const { pullAll, pullProfile } = await import('@/lib/api/memoryClient');
+                              const remote = await pullProfile();
+                              if (remote) {
+                                const { focusProfileStorage } = await import('@/lib/storage');
+                                const local = await focusProfileStorage.getValue();
+                                if ((remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
+                                  await focusProfileStorage.setValue(remote);
+                                }
+                              }
+                              const all = await pullAll();
+                              if (all) {
+                                const localGoals = await goalsStorage.getValue();
+                                const missingGoals = all.goals.filter((g) => !localGoals.some((l) => l.id === g.id));
+                                if (missingGoals.length > 0) await goalsStorage.setValue([...localGoals, ...missingGoals]);
+                                const localNotes = await notesStorage.getValue();
+                                const missingNotes = all.notes.filter((n) => !localNotes.some((l) => l.id === n.id));
+                                if (missingNotes.length > 0) await notesStorage.setValue([...missingNotes, ...localNotes]);
+                              }
+                            } catch {
+                              // Non-blocking sync error
+                            }
                           }
                         } finally {
                           setCloudBusy(false);
                         }
                       }}
-                      className="w-full py-2 bg-coal text-white font-display font-bold text-xs shadow-brut-sm hover:-translate-y-0.5 transition-transform cursor-pointer disabled:opacity-50"
+                      className="w-full py-2.5 bg-coal text-white font-display font-bold text-xs border-2 border-coal shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {cloudBusy ? 'Signing in…' : 'Sign in to Gremlin Cloud'}
                     </button>
