@@ -61,6 +61,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
         {/* Right controls */}
         <div className="flex items-center gap-2">
           <button
+            onClick={() => navigate('/auth')}
+            className="hidden sm:inline-flex items-center px-3 py-1.5 border-2 border-transparent hover:border-coal dark:hover:border-[#3F4740] font-mono text-xs font-bold text-coal dark:text-[#C8CFC4] hover:bg-paper dark:hover:bg-[#1E2219] transition-all cursor-pointer"
+          >
+            Sign In
+          </button>
+
+          <button
             onClick={() => {
               if (currentPath !== '/') {
                 navigate('/');
@@ -99,6 +106,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
                 {link.label}
               </button>
             ))}
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate('/auth');
+              }}
+              className="px-3 py-2 border-2 border-coal dark:border-[#3F4740] bg-paper dark:bg-[#1A1D18] text-coal dark:text-white font-mono text-xs font-bold text-left cursor-pointer shadow-[3px_3px_0_0_#12151A]"
+            >
+              Sign In / Cloud Account →
+            </button>
             <button
               onClick={() => {
                 setOpen(false);
