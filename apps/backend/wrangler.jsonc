@@ -12,6 +12,7 @@
     "BETTER_AUTH_URL": "https://gremlin-backend.rchdmaranga-b12.workers.dev",
     "PADDLE_ENV": "production",
     "PADDLE_PRO_PRICE_ID": "pri_01m2trj0f36nygj860s07rzn8a",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "ALLOWED_ORIGINS": "https://gremlin.fasihi.xyz,http://localhost:5173"
   }
 }
