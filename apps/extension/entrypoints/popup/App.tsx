@@ -592,9 +592,10 @@ export default function App() {
                       disabled={!goalInput.trim() || isDecomposing}
                       className="font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80 transition-opacity cursor-pointer"
                       style={{ color: 'var(--skin-accent)' }}
+                      title="Break down into steps"
                     >
                       <Sparkles size={11} />
-                      <span>{isDecomposing ? '…' : 'Decompose'}</span>
+                      <span>{isDecomposing ? '…' : 'Break down'}</span>
                     </button>
                   </div>
                   <input
