@@ -54,12 +54,6 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
   return (
     <main className="container-site py-20 relative z-10 flex flex-col items-center justify-center min-h-[75vh]">
       <div className="w-full max-w-md py-4 text-coal dark:text-white relative">
-        {/* Refined inline badge */}
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-accent/20 border border-accent/40 text-coal dark:text-accent text-[11px] font-mono font-bold uppercase tracking-wider mb-5">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-          <span>Gremlin Cloud</span>
-        </div>
-
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 border-2 border-coal bg-accent flex items-center justify-center text-coal shadow-[2px_2px_0_0_#12151A]">
             <Shield className="w-5 h-5" />
