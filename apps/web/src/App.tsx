@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CleanGridBackground } from './components/CleanGridBackground';
@@ -66,6 +67,8 @@ export function App() {
 
       {/* Subtle organic film grain */}
       <div className="noise-overlay" aria-hidden="true" />
+
+      <Analytics />
     </div>
   );
 }
