@@ -37,7 +37,7 @@ export interface Bindings {
   /** Optional Cloudflare Workers AI binding for on-edge inference. */
   AI?: unknown;
 
-  // --- Paddle Billing Bindings ---
+  // --- Paddle Billing Bindings (Legacy/Deprecated) ---
   /** Paddle Server-side API Secret Key (e.g. pdl_sdbx_apikey_... or pdl_live_apikey_...). */
   PADDLE_API_KEY?: string;
   /** Paddle Webhook Secret (pdl_ntfset_...) for HMAC-SHA256 signature verification. */
@@ -46,6 +46,16 @@ export interface Bindings {
   PADDLE_PRO_PRICE_ID?: string;
   /** Paddle Environment: 'sandbox' (default) or 'production'. */
   PADDLE_ENV?: 'sandbox' | 'production';
+
+  // --- Polar Billing Bindings ---
+  /** Polar Organization Access Token created from Polar Organization Settings. */
+  POLAR_ACCESS_TOKEN?: string;
+  /** Polar Webhook Secret (whsec_...) for HMAC signature verification. */
+  POLAR_WEBHOOK_SECRET?: string;
+  /** Polar Product ID for Gremlin Pro subscription ($5/mo). */
+  POLAR_PRO_PRODUCT_ID?: string;
+  /** Polar Environment: 'sandbox' or 'production'. */
+  POLAR_ENV?: 'sandbox' | 'production';
 }
 
 /**

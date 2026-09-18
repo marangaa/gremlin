@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Check, KeyRound, Zap, MessageSquare } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
-import { authClient, API_URL } from '../lib/auth';
-import { openPaddleCheckout, PADDLE_PRO_PRICE_ID } from '../lib/paddle';
+import { authClient } from '../lib/auth';
 
 /* Paper theme: the deliberate light route on the dark site. */
 /* Featured tier inverts back to dark: an island of the night mode. */
@@ -83,19 +82,15 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
   const user = session?.user;
   const userPlan = (user as any)?.plan || 'free';
   const [portalLoading, setPortalLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const handleManageSubscription = async () => {
     setPortalLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/billing/portal`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      const data: any = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      if ((authClient as any).customer?.portal) {
+        await (authClient as any).customer.portal();
       } else {
-        alert(data.error || 'Failed to open customer portal');
+        alert('Customer portal is not available yet.');
       }
     } catch (err: any) {
       alert(err?.message || 'Failed to open customer portal');
@@ -104,7 +99,7 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!user) {
       if (navigate) {
         navigate('/auth');
@@ -114,17 +109,20 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
       return;
     }
 
-    if (!PADDLE_PRO_PRICE_ID) {
-      alert(
-        'Paddle Pro price ID (VITE_PADDLE_PRO_PRICE_ID) is not configured yet. Run the seed script in apps/backend or set it in .env.',
-      );
-      return;
+    setCheckoutLoading(true);
+    try {
+      if ((authClient as any).checkout) {
+        await (authClient as any).checkout({
+          slug: 'pro',
+        });
+      } else {
+        alert('Checkout service is currently initializing. Please try again in a moment.');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to initiate checkout');
+    } finally {
+      setCheckoutLoading(false);
     }
-    openPaddleCheckout({
-      priceId: PADDLE_PRO_PRICE_ID,
-      userEmail: user?.email,
-      userId: user?.id,
-    });
   };
 
   return (
@@ -227,13 +225,18 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
                       <button
                         type="button"
                         onClick={handleCheckout}
+                        disabled={checkoutLoading}
                         className={
                           tier.highlight
-                            ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
+                            ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-50'
                             : PAPER_GHOST_BTN
                         }
                       >
-                        {!user ? 'Sign in to get Pro' : 'Upgrade to Pro — $5/mo'}
+                        {checkoutLoading
+                          ? 'Starting checkout...'
+                          : !user
+                            ? 'Sign in to get Pro'
+                            : 'Upgrade to Pro — $5/mo'}
                       </button>
                       {!user ? (
                         <p className="text-[11px] font-mono text-center text-[#5D6675] dark:text-[#9CA3AF]">

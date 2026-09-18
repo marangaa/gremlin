@@ -1,14 +1,19 @@
 import { betterAuth } from 'better-auth';
 import { anonymous } from 'better-auth/plugins';
+import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth';
+import { Polar } from '@polar-sh/sdk';
+import { eq, sql } from 'drizzle-orm';
 import type { Bindings } from '../types/env';
 import { buildAllowedOrigins } from '../middleware/cors';
-import { getPool } from './db';
+import { getPool, getDb, user as userTable } from './db';
+import { logger } from './logger';
 
 /**
  * In-memory cache for the Better Auth instance per worker isolate.
  */
 let cachedAuth: ReturnType<typeof createBetterAuthInstance> | null = null;
 let cachedDbUrl: string | null = null;
+let cachedPolarToken: string | null = null;
 
 function parseList(value?: string): string[] {
   if (!value) return [];
@@ -42,6 +47,115 @@ export function createBetterAuthInstance(env?: Partial<Bindings>) {
     env?.DATABASE_URL || process.env.DATABASE_URL || 'postgresql://localhost:5432/gremlin',
   );
 
+  const polarPlugins = env?.POLAR_ACCESS_TOKEN
+    ? [
+        polar({
+          client: new Polar({
+            accessToken: env.POLAR_ACCESS_TOKEN,
+            server: (env.POLAR_ENV || 'production') === 'sandbox' ? 'sandbox' : 'production',
+          }),
+          createCustomerOnSignUp: true,
+          use: [
+            checkout({
+              products: [
+                {
+                  productId: env.POLAR_PRO_PRODUCT_ID || '',
+                  slug: 'pro',
+                },
+              ],
+              successUrl: `${env.FRONTEND_URL || 'https://gremlin.fasihi.xyz'}/pricing?success=true`,
+              authenticatedUsersOnly: true,
+            }),
+            portal(),
+            webhooks({
+              secret: env.POLAR_WEBHOOK_SECRET || '',
+              onSubscriptionActive: async (payload: any) => {
+                try {
+                  const db = getDb(env.DATABASE_URL!);
+                  const externalId = payload?.data?.customer?.external_id;
+                  const email = payload?.data?.customer?.email;
+
+                  if (externalId) {
+                    await db
+                      .update(userTable)
+                      .set({ plan: 'pro', updatedAt: new Date() })
+                      .where(eq(userTable.id, externalId));
+                    logger.info('User upgraded to Pro via Polar subscription.active (by externalId)', {
+                      userId: externalId,
+                    });
+                  } else if (email) {
+                    await db
+                      .update(userTable)
+                      .set({ plan: 'pro', updatedAt: new Date() })
+                      .where(eq(sql`LOWER(${userTable.email})`, email.toLowerCase().trim()));
+                    logger.info('User upgraded to Pro via Polar subscription.active (by email)', {
+                      email,
+                    });
+                  }
+                } catch (err) {
+                  logger.error('Failed to handle Polar onSubscriptionActive webhook', err);
+                }
+              },
+              onSubscriptionCanceled: async (payload: any) => {
+                try {
+                  const db = getDb(env.DATABASE_URL!);
+                  const externalId = payload?.data?.customer?.external_id;
+                  const email = payload?.data?.customer?.email;
+
+                  if (externalId) {
+                    await db
+                      .update(userTable)
+                      .set({ plan: 'free', updatedAt: new Date() })
+                      .where(eq(userTable.id, externalId));
+                    logger.info('User downgraded to Free via Polar subscription.canceled (by externalId)', {
+                      userId: externalId,
+                    });
+                  } else if (email) {
+                    await db
+                      .update(userTable)
+                      .set({ plan: 'free', updatedAt: new Date() })
+                      .where(eq(sql`LOWER(${userTable.email})`, email.toLowerCase().trim()));
+                    logger.info('User downgraded to Free via Polar subscription.canceled (by email)', {
+                      email,
+                    });
+                  }
+                } catch (err) {
+                  logger.error('Failed to handle Polar onSubscriptionCanceled webhook', err);
+                }
+              },
+              onSubscriptionRevoked: async (payload: any) => {
+                try {
+                  const db = getDb(env.DATABASE_URL!);
+                  const externalId = payload?.data?.customer?.external_id;
+                  const email = payload?.data?.customer?.email;
+
+                  if (externalId) {
+                    await db
+                      .update(userTable)
+                      .set({ plan: 'free', updatedAt: new Date() })
+                      .where(eq(userTable.id, externalId));
+                    logger.info('User downgraded to Free via Polar subscription.revoked (by externalId)', {
+                      userId: externalId,
+                    });
+                  } else if (email) {
+                    await db
+                      .update(userTable)
+                      .set({ plan: 'free', updatedAt: new Date() })
+                      .where(eq(sql`LOWER(${userTable.email})`, email.toLowerCase().trim()));
+                    logger.info('User downgraded to Free via Polar subscription.revoked (by email)', {
+                      email,
+                    });
+                  }
+                } catch (err) {
+                  logger.error('Failed to handle Polar onSubscriptionRevoked webhook', err);
+                }
+              },
+            }),
+          ],
+        }),
+      ]
+    : [];
+
   return betterAuth({
     database: pool,
     secret: env?.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET || 'development_secret_key_minimum_32_characters_long',
@@ -49,6 +163,7 @@ export function createBetterAuthInstance(env?: Partial<Bindings>) {
     basePath: '/api/auth',
     plugins: [
       anonymous(),
+      ...polarPlugins,
     ],
     emailAndPassword: {
       enabled: true,
@@ -106,13 +221,18 @@ export const auth = createBetterAuthInstance();
  * @returns Configured Better Auth instance.
  */
 export function getAuth(env: Bindings) {
-  if (cachedAuth && cachedDbUrl === env.DATABASE_URL) {
+  if (
+    cachedAuth &&
+    cachedDbUrl === env.DATABASE_URL &&
+    cachedPolarToken === (env.POLAR_ACCESS_TOKEN || null)
+  ) {
     return cachedAuth;
   }
 
   const authInstance = createBetterAuthInstance(env);
   cachedAuth = authInstance;
   cachedDbUrl = env.DATABASE_URL;
+  cachedPolarToken = env.POLAR_ACCESS_TOKEN || null;
   return authInstance;
 }
 
