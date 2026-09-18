@@ -12,6 +12,7 @@
   "dependencies": {
     "@gremlin/shared": "workspace:*",
     "@paddle/paddle-js": "^1.6.5",
+    "@vercel/analytics": "^2.0.1",
     "better-auth": "1.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
