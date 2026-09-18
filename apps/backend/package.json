@@ -6,7 +6,7 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --port 8787",
     "build": "tsc --noEmit",
     "deploy": "wrangler deploy --minify",
     "compile": "tsc --noEmit",

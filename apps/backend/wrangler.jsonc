@@ -8,6 +8,9 @@
   ],
   "workers_dev": true,
   "preview_urls": true,
+  "dev": {
+    "port": 8787
+  },
   "vars": {
     "BETTER_AUTH_URL": "https://gremlin-backend.rchdmaranga-b12.workers.dev",
     "PADDLE_ENV": "production",
