@@ -48,3 +48,5 @@ lerna-debug.log*
 
 # AI SDK DevTools local captures
 .devtools/
+.vercel
+.env*

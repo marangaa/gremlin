@@ -88,10 +88,7 @@ export function createBetterAuthInstance(env?: Partial<Bindings>) {
       },
     },
     rateLimit: {
-      enabled: true,
-      // In-memory counters are per-isolate and meaningless on Workers;
-      // persist windows in the `rate_limit` table instead.
-      storage: 'database',
+      enabled: false,
     },
     trustedOrigins: buildTrustedOrigins(env),
   });
