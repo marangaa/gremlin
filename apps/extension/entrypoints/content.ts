@@ -10,7 +10,7 @@ import { onMessage, sendMessage } from '@/lib/messaging';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
-  cssInjectionMode: 'ui',
+  cssInjectionMode: 'manual',
   runAt: 'document_idle',
   async main(ctx) {
     /** Only mount on top-level window, never inside embedded iframes */

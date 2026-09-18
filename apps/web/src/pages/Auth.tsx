@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Sparkles, Check, ArrowRight } from 'lucide-react';
+import { Shield, Sparkles, Check, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { authClient } from '../lib/auth';
 
 interface AuthProps {
@@ -10,6 +10,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -33,17 +34,6 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
         throw new Error(result.error.message ?? 'Authentication failed.');
       }
       setSuccess(true);
-
-      // Legacy handoff signal: kept for any opener that listens.
-      if (window.opener) {
-        window.opener.postMessage(
-          {
-            type: 'GREMLIN_AUTH_SUCCESS',
-            user: { email, name: name || email.split('@')[0] },
-          },
-          '*',
-        );
-      }
     } catch (err: any) {
       setErrorMsg(err?.message || 'Authentication failed. Please try again.');
     } finally {
@@ -130,14 +120,29 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
-                  className="w-full bg-white dark:bg-[#161914] border-2 border-coal dark:border-[#3F4740] px-3.5 py-2.5 text-sm text-coal dark:text-white placeholder:text-[#9CA3AF] focus:border-coal dark:focus:border-accent focus:outline-none focus:shadow-[2px_2px_0_0_#12151A] transition-all"
-                  placeholder="••••••••••••"
+                  minLength={8}
+                  className="w-full bg-white dark:bg-[#161914] border-2 border-coal dark:border-[#3F4740] pl-3.5 pr-10 py-2.5 text-sm text-coal dark:text-white placeholder:text-[#9CA3AF] focus:border-coal dark:focus:border-accent focus:outline-none focus:shadow-[2px_2px_0_0_#12151A] transition-all"
+                  placeholder={isSignUp ? 'Min 8 characters' : '••••••••••••'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-coal dark:hover:text-white transition-colors cursor-pointer"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              {isSignUp && (
+                <p className="text-[11px] font-mono text-[#5D6675] dark:text-[#9CA3AF] mt-1">
+                  Must be at least 8 characters
+                </p>
+              )}
             </div>
 
             <button

@@ -38,6 +38,8 @@ import {
   Shield,
   BookOpen,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import './App.css';
 
@@ -151,8 +153,10 @@ export default function App() {
   const [session, setSession] = useState<UserSession>({ plan: 'free', isLoggedIn: false });
   const [cloudEmail, setCloudEmail] = useState('');
   const [cloudPassword, setCloudPassword] = useState('');
+  const [showCloudPassword, setShowCloudPassword] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [cloudError, setCloudError] = useState<string | null>(null);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const [goals, setGoals] = useState<DecomposedGoal[]>([]);
 
@@ -961,13 +965,24 @@ export default function App() {
                         <label className="font-mono text-[10px] font-bold uppercase tracking-wider text-coal block mb-1">
                           Password
                         </label>
-                        <input
-                          type="password"
-                          placeholder="••••••••"
-                          value={cloudPassword}
-                          onChange={(e) => setCloudPassword(e.target.value)}
-                          className="w-full bg-[#FAFBF7] border-2 border-coal px-2.5 py-1.5 font-mono text-xs text-coal placeholder:text-[#8C94A0] focus:outline-none focus:bg-white focus:shadow-[2px_2px_0_0_#12151A] transition-all"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showCloudPassword ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            value={cloudPassword}
+                            onChange={(e) => setCloudPassword(e.target.value)}
+                            className="w-full bg-[#FAFBF7] border-2 border-coal pl-2.5 pr-8 py-1.5 font-mono text-xs text-coal placeholder:text-[#8C94A0] focus:outline-none focus:bg-white focus:shadow-[2px_2px_0_0_#12151A] transition-all"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCloudPassword(!showCloudPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8C94A0] hover:text-coal cursor-pointer"
+                            tabIndex={-1}
+                            title={showCloudPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showCloudPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -1088,13 +1103,24 @@ export default function App() {
                   {currentProviderConfig.requiresKey && (
                     <div>
                       <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Key</span>
-                      <input
-                        type="password"
-                        placeholder={currentProviderConfig.placeholderKey}
-                        value={apiKeyInput}
-                        onChange={(e) => setApiKeyInput(e.target.value)}
-                        className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showApiKey ? 'text' : 'password'}
+                          placeholder={currentProviderConfig.placeholderKey}
+                          value={apiKeyInput}
+                          onChange={(e) => setApiKeyInput(e.target.value)}
+                          className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 pr-6 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKey(!showApiKey)}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 text-paper-faint hover:text-paper-ink cursor-pointer"
+                          tabIndex={-1}
+                          title={showApiKey ? 'Hide key' : 'Show key'}
+                        >
+                          {showApiKey ? <EyeOff size={13} /> : <Eye size={13} />}
+                        </button>
+                      </div>
                     </div>
                   )}
 
