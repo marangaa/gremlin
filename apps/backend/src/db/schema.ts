@@ -203,61 +203,8 @@ export const syncDiaries = pgTable(
   },
   (table) => [primaryKey({ columns: [table.userId, table.date] })],
 );
-
 // ==========================================================
-// 3. Billing & Subscription Tables (Legacy / Reference)
-// ==========================================================
-
-export const customers = pgTable(
-  'customers',
-  {
-    customerId: text('customerId').primaryKey(),
-    userId: text('userId').references(() => user.id, { onDelete: 'cascade' }),
-    email: text('email').notNull(),
-    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index('idx_customers_userId').on(table.userId),
-    index('idx_customers_email').on(table.email),
-  ],
-);
-
-export const subscriptions = pgTable(
-  'subscriptions',
-  {
-    subscriptionId: text('subscriptionId').primaryKey(),
-    customerId: text('customerId')
-      .notNull()
-      .references(() => customers.customerId, { onDelete: 'cascade' }),
-    userId: text('userId').references(() => user.id, { onDelete: 'cascade' }),
-    status: text('status').notNull(),
-    priceId: text('priceId').notNull(),
-    productId: text('productId').notNull(),
-    scheduledChange: timestamp('scheduledChange', { withTimezone: true }),
-    currentBillingPeriodEnd: timestamp('currentBillingPeriodEnd', { withTimezone: true }),
-    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [
-    index('idx_subscriptions_customerId').on(table.customerId),
-    index('idx_subscriptions_userId').on(table.userId),
-    index('idx_subscriptions_status').on(table.status),
-  ],
-);
-
-export const processedWebhooks = pgTable(
-  'processed_webhooks',
-  {
-    eventId: text('eventId').primaryKey(),
-    eventType: text('eventType').notNull(),
-    processedAt: timestamp('processedAt', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [index('idx_processed_webhooks_processedAt').on(table.processedAt)],
-);
-
-// ==========================================================
-// 4. Waitlist Table
+// 3. Waitlist Table
 // ==========================================================
 
 export const waitlist = pgTable(

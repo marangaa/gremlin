@@ -69,7 +69,7 @@ const FAQS: [string, string][] = [
   ],
   [
     'Can I switch companions whenever I want?',
-    'Anytime. You can switch between Sarge, Waifu, Sherlock, Kuro, Sensei, Byte, Pixel, and UFO right inside the extension popup mid-sprint.',
+    'Anytime. You can switch between Sarge, Momo, Sherlock, Kuro, Sensei, Byte, Pixel, and Zeta right inside the extension popup mid-sprint.',
   ],
   [
     'Can I cancel my subscription anytime?',
