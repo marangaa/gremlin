@@ -7,12 +7,14 @@ import {
   userSessionStorage,
   onboardedStorage,
   goalsStorage,
+  notesStorage,
   type OrganismConfig,
   type FocusSprint,
   type OrganismStateData,
   type UserSession,
   type OperatingMode,
   type DecomposedGoal,
+  type SmartPageNote,
 } from '@/lib/storage';
 import { authClient } from '@/lib/auth/client';
 import {
@@ -1032,7 +1034,7 @@ export default function App() {
                                 const missingGoals = all.goals.filter((g) => !localGoals.some((l) => l.id === g.id));
                                 if (missingGoals.length > 0) await goalsStorage.setValue([...localGoals, ...missingGoals]);
                                 const localNotes = await notesStorage.getValue();
-                                const missingNotes = all.notes.filter((n) => !localNotes.some((l) => l.id === n.id));
+                                const missingNotes = all.notes.filter((n) => !localNotes.some((l: SmartPageNote) => l.id === n.id));
                                 if (missingNotes.length > 0) await notesStorage.setValue([...missingNotes, ...localNotes]);
                               }
                             } catch {

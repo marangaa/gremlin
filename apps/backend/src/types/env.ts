@@ -8,7 +8,7 @@ export interface Bindings {
   DATABASE_URL: string;
   /** Secret key used by Better Auth to sign session cookies and tokens. */
   BETTER_AUTH_SECRET: string;
-  /** Canonical base URL of the backend API (e.g., http://localhost:8787). */
+  /** Canonical base URL of the backend API (e.g., http://localhost:8700). */
   BETTER_AUTH_URL?: string;
   /** Frontend web app URL (e.g., http://localhost:5173). */
   FRONTEND_URL?: string;

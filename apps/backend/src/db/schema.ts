@@ -205,7 +205,7 @@ export const syncDiaries = pgTable(
 );
 
 // ==========================================================
-// 3. Paddle Billing & Subscription Tables
+// 3. Billing & Subscription Tables (Legacy / Reference)
 // ==========================================================
 
 export const customers = pgTable(

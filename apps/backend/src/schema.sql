@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS "sync_diaries" (
 );
 
 -- ==========================================================
--- Paddle Billing & Subscription Mirror (paddle-subscription-sync)
+-- Legacy Billing & Subscription Mirror (for historical reference)
 -- ==========================================================
 
 CREATE TABLE IF NOT EXISTS "customers" (

@@ -36,7 +36,7 @@ graph TD
     BackgroundSW -->|Active Sprint & Context + pageSignal| AIReasoning[AI Decision Engine: /lib/ai/engine.ts]
     AIReasoning -->|BYOK: Direct Client Fetch| Gemini[Google AI Studio / OpenAI / Ollama]
     AIReasoning -->|Cloud Mode: Session RPC| EdgeAPI[Backend: apps/backend]
-    EdgeAPI -->|Better Auth + Neon DB| CloudDB[(Neon Serverless Postgres)]
+    EdgeAPI -->|Better Auth + Polar + Neon DB| CloudDB[(Neon Serverless Postgres)]
     
     AIReasoning -->|Decision: State, Remark, Audio| BackgroundSW
     BackgroundSW -->|Typed RPC: sendMessage 'triggerReaction'| ContentScript
@@ -97,7 +97,7 @@ The dynamic import + `import.meta.env.DEV` gate keep the package out of release 
 
 ## 3. Backend & Cloud Architecture (`apps/backend`)
 
-> **Status: LIVE.** The extension ships BYOK by default but Gremlin Cloud is fully wired — inline sign-in in the popup's Model tab, `mode === 'cloud'` evaluation through `/api/sprint/evaluate`, and memory mirroring via `/api/memory/*` (see Memory Loop section). Billing/plan enforcement is the only unbuilt piece.
+> **Status: LIVE.** The extension ships BYOK by default but Gremlin Cloud is fully wired — inline sign-in in the popup's Model tab, `mode === 'cloud'` evaluation through `/api/sprint/evaluate`, memory mirroring via `/api/memory/*` (see Memory Loop section), and full subscription lifecycle management via Polar.sh.
 
 ### Auth & Sessions
 
@@ -125,18 +125,18 @@ Syncing is **account-scoped**: any signed-in human mirrors their episode log and
 | Smart notes | device-only | ✅ mirrored |
 | Diaries | device-only | ✅ today's diary mirrored on finish/reflect |
 
-Local-only without an account: everything stays on-device. Plan-tier enforcement (`free` vs `pro`) is not yet checked server-side — pending billing.
+Local-only without an account: everything stays on-device. Plan-tier enforcement (`free` vs `pro`) is synchronized automatically via Polar.sh customer state webhooks (`onCustomerStateChanged`).
 
 Full sync lives in `/api/memory/*` (`routes/memory.ts` for episodes/profile, `routes/memory.sync.ts` for goals/notes/diary). Push strategy is full-list upsert-by-id/date after every mutation and judged moment; boot-time pull unions missing ids/dates into local storage (server fills gaps, local wins conflicts).
 
 ### Tech Stack
 * **Framework:** [Hono v4](https://hono.dev) deployed on **Cloudflare Workers**.
 * **Database:** [Neon Serverless Postgres](https://neon.tech) via `@neondatabase/serverless` (single memoized pool shared by Better Auth and sprint persistence).
-* **Authentication:** [Better Auth](https://better-auth.com) with email/password and session cookies configured for browser extensions (`chrome-extension://` origins via env-driven allowlists).
+* **Authentication & Billing:** [Better Auth](https://better-auth.com) with email/password and session cookies configured for browser extensions (`chrome-extension://` origins via env-driven allowlists) plus the official `@polar-sh/better-auth` plugin.
   * `session.cookieCache` (5 min signed cookie) avoids a Postgres round trip on every service-worker wake-up.
   * Rate limiting persists in the `rate_limit` table (`storage: 'database'`) — in-memory counters are meaningless across isolates.
   * Client IP resolution uses `cf-connecting-ip`.
-  * Plan tier (`free`/`pro`) lives on `user.additionalFields.plan` with `input: false` so it can only be mutated server-side (billing webhooks/admins).
+  * Plan tier (`free`/`pro`) lives on `user.additionalFields.plan` with `input: false` so it can only be mutated server-side. Integrated with `@polar-sh/better-auth` which triggers `onCustomerStateChanged` and `onOrderPaid` to keep the tier in sync.
 * **AI Ingestion:** [Vercel AI SDK v7](https://sdk.vercel.ai) (`@ai-sdk/google`, `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/groq`). Structured output uses `generateText` + `Output.object({ schema })` (`generateObject` is deprecated). **Zero Fallbacks:** an unconfigured or failing provider surfaces an honest `503` error envelope instead of faking an `on_task` result.
 
 ### Memory Loop & Judge Architecture
@@ -164,10 +164,15 @@ Extension-side sync is opportunistic and local-first (`lib/api/memoryClient.ts`)
 
 ### Cloud API Routes
 * `GET /health`: Health check and status ping.
-* `ALL /api/auth/*`: Better Auth handler (sign-up, sign-in, sign-out, session validation).
+* `ALL /api/auth/*`: Better Auth handler (sign-up, sign-in, sign-out, session validation). Includes native Polar plugin endpoints:
+  * `POST /api/auth/polar/webhooks`: Signature-verified Polar webhook receiver (`POLAR_WEBHOOK_SECRET`). Ingests `customer.state_changed` (reconciles `user.plan` to `pro` or `free`) and `order.paid`.
+  * `POST /api/auth/checkout`: Initiates a Polar checkout session for the $5/mo Pro tier (`POLAR_PRO_PRODUCT_ID`).
+  * `GET /api/auth/customer/portal`: Generates an authenticated Polar Customer Portal session URL for subscription self-management, payment method updates, and invoices.
+  * `GET /api/auth/customer/state`: Fetches cached customer subscription and entitlement state.
 * `GET /api/user/profile`: Authenticated profile incl. plan tier. `PATCH /api/user/profile`: display-name update.
 * `POST /api/sprint/evaluate`: Authenticated cloud proxy for AI reasoning (for Pro subscribers without their own API keys). Request body validated with `@hono/zod-validator`; error envelopes are typed into `hc<AppType>` responses via hono's `ApplyGlobalResponse`.
 * `POST /api/sprint/start` / `GET /api/sprint/current` / `POST /api/sprint/complete`: Cross-device sprint lifecycle persisted in Neon (`sprints` table) — state survives worker eviction, unlike the previous per-isolate in-memory Map.
+* *Note: Legacy `/api/billing` routes were completely deleted; all monetization flows are handled cleanly by Better Auth Polar primitives.*
 
 ### Origin Configuration
 CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker bindings:
@@ -195,7 +200,7 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
 
 ---
 
-## 5. Monetization & Payment Processing Architecture (Paddle)
+## 5. Monetization & Payment Processing Architecture (Polar.sh)
 
 ### Model Strategy
 
@@ -205,36 +210,42 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
 | **Gremlin Pro** | **$5 / month** | Students, knowledge workers, and professionals wanting 1-click zero-setup focus coaching. | Managed cloud evaluation proxy (`/api/sprint/evaluate`), multi-device sync, custom companion tuning. |
 
 ### Unit Economics at $5/Month
-* **Paddle Processing Fee**: 5% + $0.50 per transaction = **$0.75 / month**.
-* **Net Revenue Payout**: **$4.25 / month per subscriber**.
+* **Polar Processing Fee**: 4% + $0.40 per transaction = **$0.60 / month** (significantly cheaper than legacy Merchant-of-Record providers).
+* **Net Revenue Payout**: **$4.40 / month per subscriber (~88% net margin)**.
 * **Evaluation Workload**: ~15 evaluations per active focused hour × 80 hours/month = **~1,200 evaluations/month**.
 * **LLM Inference Cost (per user/month)**:
   * **Google Gemini 2.5 Flash**: ~384k input tokens + ~36k output tokens = **~$0.04 (~4¢/mo)**.
   * **Groq Llama 3.1 8B**: **~$0.02 (~2¢/mo)**.
   * **OpenAI GPT-4o-mini**: **~$0.08 (~8¢/mo)**.
 * **Infrastructure (Cloudflare Workers + Neon)**: **~$0.02 – $0.05/mo**.
-* **Net Profit Margin**: **~$4.15 / user / month (~83% net margin)**.
+* **Net Profit Margin**: **~$4.30 / user / month (~86% net margin)**.
 
-### Paddle Integration Architecture
-Adheres strictly to the agent skills (`paddle-webhooks`, `paddle-subscription-sync`, `paddle-checkout-web`, `paddle-customer-portal`):
+### Polar.sh Integration Architecture
+Powered by the official `@polar-sh/better-auth` integration (backed by `@polar-sh/sdk`), bridging authentication directly with payment rails without custom webhook glue:
 
-1. **Client Checkout (`apps/web/src/lib/paddle.ts`)**:
-   - Initialized via `@paddle/paddle-js` (`initializePaddle`) with dark theme and one-page modal checkout.
-   - Pre-fills authenticated customer email for clean server-side bridging.
-2. **Server SDK & Webhook Ingestion (`apps/backend/src/routes/billing.ts` & `src/lib/paddle.ts`)**:
-   - Built on the official `@paddle/paddle-node-sdk` v3 with `nodejs_compat` on Cloudflare Workers.
-   - Verifies HMAC-SHA256 signature and unmarshals typed events via `paddle.webhooks.unmarshal(rawBody, secret, signature)`.
-   - Returns 200 within 5 seconds for processed events; returns 500 on unmarshal/processing failure to trigger Paddle's automated retry schedule.
-   - Deduplicates incoming deliveries against the `processed_webhooks` ledger table in Neon on `eventId`.
-3. **Clean User Bridging (`paddle-subscription-sync`)**:
-   - Bridges Paddle customers to Better Auth users strictly by lowercase **email** (`user.email == customer.email`).
-   - Idempotently mirrors customer and subscription state to Neon PostgreSQL (`customers` and `subscriptions` tables).
-   - Toggles `user.plan` between `'pro'` and `'free'`.
-4. **Self-Service Customer Portal (`paddle-customer-portal`)**:
-   - Server route `POST /api/billing/portal` mints a time-limited Customer Portal session URL via `paddle.customerPortalSessions.create(customerId, subscriptionIds)`.
-   - Allows users to view past invoices, update payment methods, or cancel subscriptions on Paddle's hosted UI.
-5. **Structured Observability (`apps/backend/src/lib/logger.ts`)**:
-   - Structured JSON logging with ISO timestamps, service identification, and severity levels (`debug`, `info`, `warn`, `error`).
+1. **Better Auth Plugin Suite (`apps/backend/src/lib/auth.ts`)**:
+   - Initialized via `polar({ client, createCustomerOnSignUp: true, use: [checkout(...), portal(), usage(), webhooks(...)] })`.
+   - Automatically provisions a Polar Customer record upon user registration (`createCustomerOnSignUp: true`).
+   - Supports both `sandbox` and `production` environments via the `POLAR_ENV` configuration binding.
+2. **Authoritative Customer State Sync (`customer.state_changed`)**:
+   - Rather than juggling disjointed webhook events for renewals, cancellations, pauses, and payment failures, Polar emits a unified `customer.state_changed` event.
+   - The plugin's `onCustomerStateChanged` hook checks `customer.active_subscriptions.length > 0`:
+     - If active subscriptions exist: updates `user.plan = 'pro'`.
+     - If no active subscriptions remain (cancelled, expired, or past due): reverts `user.plan = 'free'`.
+3. **Instant Order Confirmation (`order.paid`)**:
+   - The `onOrderPaid` hook triggers immediately when checkout completes, ensuring zero latency before the user receives their Pro tier entitlements.
+4. **Self-Service Customer Portal (`portal()`)**:
+   - Mounted at `/api/auth/customer/portal`.
+   - Users can update cards, view invoices/receipts, and cancel or resume subscriptions on Polar's hosted portal without needing custom UI in the extension.
+5. **Standard Webhook Verification**:
+   - Polar webhooks are ingested at `/api/auth/polar/webhooks`.
+   - The plugin handles Standard Webhooks HMAC-SHA256 signature verification natively using `POLAR_WEBHOOK_SECRET` (`whsec_...`).
+6. **Local Development & Sandbox Webhook Forwarding**:
+   - The backend runs locally on port **`8700`** (avoiding Windows Hyper-V NAT dynamic exclusion range `8714–8813`).
+   - Webhooks can be forwarded directly from Polar Sandbox using the Polar CLI:
+     ```bash
+     polar --sandbox webhooks listen --forward-to http://localhost:8700/api/auth/polar/webhooks
+     ```
 
 ---
 
