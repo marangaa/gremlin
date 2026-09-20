@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Check, KeyRound, Zap, MessageSquare } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
-import { authClient } from '../lib/auth';
+import { API_URL, authClient } from '../lib/auth';
 
 /* Paper theme: the deliberate light route on the dark site. */
 /* Featured tier inverts back to dark: an island of the night mode. */
@@ -78,25 +78,118 @@ const FAQS: [string, string][] = [
 ];
 
 export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navigate }) => {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
   const user = session?.user;
-  const userPlan = (user as any)?.plan || 'free';
+  const [profilePlan, setProfilePlan] = useState<'free' | 'pro' | null>(null);
+  const [verifiedPro, setVerifiedPro] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [planNotice, setPlanNotice] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [portalError, setPortalError] = useState<string | null>(null);
+
+  // Strict rule: the session cookie is a hint only. The DB mirror
+  // (GET /api/user/profile) is the fast authority, and Polar
+  // customer.state() is the final verifier — Pro renders ONLY when the
+  // server or Polar confirms an active subscription.
+  useEffect(() => {
+    if (!user) {
+      setProfilePlan(null);
+      setVerifiedPro(false);
+      return;
+    }
+    let cancelled = false;
+    setVerifying(true);
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/user/profile`, { credentials: 'include' });
+        if (!res.ok) return;
+        const body = (await res.json()) as { data?: { plan?: string } };
+        if (cancelled) return;
+        if (body?.data?.plan === 'pro' || body?.data?.plan === 'free') {
+          setProfilePlan(body.data.plan);
+        }
+        // Final verifier: live Polar customer state. Any failure keeps the
+        // previous tier (fail-closed on upgrade, fail-open on downgrade is
+        // handled by the profile mirror above).
+        try {
+          const state = await authClient.customer.state();
+          const subs = (state?.data as { activeSubscriptions?: unknown[] } | undefined)
+            ?.activeSubscriptions;
+          if (!cancelled && Array.isArray(subs)) {
+            setVerifiedPro(subs.length > 0);
+          }
+        } catch {
+          /** Polar unreachable: trust the DB mirror. */
+        }
+      } catch {
+        // Offline / backend down: fall back to session hint below.
+      } finally {
+        if (!cancelled) setVerifying(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // Surface the Polar return-trip (?checkout_id=&success=) exactly once, then
+  // re-verify the tier — the badge flips only when Polar confirms.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true' && params.get('checkout_id')) {
+      setPlanNotice('Checkout complete — confirming your subscription with Polar…');
+      params.delete('checkout_id');
+      params.delete('success');
+      const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+      window.history.replaceState({}, '', clean);
+      void (async () => {
+        try {
+          const state = await authClient.customer.state();
+          const subs = (state?.data as { activeSubscriptions?: unknown[] } | undefined)
+            ?.activeSubscriptions;
+          if (Array.isArray(subs) && subs.length > 0) {
+            setVerifiedPro(true);
+            setProfilePlan('pro');
+            setPlanNotice('Pro Active — subscription confirmed.');
+            if (user?.email) {
+              window.postMessage(
+                {
+                  source: 'gremlin-web',
+                  type: 'GREMLIN_AUTH_SUCCESS',
+                  payload: { user: { ...user, plan: 'pro' } },
+                },
+                '*',
+              );
+            }
+          } else {
+            setPlanNotice('Checkout complete — your Pro subscription is activating. Usually ready within a minute; refresh if the badge lags.');
+          }
+        } catch {
+          setPlanNotice('Checkout complete — your Pro subscription is activating. Usually ready within a minute; refresh if the badge lags.');
+        }
+      })();
+    }
+  }, [user]);
+
+  // Strict: Pro renders ONLY on server confirmation. Session cookie alone
+  // never grants Pro (it can lag webhook flips in either direction).
+  const userPlan: 'free' | 'pro' = profilePlan === 'pro' || verifiedPro ? 'pro' : 'free';
+  const planLoading = sessionPending || verifying;
 
   const handleManageSubscription = async () => {
     setPortalLoading(true);
+    setPortalError(null);
     try {
-      if ((authClient as any).customer?.portal) {
-        const res = await (authClient as any).customer.portal();
-        if (res?.data?.url) {
-          window.location.href = res.data.url;
-        }
+      const res = await authClient.customer.portal();
+      if (res?.data?.url) {
+        window.location.href = res.data.url;
       } else {
-        alert('Customer portal is not available yet.');
+        setPortalError(res?.error?.message || 'Customer portal is not available yet.');
       }
-    } catch (err: any) {
-      alert(err?.message || 'Failed to open customer portal');
+    } catch (err: unknown) {
+      setPortalError(err instanceof Error ? err.message : 'Failed to open customer portal');
     } finally {
       setPortalLoading(false);
     }
@@ -113,19 +206,16 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
     }
 
     setCheckoutLoading(true);
+    setCheckoutError(null);
     try {
-      if ((authClient as any).checkout) {
-        const res = await (authClient as any).checkout({
-          slug: 'pro',
-        });
-        if (res?.data?.url) {
-          window.location.href = res.data.url;
-        }
+      const res = await authClient.checkout({ slug: 'pro' });
+      if (res?.data?.url) {
+        window.location.href = res.data.url;
       } else {
-        alert('Checkout service is currently initializing. Please try again in a moment.');
+        setCheckoutError(res?.error?.message || 'Checkout is not configured yet. Set POLAR_PRO_PRODUCT_ID on the backend.');
       }
-    } catch (err: any) {
-      alert(err?.message || 'Failed to initiate checkout');
+    } catch (err: unknown) {
+      setCheckoutError(err instanceof Error ? err.message : 'Failed to initiate checkout');
     } finally {
       setCheckoutLoading(false);
     }
@@ -145,6 +235,12 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
             </p>
           </Reveal>
         </div>
+
+        {planNotice && (
+          <div className="mt-8 max-w-4xl mx-auto p-4 border-2 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-sm font-mono">
+            {planNotice}
+          </div>
+        )}
 
         <div className="mt-14 max-w-4xl mx-auto grid md:grid-cols-2 gap-8 items-stretch">
           {TIERS.map((tier, i) => (
@@ -214,18 +310,28 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
                       {tier.cta}
                     </button>
                   ) : userPlan === 'pro' ? (
-                    <button
-                      type="button"
-                      onClick={handleManageSubscription}
-                      disabled={portalLoading}
-                      className={
-                        tier.highlight
-                          ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-50'
-                          : PAPER_GHOST_BTN
-                      }
-                    >
-                      {portalLoading ? 'Opening portal...' : 'Manage Subscription →'}
-                    </button>
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-mono text-center text-emerald-700 dark:text-emerald-300 font-bold">
+                        Pro Active — active subscription
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleManageSubscription}
+                        disabled={portalLoading}
+                        className={
+                          tier.highlight
+                            ? 'w-full text-center block px-5 py-3 rounded-none border-2 border-coal bg-accent font-display font-bold text-sm text-coal shadow-[4px_4px_0_0_#12151A] transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-50'
+                            : PAPER_GHOST_BTN
+                        }
+                      >
+                        {portalLoading ? 'Opening portal...' : 'Manage Subscription →'}
+                      </button>
+                      {portalError && (
+                        <p className="text-[11px] font-mono text-center text-red-600 dark:text-red-400">
+                          {portalError}
+                        </p>
+                      )}
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       <button
@@ -240,10 +346,17 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
                       >
                         {checkoutLoading
                           ? 'Starting checkout...'
-                          : !user
-                            ? 'Sign in to get Pro'
-                            : 'Upgrade to Pro — $5/mo'}
+                          : planLoading
+                            ? 'Checking subscription…'
+                            : !user
+                              ? 'Sign in to get Pro'
+                              : 'Upgrade to Pro — $5/mo'}
                       </button>
+                      {checkoutError && (
+                        <p className="text-[11px] font-mono text-center text-red-600 dark:text-red-400">
+                          {checkoutError}
+                        </p>
+                      )}
                       {!user ? (
                         <p className="text-[11px] font-mono text-center text-[#5D6675] dark:text-[#9CA3AF]">
                           Sign in or create account to activate Pro

@@ -26,47 +26,16 @@ import {
   getTodaysEpisodes,
 } from '@/lib/memory/episodeStore';
 import { recordObservation, getProfile, bumpLessons } from '@/lib/memory/focusProfile';
-import { pushEpisodes, pushProfile } from '@/lib/api/memoryClient';
+import { onAccountConnected, pullAndMerge, schedulePush } from '@/lib/sync/engine';
 import { agentOrchestrator } from '@/lib/ai/AgentOrchestrator';
 import { onMessage, sendMessage } from '@/lib/messaging';
 
 /**
- * Account-scoped memory sync — any signed-in human gets their episode log and
- * focus profile mirrored to Gremlin Cloud, INDEPENDENT of evaluation mode.
- * Mode (`self-hosted` vs `cloud`) decides only who runs the LLM. Local-first:
- * every failure is swallowed and nothing waits on the network.
+ * Account sync (PRO ONLY) lives in `@/lib/sync/engine` — one store, one
+ * direction of authority: schedulePush() after local mutations, pullAndMerge()
+ * on sign-in/heartbeat, onAccountConnected() when an account attaches.
+ * Free tier is device-local by design (matches /pricing copy).
  */
-async function isAccountSyncActive(): Promise<boolean> {
-  try {
-    const { userSessionStorage } = await import('@/lib/storage');
-    const session = await userSessionStorage.getValue();
-    return Boolean(session.isLoggedIn);
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Pushes the current goals/notes/today-diary snapshot to the account.
- * Full-list upserts by id/date keep server and device convergent without
- * delta bookkeeping.
- */
-async function mirrorAccountData(): Promise<void> {
-  try {
-    if (!(await isAccountSyncActive())) return;
-    const { pushGoals, pushNotes, pushDiary } = await import('@/lib/api/memoryClient');
-    const [goals, notes, diaries] = await Promise.all([
-      goalsStorage.getValue(),
-      notesStorage.getValue(),
-      diaryStorage.getValue(),
-    ]);
-    await pushGoals(goals.slice(0, 300));
-    await pushNotes(notes.slice(0, 200));
-    if (diaries[0]) await pushDiary(diaries[0].date, diaries[0]);
-  } catch {
-    /** Best-effort mirror — local-first continues on any failure. */
-  }
-}
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 const DEBOUNCE_MS = 600;
@@ -191,41 +160,11 @@ export default defineBackground(() => {
   browser.alarms.create('organismTick', { periodInMinutes: 0.5 });
 
   /**
-   * Boot-time cloud merge: adopt anything the account holds that this device
-   * is missing (profile by freshness; goals/notes/diaries union-by-id/date).
+   * Boot account merge: adopt anything the account holds that this device
+   * is missing (per-record LWW — never blind overwrite), then contribute
+   * local state back. The engine self-throttles pulls.
    */
-  void (async () => {
-    try {
-      if (!(await isAccountSyncActive())) return;
-      const { pullAll, pullProfile } = await import('@/lib/api/memoryClient');
-      const { focusProfileStorage } = await import('@/lib/storage');
-
-      const remote = await pullProfile();
-      if (remote) {
-        const local = await focusProfileStorage.getValue();
-        if ((remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
-          await focusProfileStorage.setValue(remote);
-        }
-      }
-
-      const all = await pullAll();
-      if (!all) return;
-
-      const localGoals = await goalsStorage.getValue();
-      const missingGoals = all.goals.filter((g) => !localGoals.some((l) => l.id === g.id));
-      if (missingGoals.length > 0) await goalsStorage.setValue([...localGoals, ...missingGoals]);
-
-      const localNotes = await notesStorage.getValue();
-      const missingNotes = all.notes.filter((n) => !localNotes.some((l) => l.id === n.id));
-      if (missingNotes.length > 0) await notesStorage.setValue([...missingNotes, ...localNotes]);
-
-      const diaries = await diaryStorage.getValue();
-      const missingDiaries = all.diaries.filter((d) => !diaries.some((l) => l.date === d.date));
-      if (missingDiaries.length > 0) await diaryStorage.setValue([...diaries, ...missingDiaries]);
-    } catch {
-      /** Cloud unreachable — local-first continues unaffected. */
-    }
-  })();
+  void onAccountConnected();
 
   browser.idle.setDetectionInterval(60);
   browser.idle.onStateChanged.addListener((newState) => {
@@ -265,6 +204,8 @@ export default defineBackground(() => {
       if (!isHumanPresent()) return;
       await maybeRunNightlyDistill();
       await evaluateCurrentState();
+      /** Keep the account mirror convergent while the worker is alive. */
+      void pullAndMerge();
     }
   });
 
@@ -324,9 +265,10 @@ export default defineBackground(() => {
       targetMinutes: data.targetMinutes,
       startedAt: Date.now(),
       status: 'active',
+      isContinuousFlow: true,
     });
 
-    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
+    const [activeTab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
 
     if (activeTab?.id) {
       try {
@@ -343,6 +285,11 @@ export default defineBackground(() => {
         /** Tab not injectable */
       }
     }
+
+    // Trigger an immediate initial observation cycle so telemetry and reasoning update promptly
+    setTimeout(() => {
+      void evaluateCurrentState(true);
+    }, 800);
   });
 
   onMessage('stopSprint', async () => {
@@ -366,7 +313,7 @@ export default defineBackground(() => {
       startedAt: 0,
       status: 'idle',
     });
-    void mirrorAccountData();
+    void schedulePush();
   });
 
   onMessage('pokeOrganism', async () => {
@@ -386,7 +333,7 @@ export default defineBackground(() => {
    */
   onMessage('testScreenEffect', async ({ data }) => {
     try {
-      const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
+      const [activeTab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
       if (activeTab?.id != null) {
         await sendMessage('testScreenEffect', { organismId: data.organismId }, activeTab.id);
       }
@@ -439,12 +386,12 @@ export default defineBackground(() => {
 
     return { note: newNote };
   });
-  void mirrorAccountData();
+  void schedulePush();
 
   onMessage('deletePageNote', async ({ data }) => {
     const notes: SmartPageNote[] = await notesStorage.getValue();
     await notesStorage.setValue(notes.filter((n: SmartPageNote) => n.id !== data.id));
-    void mirrorAccountData();
+    void schedulePush();
   });
 
   onMessage('toggleGoal', async ({ data }) => {
@@ -462,12 +409,12 @@ export default defineBackground(() => {
     });
     await goalsStorage.setValue(updated);
   });
-  void mirrorAccountData();
+  void schedulePush();
 
   onMessage('deleteGoal', async ({ data }) => {
     const goals: DecomposedGoal[] = await goalsStorage.getValue();
     await goalsStorage.setValue(goals.filter((g: DecomposedGoal) => g.id !== data.id));
-    void mirrorAccountData();
+    void schedulePush();
   });
 
   onMessage('addGoal', async ({ data }) => {
@@ -485,7 +432,7 @@ export default defineBackground(() => {
     await goalsStorage.setValue(updated);
     return { goal: newGoal };
   });
-  void mirrorAccountData();
+  void schedulePush();
 
   onMessage('getTodayDiary', async () => {
     const diary = await getOrCreateTodayDiary();
@@ -531,10 +478,11 @@ async function evaluateCurrentState(force = false): Promise<{
 
     const sprint = await sprintStorage.getValue();
     const organismState = await organismStateStorage.getValue();
+    await eventTracker.refreshActiveTab();
     const ctx = eventTracker.getContext();
 
-    /** Check if sprint completed */
-    if (sprint.status === 'active' && sprint.startedAt > 0) {
+    /** Check if sprint completed (only for timed sprints with an explicit positive duration) */
+    if (sprint.status === 'active' && sprint.startedAt > 0 && typeof sprint.targetMinutes === 'number' && sprint.targetMinutes > 0) {
       const elapsedMinutes = (Date.now() - sprint.startedAt) / 60000;
       if (elapsedMinutes >= sprint.targetMinutes) {
         await sprintStorage.setValue({ ...sprint, status: 'completed' });
@@ -580,101 +528,99 @@ async function evaluateCurrentState(force = false): Promise<{
       hour: new Date().getHours(),
     });
 
+    const isOffTask =
+      decision.status === 'distracted' || decision.status === 'exploring_tangent';
+    const kind = decision.intervention ?? 'observe';
+    const isActualIntervention = isOffTask && kind !== 'observe';
 
-    if (decision.shouldReact || force) {
-      if (decision.triggerEffect || decision.state === 'annoyed' || decision.state === 'suspicious') {
-        organismState.divergenceCountToday += 1;
-        await logActivity('divergence', ctx.currentDomain, `Detour on ${ctx.currentDomain}`);
-        void recordEpisode({
-          type: 'divergence',
-          domain: ctx.currentDomain,
-          detail: decision.remark ?? `Detour on ${ctx.currentDomain}`,
-          ...(sprint.goal ? { goalTitle: sprint.goal } : {}),
-        });
-      } else if (decision.state === 'celebrating') {
-        organismState.focusMinutesToday += 15;
-        await logActivity('focus', ctx.currentDomain, 'Focus streak milestone');
-      }
+    if (decision.state === 'celebrating') {
+      organismState.focusMinutesToday += 15;
+      await logActivity('focus', ctx.currentDomain, 'Focus streak milestone');
+    } else if (isActualIntervention) {
+      organismState.divergenceCountToday += 1;
+      await logActivity('divergence', ctx.currentDomain, `Detour on ${ctx.currentDomain}`);
+      void recordEpisode({
+        type: 'divergence',
+        domain: ctx.currentDomain,
+        detail: decision.remark ?? `Detour on ${ctx.currentDomain}`,
+        ...(sprint.goal ? { goalTitle: sprint.goal } : {}),
+      });
 
-      /**
-       * MEMORY LOOP — the judge spoke: open an intervention episode and
-       * remember its kind so outcomes can close it later.
-       */
-      const kind = decision.intervention ?? 'nudge';
       const level = organismState.escalationLevel ?? 0;
-      if (kind !== 'observe') {
-        await openIntervention({
-          kind,
-          level,
-          remark: decision.remark,
-          domain: ctx.currentDomain,
-          ...(sprint.goal ? { goalTitle: sprint.goal } : {}),
-        });
-      }
+      await openIntervention({
+        kind,
+        level,
+        remark: decision.remark,
+        domain: ctx.currentDomain,
+        ...(sprint.goal ? { goalTitle: sprint.goal } : {}),
+      });
+
       organismState.escalationLevel = Math.max(
         0,
-        Math.min(3, level + (kind === 'observe' ? -1 : (decision.escalationDelta ?? 1))),
+        Math.min(3, level + (decision.escalationDelta ?? 1)),
       );
-      if (kind !== 'observe') {
-        organismState.state = decision.state;
+      organismState.state = decision.state;
+      organismState.lastRemark = decision.remark;
+      organismState.lastRemarkAt = Date.now();
+    } else {
+      // User is on-task or companion is observing silently — NEVER attack or roast the page.
+      organismState.escalationLevel = Math.max(0, (organismState.escalationLevel ?? 0) - 1);
+      organismState.state = decision.state;
+      if (force && decision.remark) {
         organismState.lastRemark = decision.remark;
         organismState.lastRemarkAt = Date.now();
-      } else {
-        organismState.state = decision.state;
       }
-      await organismStateStorage.setValue(organismState);
+    }
 
-      void (async () => {
-        if (await isAccountSyncActive()) {
-          const eps = await getTodaysEpisodes();
-          if (eps[0]) await pushEpisodes([eps[0]!]);
-          await pushProfile(await getProfile());
-        }
-      })();
+    await organismStateStorage.setValue(organismState);
+    void schedulePush();
 
-      const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
+    const [activeTab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
 
-      if (activeTab?.id && kind !== 'observe') {
-        try {
+    if (activeTab?.id) {
+      try {
+        if (isActualIntervention) {
+          // Off-task intervention: in-place roast replacement or screen heist
+          const triggerEffect =
+            (kind === 'callout' || kind === 'reset' || Boolean(decision.triggerEffect)) &&
+            kind !== 'nudge';
+
           await sendMessage(
             'triggerReaction',
             {
               state: decision.state,
               message: decision.remark,
               intensity: decision.intensity,
-              triggerEffect: decision.triggerEffect,
+              triggerEffect,
+              interventionKind: kind,
             },
             activeTab.id,
           );
-        } catch {
-          /** Tab might not be injectable */
+        } else if (force && decision.remark) {
+          // Ambient / manual poke: companion reacts with its state and speech bubble only, ZERO page surgery
+          await sendMessage(
+            'triggerReaction',
+            {
+              state: decision.state,
+              message: decision.remark,
+              intensity: 0,
+              triggerEffect: false,
+              interventionKind: 'observe',
+            },
+            activeTab.id,
+          );
         }
-      }
-
-      return {
-        triggered: kind !== 'observe',
-        message: decision.remark,
-        state: decision.state,
-      };
-    }
-
-    /**
-     * OUTCOME WATCHER — the judge stayed silent this cycle; if that silence
-     * follows an intervention and the human is back on task, close the loop.
-     */
-    if (onTask) {
-      const closed = await closeOpenOutcomes({ effective: true });
-      if (closed > 0) {
-        organismState.escalationLevel = Math.max(0, (organismState.escalationLevel ?? 0) - 1);
+      } catch {
+        /** Tab might not be injectable */
       }
     }
 
-    /**
-     * Persist observation timestamp even when no reaction fires so the
-     * throttle window reflects actual evaluation cadence.
-     */
     await organismStateStorage.setValue(organismState);
-    return { triggered: false };
+    return {
+      triggered: isActualIntervention || (force && Boolean(decision.remark)),
+      message: decision.remark,
+      state: decision.state,
+    };
   } catch (err) {
     console.warn('[Gremlin Background] State evaluation error:', err);
     return { triggered: false };

@@ -49,6 +49,8 @@ export interface EffectContext {
   secondaryColor: string;
   /** Chaos slider, 0 (calm) to 1 (unhinged). Scales opacity, counts, amplitude. */
   intensity: number;
+  /** The generated LLM roast or remark for this intervention, if applicable. */
+  roast?: string;
   /**
    * Picks a random readable word currently visible in the page (main
    * document). Returns null on restrictive pages (iframes, PDFs, about:).

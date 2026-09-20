@@ -11,7 +11,7 @@ import type {
   FocusProfile,
 } from '@gremlin/shared';
 
-export type OperatingMode = 'self-hosted' | 'cloud';
+export type OperatingMode = 'byok' | 'cloud' | 'self-hosted';
 
 export interface OrganismConfig {
   mode: OperatingMode;
@@ -21,6 +21,11 @@ export interface OrganismConfig {
 
   // BYOK Settings
   provider?: SupportedAiProvider;
+  byokEndpoint?: string;
+  byokApiKey?: string;
+  byokModel?: string;
+
+  // Backward compatibility aliases
   selfHostedEndpoint?: string;
   selfHostedApiKey?: string;
   selfHostedModel?: string;
@@ -39,10 +44,30 @@ export interface OrganismConfig {
 
 export interface FocusSprint {
   goal: string;
-  targetMinutes: number;
+  targetMinutes?: number;
   startedAt: number;
   status: 'idle' | 'active' | 'paused' | 'completed';
   isContinuousFlow?: boolean;
+}
+
+export interface FocusScorePoint {
+  timestamp: number;
+  score: number; // 0-100 focus %
+  status: import('@gremlin/shared').AgentFocusStatus;
+  domain: string;
+}
+
+export interface AgentTelemetryData {
+  isEvaluating: boolean;
+  lastEvaluatedAt: number;
+  nextEvaluationAt: number;
+  lastStatus?: import('@gremlin/shared').AgentFocusStatus;
+  lastScore?: number; // 0-100
+  lastReasoning?: string;
+  lastRemark?: string;
+  lastDomain?: string;
+  latencyMs?: number;
+  history: FocusScorePoint[];
 }
 
 export interface OrganismStateData {
@@ -59,7 +84,7 @@ export interface OrganismStateData {
 
 export interface UserSession {
   userId?: string;
-  token?: string;
+
   plan: 'free' | 'pro';
   email?: string;
   isLoggedIn?: boolean;
@@ -91,14 +116,17 @@ export type {
 // ================= STORAGE DEFINITIONS =================
 export const configStorage = storage.defineItem<OrganismConfig>('local:organismConfig', {
   fallback: {
-    mode: 'self-hosted',
+    mode: 'byok',
     organismId: 'Sarge',
     name: 'Sarge',
     enabled: true,
     provider: 'google',
+    byokEndpoint: 'http://localhost:11434/v1',
+    byokApiKey: '',
+    byokModel: '',
     selfHostedEndpoint: 'http://localhost:11434/v1',
     selfHostedApiKey: '',
-    selfHostedModel: 'gemini-2.5-flash',
+    selfHostedModel: '',
     soundEnabled: true,
     volume: 0.6,
     effectsEnabled: true,
@@ -111,9 +139,18 @@ export const configStorage = storage.defineItem<OrganismConfig>('local:organismC
 export const sprintStorage = storage.defineItem<FocusSprint>('local:sprint', {
   fallback: {
     goal: '',
-    targetMinutes: 25,
     startedAt: 0,
     status: 'idle',
+    isContinuousFlow: true,
+  },
+});
+
+export const telemetryStorage = storage.defineItem<AgentTelemetryData>('local:agentTelemetry', {
+  fallback: {
+    isEvaluating: false,
+    lastEvaluatedAt: 0,
+    nextEvaluationAt: 0,
+    history: [],
   },
 });
 
@@ -182,13 +219,42 @@ export const focusProfileStorage = storage.defineItem<FocusProfile>('local:focus
 });
 
 /**
- * Best-effort sync mirror of the profile so identity survives reinstalls.
- * chrome.storage.sync persists per Google-account profile; quotas are tight
- * (single item < 8KB), which the small profile comfortably satisfies.
+ * Device identity — persisted per extension install so every sync payload
+ * carries provenance and the server can maintain a device roster.
+ * WXT `local:` storage survives browser restarts; a UUID is generated once
+ * per install and regenerated only on reinstall (fresh roster entry, old one
+ * ages out server-side).
  */
-export const focusProfileSyncStorage = storage.defineItem<FocusProfile>('sync:focusProfile', {
-  fallback: FOCUS_PROFILE_FALLBACK,
+export const deviceIdStorage = storage.defineItem<string>('local:deviceId', {
+  fallback: '',
 });
+
+export const deviceNameStorage = storage.defineItem<string>('local:deviceName', {
+  fallback: '',
+});
+
+/** Returns the install-stable device identity, creating it on first use. */
+export async function getDeviceIdentity(): Promise<{ deviceId: string; deviceName: string }> {
+  let id = await deviceIdStorage.getValue();
+  if (!id) {
+    id = crypto.randomUUID();
+    await deviceIdStorage.setValue(id);
+  }
+  let name = await deviceNameStorage.getValue();
+  if (!name) {
+    const ua = navigator.userAgent;
+    const browserName = /Edg\//.test(ua)
+      ? 'Edge'
+      : /OPR\//.test(ua)
+        ? 'Opera'
+        : /Chrome\//.test(ua)
+          ? 'Chrome'
+          : 'Browser';
+    name = `${browserName} on ${navigator.platform || 'Unknown OS'}`;
+    await deviceNameStorage.setValue(name);
+  }
+  return { deviceId: id, deviceName: name };
+}
 
 
 

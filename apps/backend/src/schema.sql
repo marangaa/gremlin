@@ -168,4 +168,13 @@ CREATE TABLE IF NOT EXISTS "sync_diaries" (
   PRIMARY KEY ("userId", "date")
 );
 
+CREATE TABLE IF NOT EXISTS "sync_devices" (
+  "userId" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+  "deviceId" TEXT NOT NULL,
+  "name" TEXT,
+  "lastSeenAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  PRIMARY KEY ("userId", "deviceId")
+);
+
 

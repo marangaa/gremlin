@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { eq, and, desc } from 'drizzle-orm';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, requirePro } from '../middleware/auth';
 import type { AppEnv } from '../types/env';
 import { runAgentEvaluation } from '../lib/agent';
 import { getDb, sprints, mapSprintRow } from '../lib/db';
@@ -58,10 +59,11 @@ const smartPageNoteSchema = z.object({
   timestamp: z.number(),
 });
 
+import { getAuth } from '../lib/auth';
+
 const evaluateSchema = z.object({
   sprint: z.object({
     goal: z.string().max(200),
-    targetMinutes: z.number().min(1).max(180),
     startedAt: z.number(),
     status: z.enum(['idle', 'active', 'paused', 'completed']),
     isContinuousFlow: z.boolean().optional(),
@@ -79,24 +81,54 @@ const evaluateSchema = z.object({
 
 const startSprintSchema = z.object({
   goal: z.string().max(100).default('Deep Work Sprint'),
-  targetMinutes: z.coerce.number().min(1).max(180).default(25),
+  targetMinutes: z.coerce.number().optional().default(0),
   organismId: z.enum(['Sarge', 'waifu', 'sherlock', 'kuro', 'sensei', 'byte', 'pixel', 'ufo']).optional(),
 });
 
 /**
  * Focus Sprint Lifecycle, Evaluation, and Telemetry Router.
- * Strictly guarded by Better Auth session middleware.
  *
- * Sprints are persisted in Neon so state survives worker eviction and
- * syncs across devices; the previous per-isolate in-memory Map could not.
+ * Evaluation route supports:
+ * 1. Local Development (localhost) - zero-gate instant dev evaluations via server dev keys.
+ * 2. BYOK (Free Tier) - evaluates via user-provided API key passed in headers.
+ * 3. Gremlin Pro ($5/mo) - evaluates via server's hosted Gemini pool.
  */
 export const sprintRoutes = new Hono<AppEnv>()
-  .use('*', requireAuth)
-
   /**
    * Evaluates the rolling browsing context window using server-side AI SDK agent reasoning.
    */
   .post('/evaluate', zValidator('json', evaluateSchema), async (c) => {
+    // 1. Check for client-supplied BYOK headers
+    const byokKey = c.req.header('x-byok-key')?.trim();
+    const byokProvider = c.req.header('x-byok-provider')?.trim();
+    const byokModel = c.req.header('x-byok-model')?.trim();
+    const byokEndpoint = c.req.header('x-byok-endpoint')?.trim();
+
+    const isByok = Boolean(byokKey) || byokProvider === 'ollama';
+
+    // Strict gate: Must either supply client BYOK credentials or have an authenticated Pro subscription.
+    // Zero dev bypass or server-key fallback.
+    let isPro = false;
+    if (!isByok) {
+      try {
+        const auth = getAuth(c.env);
+        const session = await auth.api.getSession({
+          headers: c.req.raw.headers,
+        });
+        if (session?.user && (session.user as any).plan === 'pro') {
+          isPro = true;
+        }
+      } catch {
+        isPro = false;
+      }
+
+      if (!isPro) {
+        throw new HTTPException(403, {
+          message: 'Add your API key (BYOK) in Settings or upgrade to Gremlin Pro ($5/mo) for cloud AI.',
+        });
+      }
+    }
+
     const payload = c.req.valid('json');
 
     // Sanitize payload: bound excerpt length & array sizes to protect LLM context & token costs
@@ -108,7 +140,18 @@ export const sprintRoutes = new Hono<AppEnv>()
     }
     payload.timeline = payload.timeline.slice(0, 15);
 
-    const evaluation = await runAgentEvaluation(payload, c.env);
+    const evaluation = await runAgentEvaluation(
+      payload as any,
+      c.env,
+      isByok
+        ? {
+            provider: byokProvider,
+            apiKey: byokKey,
+            model: byokModel,
+            endpoint: byokEndpoint,
+          }
+        : undefined,
+    );
 
     return c.json({
       success: true as const,
@@ -116,6 +159,10 @@ export const sprintRoutes = new Hono<AppEnv>()
       evaluatedAt: Date.now(),
     });
   })
+
+  .use('/current', requireAuth)
+  .use('/start', requireAuth)
+  .use('/complete', requireAuth)
 
   /**
    * Retrieves the active focus sprint for the current authenticated user.

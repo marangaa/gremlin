@@ -4,6 +4,7 @@ import {
   configStorage,
   onboardedStorage,
   organismStateStorage,
+  userSessionStorage,
   type OrganismConfig,
 } from '@/lib/storage';
 import { onMessage, sendMessage } from '@/lib/messaging';
@@ -15,6 +16,40 @@ export default defineContentScript({
   async main(ctx) {
     /** Only mount on top-level window, never inside embedded iframes */
     if (window.self !== window.top) return;
+
+    /**
+     * Web-to-Extension Authentication Bridge.
+     * Listens for successful login/signup events broadcast from the Gremlin Web app
+     * (e.g. localhost:5173 or production domain) and synchronizes user session storage.
+     */
+    ctx.addEventListener(window, 'message', async (event: MessageEvent) => {
+      if (event.source !== window) return;
+      if (event.data?.source === 'gremlin-web' && event.data?.type === 'GREMLIN_AUTH_SUCCESS') {
+        const user = event.data.payload?.user;
+        if (user?.email) {
+          const plan = user.plan === 'pro' ? 'pro' : 'free';
+          await userSessionStorage.setValue({
+            isLoggedIn: true,
+            email: user.email,
+            userId: user.id,
+            plan,
+          });
+          const cfg = await configStorage.getValue();
+          await configStorage.setValue({
+            ...cfg,
+            mode: 'cloud',
+          });
+          await onboardedStorage.setValue(true);
+
+          try {
+            const { onAccountConnected } = await import('@/lib/sync/engine');
+            await onAccountConnected();
+          } catch {
+            // Non-blocking sync error
+          }
+        }
+      }
+    });
 
     let controller: OrganismController | null = null;
     const uiHolder: { ui: { mount: () => void; remove: () => void } | null } = { ui: null };
@@ -128,14 +163,33 @@ export default defineContentScript({
        */
       onMessage('triggerReaction', ({ data }) => {
         if (!controller || ctx.isInvalid) return;
-        const hasEffect = Boolean(data.triggerEffect);
-        controller.setState(data.state, hasEffect);
-        if (data.message) {
-          if (hasEffect) {
-            // Queue roast to deliver after character finishes physical heist and docks
-            controller.queueRemark(data.message);
+
+        const isIntervention = Boolean(
+          data.interventionKind &&
+            data.interventionKind !== 'observe' &&
+            data.message?.trim(),
+        );
+
+        if (isIntervention && data.message) {
+          // Dynamic 50/50 randomized split between:
+          // 1. In-place text roast replacement in the DOM (pure roast)
+          // 2. Character physical screen heist (with roast delivered inside or alongside)
+          const pickScreenHeist = Math.random() < 0.5;
+
+          if (pickScreenHeist) {
+            // Screen heist: companion flies to target and performs signature heist,
+            // while passing the LLM roast to be pinned/stamped/displayed.
+            controller.setState(data.state, true, data.message);
           } else {
-            controller.showRemark(data.message);
+            // Roast replacement: seamlessly swaps the distraction text with the LLM roast.
+            controller.setState(data.state, false);
+            controller.triggerRoast(data.message);
+          }
+        } else {
+          // Non-intervention message (e.g. manual sprint start confirmation or poke)
+          controller.setState(data.state, Boolean(data.triggerEffect));
+          if (data.message) {
+            controller.showRemark(data.message, 3000);
           }
         }
       });

@@ -8,6 +8,7 @@ import {
   onboardedStorage,
   goalsStorage,
   notesStorage,
+  telemetryStorage,
   type OrganismConfig,
   type FocusSprint,
   type OrganismStateData,
@@ -15,6 +16,7 @@ import {
   type OperatingMode,
   type DecomposedGoal,
   type SmartPageNote,
+  type AgentTelemetryData,
 } from '@/lib/storage';
 import { authClient } from '@/lib/auth/client';
 import {
@@ -24,10 +26,16 @@ import {
 import { CHARACTER_SKINS } from '@/lib/personalities/skins';
 import { sendMessage } from '@/lib/messaging';
 import { soundSynth } from '@/lib/audio/soundEngine';
-import { WEB_APP_URL } from '@/lib/api/client';
-import { SUPPORTED_PROVIDERS, type SupportedAiProvider } from '@/lib/ai/providers';
+import { API_BASE_URL, WEB_APP_URL } from '@/lib/api/client';
+import {
+  SUPPORTED_PROVIDERS,
+  fetchLiveProviderModels,
+  type SupportedAiProvider,
+  type DiscoveredModelOption,
+} from '@/lib/ai/providers';
 import { AnimatedSprite } from './components/AnimatedSprite';
 import { GoalStack } from './components/GoalStack';
+import { FocusTelemetryHUD } from './components/FocusTelemetryHUD';
 import {
   Volume2,
   VolumeX,
@@ -42,6 +50,7 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  RefreshCw,
 } from 'lucide-react';
 import './App.css';
 
@@ -67,14 +76,17 @@ const PROVIDER_META: Record<SupportedAiProvider, { blurb: string }> = {
 const PROVIDER_ORDER: SupportedAiProvider[] = ['google', 'anthropic', 'openai', 'groq', 'ollama'];
 
 const DEFAULT_CONFIG: OrganismConfig = {
-  mode: 'self-hosted',
+  mode: 'byok',
   organismId: 'Sarge',
   name: 'Sarge',
   enabled: true,
   provider: 'google',
+  byokEndpoint: 'http://localhost:11434/v1',
+  byokApiKey: '',
+  byokModel: '',
   selfHostedEndpoint: 'http://localhost:11434/v1',
   selfHostedApiKey: '',
-  selfHostedModel: 'gemini-2.5-flash',
+  selfHostedModel: '',
   xFrac: 0.9,
   yFrac: 0.82,
   soundEnabled: true,
@@ -84,10 +96,10 @@ const DEFAULT_CONFIG: OrganismConfig = {
 
 const DEFAULT_SPRINT: FocusSprint = {
   goal: '',
-  targetMinutes: 25,
+  targetMinutes: 0,
   startedAt: 0,
   status: 'idle',
-  isContinuousFlow: false,
+  isContinuousFlow: true,
 };
 
 const DEFAULT_ORGANISM_STATE: OrganismStateData = {
@@ -99,52 +111,6 @@ const DEFAULT_ORGANISM_STATE: OrganismStateData = {
   contextSwitchesToday: 0,
   escalationLevel: 0,
   lastObservationAt: 0,
-};
-
-const CHARACTER_PREVIEW_INFO: Record<
-  OrganismId,
-  { label: string; firingLabel: string; description: string }
-> = {
-  ufo: {
-    label: '▶ Preview Zeta Abduction',
-    firingLabel: '◈ Abducting text… look at page',
-    description: 'Zeta deploys a tractor vortex, swirling letters into its saucer hatch.',
-  },
-  Sarge: {
-    label: '▶ Preview Sarge Redaction',
-    firingLabel: '◈ Redacting… look at page',
-    description: 'Sarge marches to distraction text and blacks it out with solid redaction bars.',
-  },
-  byte: {
-    label: '▶ Preview Byte De-Rezz',
-    firingLabel: '◈ De-rezzing… look at page',
-    description: 'Byte sweeps an analytical laser, glitching and de-rezzing letters into machine code.',
-  },
-  pixel: {
-    label: '▶ Preview Pixel Mischief',
-    firingLabel: '◈ Swiping… look at page',
-    description: 'Pixel swats text off the line to tumble to the floor or 8-bit shatters it.',
-  },
-  sherlock: {
-    label: '▶ Preview Sherlock Investigation',
-    firingLabel: '◈ Investigating… look at page',
-    description: 'Sherlock inspects text with an optical lens, flash, and hazard cordon.',
-  },
-  kuro: {
-    label: '▶ Preview Kuro Severance',
-    firingLabel: '◈ Slashing… look at page',
-    description: 'Kuro dashes across the text, slicing it apart with an RGB razor blade cut.',
-  },
-  sensei: {
-    label: '▶ Preview Sensei Dissolution',
-    firingLabel: '◈ Calming… look at page',
-    description: 'Sensei radiates ensō water ripples, dissolving words into tranquil mist.',
-  },
-  waifu: {
-    label: '▶ Preview Momo Sticky Note',
-    firingLabel: '◈ Pinning note… look at page',
-    description: 'Momo flutters down and pins a reminder sticky note over distraction text.',
-  },
 };
 
 export default function App() {
@@ -170,13 +136,41 @@ export default function App() {
   const [selectedProvider, setSelectedProvider] = useState<SupportedAiProvider>('google');
   const [endpointInput, setEndpointInput] = useState('http://localhost:11434/v1');
   const [apiKeyInput, setApiKeyInput] = useState('');
-  const [modelInput, setModelInput] = useState('gemini-2.5-flash');
+  const [modelInput, setModelInput] = useState('');
+  const [availableModels, setAvailableModels] = useState<DiscoveredModelOption[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [testStatus, setTestStatus] = useState<{ loading: boolean; ok?: boolean; message?: string } | null>(null);
   const [saveFeedback, setSaveFeedback] = useState(false);
-  const [fxPreview, setFxPreview] = useState<'idle' | 'firing' | 'fired'>('idle');
   const [settingsTab, setSettingsTab] = useState<'cloud' | 'byok'>('byok');
 
+  const [telemetry, setTelemetry] = useState<AgentTelemetryData>({
+    isEvaluating: false,
+    lastEvaluatedAt: 0,
+    nextEvaluationAt: 0,
+    history: [],
+  });
+
   const [now, setNow] = useState(() => Date.now());
+
+  const loadModelsForProvider = async (provider: SupportedAiProvider, key?: string, endpoint?: string) => {
+    if (provider !== 'ollama' && !key?.trim()) {
+      setAvailableModels([]);
+      return;
+    }
+    setIsLoadingModels(true);
+    try {
+      const models = await fetchLiveProviderModels({
+        provider,
+        apiKey: key?.trim() || undefined,
+        endpoint: endpoint?.trim() || undefined,
+      });
+      setAvailableModels(models);
+    } catch {
+      setAvailableModels([]);
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -188,14 +182,18 @@ export default function App() {
       userSessionStorage,
       onboardedStorage,
       goalsStorage,
-    ]).then(([c, s, st, u, o, g]) => {
+      telemetryStorage,
+    ]).then(([c, s, st, u, o, g, tel]) => {
       if (!alive || !c || !s || !st || !u || !o || !g) return;
       const cfg = c.value as OrganismConfig;
       setConfig(cfg);
       setSelectedProvider(cfg.provider || 'google');
-      setEndpointInput(cfg.selfHostedEndpoint || 'http://localhost:11434/v1');
-      setApiKeyInput(cfg.selfHostedApiKey || '');
-      setModelInput(cfg.selfHostedModel || SUPPORTED_PROVIDERS[cfg.provider || 'google']?.defaultModel || 'gemini-2.5-flash');
+      const endpoint = cfg.byokEndpoint || cfg.selfHostedEndpoint || 'http://localhost:11434/v1';
+      const apiKey = cfg.byokApiKey || cfg.selfHostedApiKey || '';
+      const model = cfg.byokModel || cfg.selfHostedModel || '';
+      setEndpointInput(endpoint);
+      setApiKeyInput(apiKey);
+      setModelInput(model);
       soundSynth.setVolume(cfg.volume ?? 0.6);
       soundSynth.setMuted(!cfg.soundEnabled);
       setSprint(s.value as FocusSprint);
@@ -204,6 +202,12 @@ export default function App() {
       setSession(userSess);
       setHasOnboarded(o.value as boolean);
       setGoals(g.value as DecomposedGoal[]);
+      if (tel?.value) {
+        setTelemetry(tel.value as AgentTelemetryData);
+      }
+      if (apiKey || cfg.provider === 'ollama') {
+        void loadModelsForProvider(cfg.provider || 'google', apiKey, endpoint);
+      }
       if (cfg.mode === 'cloud' || userSess?.isLoggedIn) {
         setSettingsTab('cloud');
       }
@@ -215,20 +219,70 @@ export default function App() {
     const unwatchSession = userSessionStorage.watch((u: UserSession | null) => u && setSession(u));
     const unwatchOnboard = onboardedStorage.watch((o: boolean | null) => o !== null && setHasOnboarded(o));
     const unwatchGoals = goalsStorage.watch((g: DecomposedGoal[] | null) => g && setGoals(g));
+    const unwatchTelemetry = telemetryStorage.watch((t: AgentTelemetryData | null) => t && setTelemetry(t));
 
     /**
      * Shared-cookie auto-detect: the extension's service worker sends the
      * browser's cookie jar to the backend, so a session created on the
      * WEBSITE is visible here too. Probe once per popup open and adopt it
      * silently — this makes web sign-in effectively sign the extension in.
+     *
+     * Strict tier rule: local storage is NEVER trusted for the plan badge.
+     * A fresh signup defaults to `free` until a server-confirmed source
+     * (profile fetch below, then Polar customer.state) says otherwise.
      */
     void authClient
       .getSession()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!alive || !data?.user) return;
+        const email = data.user.email;
+        // Session additionalFields carry the plan hint; fall back to 'free'.
+        const hinted = (data.user as { plan?: unknown }).plan === 'pro' ? 'pro' : 'free';
         setSession((prev) =>
-          prev.isLoggedIn ? prev : { plan: 'pro', isLoggedIn: true, email: data.user.email },
+          prev.isLoggedIn
+            ? prev
+            : { plan: hinted, isLoggedIn: true, email, userId: data.user.id },
         );
+        try {
+          const stored = await userSessionStorage.getValue();
+          if (!stored?.isLoggedIn) {
+            await userSessionStorage.setValue({
+              plan: hinted,
+              isLoggedIn: true,
+              email,
+              userId: data.user.id,
+            });
+          }
+        } catch {
+          /** Best-effort persist; in-memory session above is enough for this open. */
+        }
+
+        /**
+         * Authoritative plan re-sync: the session cookie hint can lag webhook
+         * flips, so confirm the tier against GET /api/user/profile (server reads
+         * the webhook-reconciled `user.plan` mirror). Only queried when authenticated.
+         */
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/user/profile`, {
+            credentials: 'include',
+            headers: { 'x-requested-with': 'Gremlin-Browser-Extension' },
+          });
+          if (!alive || !res.ok) return;
+          const body = (await res.json()) as {
+            data?: { plan?: string; email?: string; id?: string };
+          };
+          const serverPlan = body?.data?.plan === 'pro' ? 'pro' : 'free';
+          setSession((prev) => {
+            if (!prev.isLoggedIn) return prev;
+            if (prev.plan === serverPlan) return prev;
+            void userSessionStorage
+              .setValue({ ...prev, plan: serverPlan })
+              .catch(() => {});
+            return { ...prev, plan: serverPlan };
+          });
+        } catch {
+          /** Offline / backend down: keep the session hint. */
+        }
       })
       .catch(() => {});
 
@@ -240,6 +294,7 @@ export default function App() {
       unwatchSession();
       unwatchOnboard();
       unwatchGoals();
+      unwatchTelemetry();
     };
   }, []);
 
@@ -253,8 +308,8 @@ export default function App() {
   const currentProviderConfig = SUPPORTED_PROVIDERS[selectedProvider] || SUPPORTED_PROVIDERS.google;
 
   const isConfigured =
-    Boolean(config.selfHostedApiKey?.trim()) ||
-    (config.provider === 'ollama' && Boolean(config.selfHostedEndpoint?.trim())) ||
+    Boolean((config.byokApiKey || config.selfHostedApiKey)?.trim()) ||
+    (config.provider === 'ollama' && Boolean((config.byokEndpoint || config.selfHostedEndpoint)?.trim())) ||
     (session.isLoggedIn && config.mode === 'cloud');
 
   const handleOrganismChange = async (id: OrganismId) => {
@@ -299,19 +354,9 @@ export default function App() {
     soundSynth.playChime('complete');
   };
 
-  const handleDecomposeCurrentGoal = async () => {
-    const textToDecompose = goalInput.trim();
-    if (!textToDecompose || isDecomposing) return;
-    setIsDecomposing(true);
-    try {
-      const res = await sendMessage('decomposeGoals', { intent: textToDecompose });
-      if (res?.goals) {
-        setGoals(res.goals);
-        soundSynth.playChime('poke');
-      }
-    } finally {
-      setIsDecomposing(false);
-    }
+  const handlePokeAgent = async () => {
+    await sendMessage('pokeOrganism', undefined);
+    soundSynth.playChime('poke');
   };
 
   const handleToggleGoal = async (id: string, completed?: boolean, isActive?: boolean) => {
@@ -332,12 +377,12 @@ export default function App() {
     setSelectedProvider(p);
     const prov = SUPPORTED_PROVIDERS[p];
     if (prov) {
-      setModelInput(prov.defaultModel);
       if (prov.defaultEndpoint) {
         setEndpointInput(prov.defaultEndpoint);
       }
     }
     setTestStatus(null);
+    void loadModelsForProvider(p, apiKeyInput, endpointInput);
   };
 
   const handleTestConnection = async () => {
@@ -355,11 +400,14 @@ export default function App() {
   const handleSaveSettings = async () => {
     const next: OrganismConfig = {
       ...config,
-      mode: config.mode,
+      mode: config.mode === 'cloud' ? 'cloud' : 'byok',
       provider: selectedProvider,
+      byokEndpoint: endpointInput.trim() || 'http://localhost:11434/v1',
+      byokApiKey: apiKeyInput.trim(),
+      byokModel: modelInput.trim(),
       selfHostedEndpoint: endpointInput.trim() || 'http://localhost:11434/v1',
       selfHostedApiKey: apiKeyInput.trim(),
-      selfHostedModel: modelInput.trim() || currentProviderConfig.defaultModel,
+      selfHostedModel: modelInput.trim(),
     };
     setConfig(next);
     await configStorage.setValue(next);
@@ -370,7 +418,8 @@ export default function App() {
   const handleCompleteOnboarding = async () => {
     const nextConfig: OrganismConfig = {
       ...config,
-      mode: apiKeyInput.trim() ? 'self-hosted' : config.mode,
+      mode: apiKeyInput.trim() ? 'byok' : config.mode,
+      byokApiKey: apiKeyInput.trim(),
       selfHostedApiKey: apiKeyInput.trim(),
       provider: selectedProvider,
     };
@@ -474,12 +523,15 @@ export default function App() {
       {/* Header */}
       <header className="flex items-center justify-between z-10">
         <div className="flex items-center gap-3 min-w-0">
-          <div
-            className="w-11 h-11 shrink-0 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center overflow-hidden"
+          <button
+            type="button"
+            onClick={handlePokeAgent}
+            title={`Poke ${skin.name}`}
+            className="w-11 h-11 shrink-0 border-2 border-coal shadow-[2px_2px_0_0_#12151A] flex items-center justify-center overflow-hidden cursor-pointer active:scale-95 transition-transform"
             style={{ backgroundColor: 'var(--skin-accent)' }}
           >
             <AnimatedSprite id={config.organismId} size={33} state={organismState.state} />
-          </div>
+          </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-display font-bold text-lg tracking-tight text-paper-ink">
@@ -592,17 +644,6 @@ export default function App() {
                     <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted">
                       Goal
                     </span>
-                    <button
-                      type="button"
-                      onClick={handleDecomposeCurrentGoal}
-                      disabled={!goalInput.trim() || isDecomposing}
-                      className="font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80 transition-opacity cursor-pointer"
-                      style={{ color: 'var(--skin-accent)' }}
-                      title="Break down into steps"
-                    >
-                      <Sparkles size={11} />
-                      <span>{isDecomposing ? '…' : 'Break down'}</span>
-                    </button>
                   </div>
                   <input
                     type="text"
@@ -654,10 +695,6 @@ export default function App() {
                   <GoalStack
                     goals={goals}
                     accentColor="var(--skin-accent)"
-                    onDecompose={async (intent) => {
-                      const res = await sendMessage('decomposeGoals', { intent });
-                      if (res?.goals) setGoals(res.goals);
-                    }}
                     onToggleGoal={handleToggleGoal}
                     onDeleteGoal={handleDeleteGoal}
                     onAddGoal={handleAddGoal}
@@ -666,40 +703,42 @@ export default function App() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col gap-3 min-h-0">
-                {/* Live mission — timerless: goal + elapsed context only */}
-                <div className="flex items-center justify-between gap-2">
+                {/* Live mission header */}
+                <div className="flex items-center justify-between gap-2 border-b border-dashed border-line pb-1.5">
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider truncate">
                     {sprint.goal || 'Open-ended focus'}
                   </span>
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider shrink-0" style={{ color: 'var(--skin-accent)' }}>
-                    live
+                    live sprint
                   </span>
                 </div>
 
-                <div className="font-display font-semibold text-3xl tracking-tight text-paper-muted text-center tabular-nums py-2">
-                  {Math.floor(elapsedSecs / 60)}m
-                </div>
+                {/* Live Telemetry HUD (Focus Graph, Agent Observation, Cadence) */}
+                <FocusTelemetryHUD
+                  telemetry={telemetry}
+                  now={now}
+                  goal={sprint.goal || 'Focus Sprint'}
+                  elapsedSecs={elapsedSecs}
+                  accentColor="var(--skin-accent)"
+                  onPoke={handlePokeAgent}
+                />
 
                 <div className="flex justify-between font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">
-                  <span>{organismState.focusMinutesToday}m today</span>
+                  <span>{organismState.focusMinutesToday}m focused today</span>
                   <span>{organismState.divergenceCountToday} off-track</span>
                 </div>
 
                 <button
                   onClick={handleStopSprint}
-                  className="mt-auto w-full bg-coal text-paper px-4 py-2.5 font-display font-bold text-sm flex items-center justify-center gap-2 transition-opacity hover:opacity-85 cursor-pointer"
+                  className="w-full bg-coal text-paper px-4 py-2.5 font-display font-bold text-sm flex items-center justify-center gap-2 transition-opacity hover:opacity-85 cursor-pointer shadow-brut"
                 >
-                  <Square size={12} fill="currentColor" /> Finish
+                  <Square size={12} fill="currentColor" /> Finish sprint
                 </button>
 
                 <div className="min-h-0 flex border-t-2 border-dashed border-line pt-2">
                   <GoalStack
                     goals={goals}
                     accentColor="var(--skin-accent)"
-                    onDecompose={async (intent) => {
-                      const res = await sendMessage('decomposeGoals', { intent });
-                      if (res?.goals) setGoals(res.goals);
-                    }}
                     onToggleGoal={handleToggleGoal}
                     onDeleteGoal={handleDeleteGoal}
                     onAddGoal={handleAddGoal}
@@ -797,33 +836,6 @@ export default function App() {
                   {Math.round((config.effectsIntensity ?? 0.45) * 100)}%
                 </span>
               </div>
-              {(() => {
-                const previewInfo = CHARACTER_PREVIEW_INFO[config.organismId] ?? CHARACTER_PREVIEW_INFO.ufo;
-                return (
-                  <>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setFxPreview(fxPreview === 'firing' ? 'fired' : 'firing');
-                        try {
-                          await sendMessage('testScreenEffect', { organismId: config.organismId });
-                        } catch {
-                          /** Non-injectable tab (chrome://, store, PDF) — no stage to fire on. */
-                        } finally {
-                          window.setTimeout(() => setFxPreview('idle'), 5200);
-                        }
-                      }}
-                      className="mt-3 w-full border-2 border-dashed border-line px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted hover:text-paper-ink hover:border-coal transition-colors cursor-pointer"
-                      title={previewInfo.description}
-                    >
-                      {fxPreview === 'firing' ? previewInfo.firingLabel : previewInfo.label}
-                    </button>
-                    <p className="mt-1.5 font-mono text-[9px] leading-relaxed text-paper-faint">
-                      {previewInfo.description}
-                    </p>
-                  </>
-                );
-              })()}
             </div>
           </div>
         )}
@@ -859,8 +871,8 @@ export default function App() {
                 type="button"
                 onClick={async () => {
                   setSettingsTab('byok');
-                  if (config.mode !== 'self-hosted') {
-                    const next = { ...config, mode: 'self-hosted' as OperatingMode };
+                  if (config.mode !== 'byok') {
+                    const next = { ...config, mode: 'byok' as OperatingMode };
                     setConfig(next);
                     await configStorage.setValue(next);
                   }
@@ -871,7 +883,7 @@ export default function App() {
                     : 'text-paper-muted hover:text-paper-ink'
                 }`}
               >
-                <span>🔑 BYOK (Local AI)</span>
+                <span>🔑 BYOK</span>
               </button>
             </div>
 
@@ -892,61 +904,106 @@ export default function App() {
                         <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-muted block">Signed in as</span>
                         <span className="font-mono text-xs font-bold text-coal truncate block">{session.email}</span>
                       </div>
-                      <span className="px-2 py-0.5 bg-accent border border-coal text-coal font-mono text-[10px] font-bold uppercase shadow-[1px_1px_0_0_#12151A]">
-                        {session.plan === 'pro' ? 'Pro Active' : 'Free Account'}
+                      <span className={`px-2 py-0.5 border border-coal font-mono text-[10px] font-bold uppercase shadow-[1px_1px_0_0_#12151A] ${
+                        session.plan === 'pro'
+                          ? 'bg-accent text-coal'
+                          : 'bg-[#FAFBF7] text-coal'
+                      }`}>
+                        {session.plan === 'pro' ? '★ Pro Active' : 'Free Account'}
                       </span>
                     </div>
 
-                    <div className="pt-2 border-t-2 border-dashed border-coal/15 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] font-bold uppercase text-paper-muted">Cloud Engine</span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const next = { ...config, mode: config.mode === 'cloud' ? 'self-hosted' as OperatingMode : 'cloud' as OperatingMode };
-                            setConfig(next);
-                            await configStorage.setValue(next);
-                          }}
-                          className={`font-mono text-[9px] font-bold uppercase px-2.5 py-1 border-2 border-coal transition-all cursor-pointer shadow-[1px_1px_0_0_#12151A] ${
-                            config.mode === 'cloud'
-                              ? 'bg-accent text-coal'
-                              : 'bg-paper text-paper-muted hover:text-coal'
-                          }`}
-                        >
-                          {config.mode === 'cloud' ? 'Enabled' : 'Paused'}
-                        </button>
-                      </div>
+                    {session.plan === 'pro' ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 p-2 bg-[#FAFBF7] border border-coal/20">
+                          <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                          <span className="font-mono text-[10px] font-bold uppercase text-coal">
+                            Cloud Pro AI Active
+                          </span>
+                        </div>
 
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await authClient.signOut();
-                          const nextSession: UserSession = { plan: 'free', isLoggedIn: false };
-                          await userSessionStorage.setValue(nextSession);
-                          setSession(nextSession);
-                          if (config.mode === 'cloud') {
-                            const next = { ...config, mode: 'self-hosted' as OperatingMode };
-                            setConfig(next);
-                            await configStorage.setValue(next);
-                          }
-                        }}
-                        className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-red-600 transition-colors cursor-pointer"
-                      >
-                        Sign out
-                      </button>
-                    </div>
+                        <div className="pt-2 border-t-2 border-dashed border-coal/15 flex items-center justify-between gap-2">
+                          <a
+                            href={`${WEB_APP_URL}/pricing`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-mono text-[9px] font-bold uppercase underline underline-offset-2 text-coal hover:text-accent transition-colors"
+                          >
+                            Manage Subscription →
+                          </a>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await authClient.signOut();
+                              const nextSession: UserSession = { plan: 'free', isLoggedIn: false };
+                              await userSessionStorage.setValue(nextSession);
+                              setSession(nextSession);
+                              if (config.mode === 'cloud') {
+                                const next = { ...config, mode: 'byok' as OperatingMode };
+                                setConfig(next);
+                                await configStorage.setValue(next);
+                              }
+                            }}
+                            className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-red-600 transition-colors cursor-pointer"
+                          >
+                            Sign out
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                          <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase text-amber-700">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            <span>Pro Required for Cloud AI</span>
+                          </div>
+                          <p className="font-mono text-[9px] text-paper-muted leading-relaxed">
+                            Gremlin Cloud is a hosted service ($5/mo). Subscribe to activate fast cloud evaluations, or switch to the BYOK tab to use your own free key.
+                          </p>
+                          <a
+                            href={`${WEB_APP_URL}/pricing`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center gap-1.5 w-full bg-accent hover:bg-accent-bright text-coal font-mono text-[10px] font-bold uppercase py-2 border-2 border-coal shadow-[1px_1px_0_0_#12151A] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer mt-1"
+                          >
+                            ⚡ Activate Cloud Pro ($5/mo) →
+                          </a>
+                        </div>
+
+                        <div className="pt-2 border-t-2 border-dashed border-coal/15 flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await authClient.signOut();
+                              const nextSession: UserSession = { plan: 'free', isLoggedIn: false };
+                              await userSessionStorage.setValue(nextSession);
+                              setSession(nextSession);
+                              if (config.mode === 'cloud') {
+                                const next = { ...config, mode: 'byok' as OperatingMode };
+                                setConfig(next);
+                                await configStorage.setValue(next);
+                              }
+                            }}
+                            className="font-mono text-[9px] font-bold uppercase text-paper-muted hover:text-red-600 transition-colors cursor-pointer"
+                          >
+                            Sign out
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="p-3.5 bg-white border-2 border-coal space-y-3.5 shadow-brut">
                     <div className="flex items-center justify-between pb-2 border-b-2 border-coal/10">
                       <span className="font-display font-bold text-xs text-coal">Sign into Gremlin Cloud</span>
                       <a
-                        href={`${WEB_APP_URL}/auth`}
+                        href={`${WEB_APP_URL}/auth?mode=signup`}
                         target="_blank"
                         rel="noreferrer"
                         className="font-mono text-[10px] font-bold uppercase underline underline-offset-2 text-coal hover:text-accent transition-colors"
                       >
-                        Create account →
+                        Create account ($5/mo) →
                       </a>
                     </div>
 
@@ -1005,8 +1062,11 @@ export default function App() {
                           if (res.error) {
                             setCloudError(res.error.message ?? 'Sign-in failed');
                           } else {
+                            // Strict default: fresh sign-in starts `free`; the
+                            // authoritative profile fetch below upgrades to
+                            // `pro` only on server confirmation.
                             const nextSession: UserSession = {
-                              plan: 'pro',
+                              plan: 'free',
                               isLoggedIn: true,
                               email: cloudEmail.trim(),
                             };
@@ -1017,29 +1077,42 @@ export default function App() {
                             await configStorage.setValue(next);
                             setCloudPassword('');
 
-                            // Instant remote sync merge on login
+                            // Confirm the billing tier from the server before
+                            // showing any badge: GET /api/user/profile reads
+                            // the webhook-reconciled `user.plan` mirror.
                             try {
-                              const { pullAll, pullProfile } = await import('@/lib/api/memoryClient');
-                              const remote = await pullProfile();
-                              if (remote) {
-                                const { focusProfileStorage } = await import('@/lib/storage');
-                                const local = await focusProfileStorage.getValue();
-                                if ((remote.updatedAt ?? 0) > (local.updatedAt ?? 0)) {
-                                  await focusProfileStorage.setValue(remote);
-                                }
-                              }
-                              const all = await pullAll();
-                              if (all) {
-                                const localGoals = await goalsStorage.getValue();
-                                const missingGoals = all.goals.filter((g) => !localGoals.some((l) => l.id === g.id));
-                                if (missingGoals.length > 0) await goalsStorage.setValue([...localGoals, ...missingGoals]);
-                                const localNotes = await notesStorage.getValue();
-                                const missingNotes = all.notes.filter((n) => !localNotes.some((l: SmartPageNote) => l.id === n.id));
-                                if (missingNotes.length > 0) await notesStorage.setValue([...missingNotes, ...localNotes]);
+                              const profileRes = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                                credentials: 'include',
+                                headers: { 'x-requested-with': 'Gremlin-Browser-Extension' },
+                              });
+                              if (profileRes.ok) {
+                                const profileBody = (await profileRes.json()) as {
+                                  data?: { plan?: string };
+                                };
+                                const serverPlan =
+                                  profileBody?.data?.plan === 'pro' ? 'pro' : 'free';
+                                const confirmed: UserSession = {
+                                  ...nextSession,
+                                  plan: serverPlan,
+                                };
+                                await userSessionStorage.setValue(confirmed);
+                                setSession(confirmed);
                               }
                             } catch {
-                              // Non-blocking sync error
+                              /** Offline: keep the `free` default until next open. */
                             }
+
+                            // Account merge via the sync engine: LWW
+                            // pull-merge of goals/notes/diaries/episodes/
+                            // profile, then push local contributions.
+                            void (async () => {
+                              try {
+                                const { onAccountConnected } = await import('@/lib/sync/engine');
+                                await onAccountConnected();
+                              } catch {
+                                // Non-blocking sync error — local-first continues.
+                              }
+                            })();
                           }
                         } finally {
                           setCloudBusy(false);
@@ -1064,7 +1137,7 @@ export default function App() {
                   </p>
                 </div>
 
-                {!isConfigured && config.mode === 'self-hosted' && (
+                {!isConfigured && config.mode !== 'cloud' && (
                   <p className="pb-2 font-mono font-bold text-[10px] uppercase tracking-wider text-red-600">
                     ⚠ Enter your API key below and save
                   </p>
@@ -1111,6 +1184,11 @@ export default function App() {
                           placeholder={currentProviderConfig.placeholderKey}
                           value={apiKeyInput}
                           onChange={(e) => setApiKeyInput(e.target.value)}
+                          onBlur={() => {
+                            if (apiKeyInput.trim()) {
+                              void loadModelsForProvider(selectedProvider, apiKeyInput, endpointInput);
+                            }
+                          }}
                           className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 pr-6 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
                         />
                         <button
@@ -1134,20 +1212,58 @@ export default function App() {
                         placeholder={currentProviderConfig.defaultEndpoint || 'http://localhost:8000/v1'}
                         value={endpointInput}
                         onChange={(e) => setEndpointInput(e.target.value)}
+                        onBlur={() => {
+                          if (selectedProvider === 'ollama' || apiKeyInput.trim()) {
+                            void loadModelsForProvider(selectedProvider, apiKeyInput, endpointInput);
+                          }
+                        }}
                         className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
                       />
                     </div>
                   )}
 
                   <div>
-                    <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Model ID</span>
-                    <input
-                      type="text"
-                      placeholder={currentProviderConfig.defaultModel}
-                      value={modelInput}
-                      onChange={(e) => setModelInput(e.target.value)}
-                      className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
-                    />
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-paper-faint">Model</span>
+                      <button
+                        type="button"
+                        onClick={() => void loadModelsForProvider(selectedProvider, apiKeyInput, endpointInput)}
+                        disabled={isLoadingModels || (!apiKeyInput.trim() && selectedProvider !== 'ollama')}
+                        className="font-mono text-[9px] uppercase tracking-wider text-paper-muted hover:text-paper-ink transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-30"
+                        title="Scan active models from provider"
+                      >
+                        <RefreshCw size={10} className={isLoadingModels ? 'animate-spin' : ''} />
+                        {isLoadingModels ? 'Scanning…' : 'Scan Live'}
+                      </button>
+                    </div>
+
+                    {availableModels.length > 0 ? (
+                      <div className="mt-1 space-y-1">
+                        <select
+                          value={modelInput}
+                          onChange={(e) => setModelInput(e.target.value)}
+                          className="w-full bg-paper-card border border-line focus:border-coal px-2 py-1 font-mono text-xs text-paper-ink focus:outline-none transition-colors cursor-pointer"
+                        >
+                          <option value="">Auto-select latest from provider</option>
+                          {availableModels.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.id} {m.isRecommended ? '★' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="font-mono text-[8px] text-paper-faint">
+                          {availableModels.length} active models discovered from provider endpoint.
+                        </p>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder={isLoadingModels ? 'Scanning provider models…' : 'Auto (dynamic latest) or specify custom model ID'}
+                        value={modelInput}
+                        onChange={(e) => setModelInput(e.target.value)}
+                        className="mt-0.5 w-full bg-transparent border-0 border-b-2 border-line focus:border-coal pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none transition-colors"
+                      />
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3 pb-2">

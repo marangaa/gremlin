@@ -28,6 +28,31 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
 });
 
 /**
+ * Enforces an active Pro subscription on cost-bearing cloud routes.
+ * Must run after `requireAuth`. The `user.plan` mirror is reconciled by the
+ * native Polar `customer.state_changed` / `order.paid` webhooks, so it stays
+ * authoritative without any hand-rolled subscription tables.
+ *
+ * @throws {HTTPException} 403 Forbidden when the caller's plan is not `pro`.
+ */
+export const requirePro = createMiddleware<AppEnv>(async (c, next) => {
+  const user = c.get('user');
+  if (!user) {
+    throw new HTTPException(401, {
+      message: 'Authentication required. Please sign in.',
+    });
+  }
+
+  if ((user.plan ?? 'free') !== 'pro') {
+    throw new HTTPException(403, {
+      message: 'Gremlin Pro is required for hosted cloud AI evaluation. Upgrade at /pricing.',
+    });
+  }
+
+  await next();
+});
+
+/**
  * Optional session middleware. Populates session context if present without blocking.
  */
 export const optionalAuth = createMiddleware<AppEnv>(async (c, next) => {

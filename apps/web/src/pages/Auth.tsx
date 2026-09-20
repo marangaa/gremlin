@@ -7,7 +7,13 @@ interface AuthProps {
 }
 
 export const Auth: React.FC<AuthProps> = ({ navigate }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('mode') === 'signup' || params.get('signup') === 'true';
+    }
+    return false;
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +21,23 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    void authClient.getSession().then(({ data }) => {
+      if (data?.user) {
+        setEmail(data.user.email);
+        setSuccess(true);
+        window.postMessage(
+          {
+            source: 'gremlin-web',
+            type: 'GREMLIN_AUTH_SUCCESS',
+            payload: { user: data.user },
+          },
+          '*',
+        );
+      }
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +56,32 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
       if (result.error) {
         throw new Error(result.error.message ?? 'Authentication failed.');
       }
+
+      if (result.data?.user) {
+        // Broadcast authentication to Gremlin Extension content script running on this tab
+        window.postMessage(
+          {
+            source: 'gremlin-web',
+            type: 'GREMLIN_AUTH_SUCCESS',
+            payload: { user: result.data.user },
+          },
+          '*',
+        );
+      }
+
+      // Option A: If signing up, immediately initiate Polar checkout for the managed Pro tier
+      if (isSignUp) {
+        try {
+          const checkoutRes = await authClient.checkout({ slug: 'pro' });
+          if (checkoutRes?.data?.url) {
+            window.location.href = checkoutRes.data.url;
+            return;
+          }
+        } catch (checkoutErr) {
+          console.warn('Auto-redirect to Polar checkout failed:', checkoutErr);
+        }
+      }
+
       setSuccess(true);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Authentication failed. Please try again.');
@@ -44,38 +93,57 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
   return (
     <main className="container-site py-20 relative z-10 flex flex-col items-center justify-center min-h-[75vh]">
       <div className="w-full max-w-md py-4 text-coal dark:text-white relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 border-2 border-coal bg-accent flex items-center justify-center text-coal shadow-[2px_2px_0_0_#12151A]">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="font-display text-2xl font-bold text-coal dark:text-white">
-              {isSignUp ? 'Create your account' : 'Sign in to Gremlin'}
-            </h1>
-            <p className="text-xs text-[#5D6675] dark:text-[#9CA3AF] mt-0.5">
-              {isSignUp ? 'Sync your companion, goals, and daily diaries everywhere.' : 'Welcome back! Pick up your active sprint and streak.'}
-            </p>
-          </div>
-        </div>
-
         {success ? (
-          <div className="bg-emerald-500/10 border-2 border-emerald-500/30 p-6 text-center space-y-4">
-            <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center">
-              <Check className="w-6 h-6" />
+          <div className="bg-white dark:bg-[#161914] border-2 border-coal shadow-brut p-8 text-center space-y-5">
+            <div className="w-14 h-14 border-2 border-coal bg-accent flex items-center justify-center text-coal shadow-[2px_2px_0_0_#12151A] mx-auto">
+              <Check className="w-7 h-7 stroke-[2.5]" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-emerald-300 text-base">Account connected</h3>
-              <p className="text-xs text-emerald-400/90 font-mono mt-1">
+              <h2 className="font-display font-bold text-2xl text-coal dark:text-white">
+                Account Connected
+              </h2>
+              <p className="text-xs text-[#5D6675] dark:text-[#9CA3AF] font-mono mt-1.5">
+                Signed in as <span className="font-bold text-coal dark:text-white">{email}</span>
+              </p>
+              <p className="text-xs text-[#5D6675] dark:text-[#9CA3AF] mt-1">
                 Your browser extension is now synced to Gremlin Cloud.
               </p>
             </div>
-            {navigate && (
-              <button onClick={() => navigate('/')} className="btn-primary w-full text-xs py-2">
-                Return to home
-              </button>
-            )}
+            <div className="space-y-2">
+              <a
+                href="/pricing"
+                className="w-full bg-accent hover:bg-accent-bright text-coal font-display font-bold tracking-wide py-3 border-2 border-coal shadow-brut active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
+              >
+                Complete Pro Subscription ($5/mo)
+                <ArrowRight className="w-4 h-4" />
+              </a>
+              {navigate && (
+                <button
+                  onClick={() => navigate('/')}
+                  className="w-full bg-transparent hover:bg-coal/5 text-coal dark:text-white font-mono text-xs font-bold py-2 border border-coal/20 transition-all cursor-pointer"
+                >
+                  Skip to Dashboard →
+                </button>
+              )}
+            </div>
           </div>
         ) : (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 border-2 border-coal bg-accent flex items-center justify-center text-coal shadow-[2px_2px_0_0_#12151A]">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="font-display text-2xl font-bold text-coal dark:text-white">
+                  {isSignUp ? 'Create your Cloud account' : 'Sign in to Gremlin'}
+                </h1>
+                <p className="text-xs text-[#5D6675] dark:text-[#9CA3AF] mt-0.5">
+                  {isSignUp
+                    ? '$5/mo · Turnkey hosted AI, multi-device sync, zero API setup.'
+                    : 'Welcome back! Pick up your active sprint and streak.'}
+                </p>
+              </div>
+            </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errorMsg && (
               <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-mono font-bold">
@@ -150,7 +218,9 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
               disabled={loading}
               className="w-full bg-accent hover:bg-accent-bright text-coal font-display font-bold tracking-wide py-3 border-2 border-coal shadow-brut active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
             >
-              {loading ? 'Connecting…' : isSignUp ? 'Create Cloud Account' : 'Sign In to Cloud'}
+              {loading
+                ? (isSignUp ? 'Opening Checkout…' : 'Connecting…')
+                : (isSignUp ? 'Continue to Checkout ($5/mo)' : 'Sign In to Cloud')}
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -164,6 +234,7 @@ export const Auth: React.FC<AuthProps> = ({ navigate }) => {
               </button>
             </div>
           </form>
+        </>
         )}
       </div>
 

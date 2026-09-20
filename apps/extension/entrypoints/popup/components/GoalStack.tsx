@@ -8,7 +8,6 @@ import type { DecomposedGoal } from '@gremlin/shared';
 interface GoalStackProps {
   goals: DecomposedGoal[];
   accentColor: string;
-  onDecompose: (intent: string) => Promise<void>;
   onToggleGoal: (id: string, completed?: boolean, isActive?: boolean) => void;
   onDeleteGoal: (id: string) => void;
   onAddGoal: (title: string, category: string) => void;
@@ -17,7 +16,6 @@ interface GoalStackProps {
 export const GoalStack: React.FC<GoalStackProps> = ({
   goals,
   accentColor,
-  onDecompose,
   onToggleGoal,
   onDeleteGoal,
   onAddGoal,
@@ -40,7 +38,7 @@ export const GoalStack: React.FC<GoalStackProps> = ({
     <div className="flex flex-col min-h-0 flex-1">
       <div className="flex items-center justify-between">
         <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-paper-muted">
-          Milestones{activeGoals.length > 0 ? ` · ${activeGoals.length}` : ''}
+          Goals{activeGoals.length > 0 ? ` · ${activeGoals.length}` : ''}
         </span>
         <button
           type="button"
@@ -59,7 +57,7 @@ export const GoalStack: React.FC<GoalStackProps> = ({
             type="text"
             className="w-full bg-transparent border-0 border-b-2 pb-1 font-mono text-xs text-paper-ink placeholder:text-paper-faint focus:outline-none"
             style={{ borderColor: accentColor }}
-            placeholder="New milestone…"
+            placeholder="New goal…"
             value={manualTitle}
             onChange={(e) => setManualTitle(e.target.value)}
             autoFocus
@@ -69,7 +67,7 @@ export const GoalStack: React.FC<GoalStackProps> = ({
 
       {goals.length === 0 && !showAddManual ? (
         <p className="py-4 text-center font-mono text-[10px] font-bold uppercase tracking-wider text-paper-faint">
-          Nothing yet
+          No specific goals · Click + Add to list tasks
         </p>
       ) : (
         <div className="mt-1 space-y-px overflow-y-auto flex-1 min-h-0 pr-0.5">

@@ -1,5 +1,6 @@
 import type { FocusProfile, InterventionKind } from '@gremlin/shared';
-import { focusProfileStorage, focusProfileSyncStorage } from '../storage';
+import { focusProfileStorage } from '../storage';
+import { queueAccountSync } from '../sync/engine';
 
 /** Neutral seed score for an hour bucket with no observations yet. */
 const DEFAULT_BUCKET_SCORE = 0.5;
@@ -13,17 +14,15 @@ const MAX_DISTRACTIONS = 5;
 const MAX_LESSONS = 8;
 
 /**
- * Writes the profile locally and mirrors it to sync storage best-effort.
- * Sync failures (quotas, offline) never fail the write.
+ * Writes the profile locally, then flags the account-sync engine (Pro-only,
+ * debounced). There is exactly ONE persistent profile store: `local:`.
+ * The removed `sync:focusProfile` chrome.storage.sync mirror was scoped to
+ * the Google profile, not the Gremlin account — a wrong-account restore
+ * hazard; account portability is now the sync engine's job.
  */
 async function persist(profile: FocusProfile): Promise<void> {
-  const p = { ...profile, updatedAt: Date.now() };
-  await focusProfileStorage.setValue(p);
-  try {
-    await focusProfileSyncStorage.setValue(p);
-  } catch {
-    /* sync quotas/offline — best effort */
-  }
+  await focusProfileStorage.setValue({ ...profile, updatedAt: Date.now() });
+  queueAccountSync('profile');
 }
 
 function ensureEffectiveness(

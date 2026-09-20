@@ -13,9 +13,13 @@ export class AgentOrchestrator {
 
   public async getResolvedModel(config?: OrganismConfig): Promise<LanguageModel | null> {
     const cfg = config || (await configStorage.getValue());
+    const apiKey = cfg.byokApiKey || cfg.selfHostedApiKey;
+    const endpoint = cfg.byokEndpoint || cfg.selfHostedEndpoint;
+    const model = cfg.byokModel || cfg.selfHostedModel;
+
     const hasKeyOrEndpoint =
-      Boolean(cfg.selfHostedApiKey?.trim()) ||
-      (cfg.provider === 'ollama' && Boolean(cfg.selfHostedEndpoint?.trim()));
+      Boolean(apiKey?.trim()) ||
+      (cfg.provider === 'ollama' && Boolean(endpoint?.trim()));
 
     if (!hasKeyOrEndpoint) {
       return null;
@@ -24,9 +28,9 @@ export class AgentOrchestrator {
     try {
       return resolveLanguageModel({
         provider: cfg.provider || 'google',
-        apiKey: cfg.selfHostedApiKey,
-        endpoint: cfg.selfHostedEndpoint,
-        model: cfg.selfHostedModel,
+        apiKey,
+        endpoint,
+        model,
       });
     } catch (err) {
       console.warn('[AgentOrchestrator] Error resolving model:', err);

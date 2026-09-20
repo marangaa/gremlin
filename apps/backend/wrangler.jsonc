@@ -13,6 +13,7 @@
   },
   "vars": {
     "BETTER_AUTH_URL": "https://gremlin-backend.rchdmaranga-b12.workers.dev",
+    "FRONTEND_URL": "https://gremlin.fasihi.xyz",
     "NODE_ENV": "production",
     "POLAR_ENV": "production",
     "ALLOWED_ORIGINS": "https://gremlin.fasihi.xyz,http://localhost:5173"

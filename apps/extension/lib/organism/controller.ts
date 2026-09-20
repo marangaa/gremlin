@@ -66,7 +66,7 @@ export class OrganismController {
   private cursorX: number = window.innerWidth / 2;
   private cursorY: number = window.innerHeight / 2;
   private speechTimeoutId: number | null = null;
-  private pendingRemark: string | null = null;
+  private outsideNotePointerDownListener: ((e: PointerEvent) => void) | null = null;
   private destroyed: boolean = false;
   private rafId: number = 0;
   private lastTime: number = 0;
@@ -115,10 +115,16 @@ export class OrganismController {
     this.destroyed = true;
     cancelAnimationFrame(this.rafId);
     if (this.speechTimeoutId) clearTimeout(this.speechTimeoutId);
+    this.closeNoteSheet();
     this.screenEffects?.clear();
 
-    window.removeEventListener('pointermove', this.onGlobalPointerMove);
+    window.removeEventListener('pointermove', this.onGlobalPointerMove, { capture: true });
+    window.removeEventListener('pointerdown', this.onGlobalPointerMove, { capture: true });
+    window.removeEventListener('pointerover', this.onGlobalPointerMove, { capture: true });
+    window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('resize', this.onWindowResize);
+    this.thoughtPill?.remove();
+    this.noteHudEl?.remove();
     this.rootEl?.remove();
   }
 
@@ -151,40 +157,43 @@ export class OrganismController {
     this.updateTransform();
   }
 
-  public setState(nextState: OrganismState, triggerScreenFx = false) {
-    if (this.destroyed || this.state === nextState) return;
-    this.rootEl.classList.remove(`state-${this.state}`);
-    this.state = nextState;
-    this.rootEl.classList.add(`state-${nextState}`);
+  public setState(nextState: OrganismState, triggerScreenFx = false, roast?: string) {
+    if (this.destroyed) return;
+    const stateChanged = this.state !== nextState;
+    if (stateChanged) {
+      this.rootEl.classList.remove(`state-${this.state}`);
+      this.state = nextState;
+      this.rootEl.classList.add(`state-${nextState}`);
 
-    if (this.spriteEngine) {
-      this.spriteEngine.setState(nextState);
-      if (nextState === 'celebrating') {
-        this.spriteEngine.triggerBurst('spark');
-        if (this.soundEnabled) soundSynth.playChime('complete');
-      } else if (nextState === 'sleeping') {
-        this.spriteEngine.triggerBurst('zzz');
-      } else if (nextState === 'shocked' || nextState === 'annoyed') {
-        this.spriteEngine.triggerBurst('exclamation');
-        if (this.soundEnabled) soundSynth.playAlert();
+      if (this.spriteEngine) {
+        this.spriteEngine.setState(nextState);
+        if (nextState === 'celebrating') {
+          this.spriteEngine.triggerBurst('spark');
+          if (this.soundEnabled) soundSynth.playChime('complete');
+        } else if (nextState === 'sleeping') {
+          this.spriteEngine.triggerBurst('zzz');
+        } else if (nextState === 'shocked' || nextState === 'annoyed') {
+          this.spriteEngine.triggerBurst('exclamation');
+          if (this.soundEnabled) soundSynth.playAlert();
+        }
       }
     }
 
     if (this.effectsEnabled) {
       /**
-       * AI-flagged effects always fire; at high chaos the companion also
-       * improvises on any state change.
+       * AI-flagged effects always fire (even if the state was already annoyed);
+       * at high chaos the companion also improvises on any state change.
        */
-      const ambientChance = triggerScreenFx ? 1 : this.effectsIntensity * 0.22;
+      const ambientChance = triggerScreenFx ? 1 : (stateChanged ? this.effectsIntensity * 0.22 : 0);
       if (Math.random() < ambientChance) {
-        this.screenEffects.triggerEffect(this.organismId, this.effectsIntensity);
+        this.screenEffects.triggerEffect(this.organismId, this.effectsIntensity, roast);
       }
     }
   }
 
-  public triggerCustomEffect(organismId?: OrganismId) {
+  public triggerCustomEffect(organismId?: OrganismId, roast?: string) {
     if (this.screenEffects) {
-      this.screenEffects.triggerEffect(organismId || this.organismId);
+      this.screenEffects.triggerEffect(organismId || this.organismId, this.effectsIntensity, roast);
     }
   }
 
@@ -253,28 +262,8 @@ export class OrganismController {
       <div class="pill-body">${message}</div>
     `;
 
-    /**
-     * Viewport-anchored placement: measure the laid-out pill (opacity-0 still
-     * occupies space), clamp its center so it never leaves the screen, and
-     * flip above/below depending on the room available near the companion.
-     */
-    const margin = 8;
-    const gap = 12;
-    const w = pill.offsetWidth || 220;
-    const h = pill.offsetHeight || 60;
-    const avatarCenterX = this.x + 48;
-    const clampedCenterX = Math.max(margin + w / 2, Math.min(avatarCenterX, window.innerWidth - margin - w / 2));
-    const placeAbove = this.y - h - gap > margin;
-
-    pill.style.left = `${Math.round(clampedCenterX - w / 2)}px`;
-    pill.style.top = `${Math.round(placeAbove ? this.y - h - gap : this.y + 96 + gap)}px`;
-    /** Tail slides toward the companion when the bubble gets edge-clamped. */
-    const tailX = Math.max(14, Math.min(w - 14, avatarCenterX - (clampedCenterX - w / 2)));
-    pill.style.setProperty('--tail-x', `${Math.round(tailX)}px`);
-    pill.classList.toggle('tail-below', placeAbove);
-    pill.classList.toggle('tail-above', !placeAbove);
-
     pill.classList.add('is-visible');
+    this.updateSpeechBubblePosition();
 
     /** Synthesize Animalese speech chirps. */
     if (this.soundEnabled) {
@@ -285,6 +274,83 @@ export class OrganismController {
       pill.classList.remove('is-visible');
       this.speechTimeoutId = null;
     }, durationMs);
+  }
+
+  /**
+   * Recalculates and updates speech bubble coordinates in viewport space
+   * relative to the companion's current (x, y) coordinates.
+   */
+  public updateSpeechBubblePosition(): void {
+    if (!this.thoughtPill || !this.thoughtPill.classList.contains('is-visible')) return;
+
+    const margin = 8;
+    const gap = 12;
+    const w = this.thoughtPill.offsetWidth || 220;
+    const h = this.thoughtPill.offsetHeight || 60;
+    const avatarCenterX = this.x + 48;
+    const clampedCenterX = Math.max(margin + w / 2, Math.min(avatarCenterX, window.innerWidth - margin - w / 2));
+    const placeAbove = this.y - h - gap > margin;
+
+    const left = Math.round(clampedCenterX - w / 2);
+    const top = Math.round(placeAbove ? this.y - h - gap : this.y + 96 + gap);
+
+    this.thoughtPill.style.left = `${left}px`;
+    this.thoughtPill.style.top = `${top}px`;
+
+    const tailX = Math.max(14, Math.min(w - 14, avatarCenterX - left));
+    this.thoughtPill.style.setProperty('--tail-x', `${Math.round(tailX)}px`);
+    this.thoughtPill.classList.toggle('tail-below', placeAbove);
+    this.thoughtPill.classList.toggle('tail-above', !placeAbove);
+  }
+
+  /**
+   * Recalculates and updates in-page note card coordinates in viewport space
+   * relative to the companion's current (x, y) coordinates.
+   * Ensures the note card moves in lockstep with the companion during drag and glide.
+   */
+  public updateNotePosition(): void {
+    if (!this.noteHudEl || !this.noteHudEl.classList.contains('is-visible')) return;
+
+    const margin = 12;
+    const gap = 12;
+    const w = this.noteHudEl.offsetWidth || 280;
+    const h = this.noteHudEl.offsetHeight || 150;
+    const avatarCenterX = this.x + 48;
+    const clampedCenterX = Math.max(margin + w / 2, Math.min(avatarCenterX, window.innerWidth - margin - w / 2));
+    const placeAbove = this.y - h - gap > margin;
+
+    const left = Math.round(clampedCenterX - w / 2);
+    const top = Math.round(placeAbove ? this.y - h - gap : this.y + 96 + gap);
+
+    this.noteHudEl.style.left = `${left}px`;
+    this.noteHudEl.style.top = `${top}px`;
+
+    const tailX = Math.max(16, Math.min(w - 16, avatarCenterX - left));
+    this.noteHudEl.style.setProperty('--tail-x', `${Math.round(tailX)}px`);
+    this.noteHudEl.classList.toggle('tail-below', placeAbove);
+    this.noteHudEl.classList.toggle('tail-above', !placeAbove);
+  }
+
+  public isNoteSheetOpen(): boolean {
+    return Boolean(this.noteHudEl?.classList.contains('is-visible'));
+  }
+
+  public closeNoteSheet(): void {
+    if (this.outsideNotePointerDownListener) {
+      window.removeEventListener('pointerdown', this.outsideNotePointerDownListener, { capture: true });
+      this.outsideNotePointerDownListener = null;
+    }
+    if (this.noteHudEl) {
+      this.noteHudEl.classList.remove('is-visible');
+    }
+  }
+
+  public toggleNoteSheet(): void {
+    if (this.isNoteSheetOpen()) {
+      this.closeNoteSheet();
+    } else {
+      this.openNoteSheet();
+    }
   }
 
   public openNoteSheet() {
@@ -300,51 +366,40 @@ export class OrganismController {
 
     hud.innerHTML = `
       <div class="note-hud-header">
-        <span class="note-hud-badge">📝 Page Note · ${model.name}</span>
-        <button class="note-hud-close">&times;</button>
+        <div class="note-hud-title-group">
+          <div class="note-hud-badge">
+            <span class="note-hud-dot"></span>
+            <span class="note-hud-title">${model.name.toLowerCase()}</span>
+          </div>
+          <span class="note-hud-domain" title="${domain}">${domain}</span>
+        </div>
+        <button class="note-hud-close" title="Close (esc)">&times;</button>
       </div>
-      ${selectedText ? `<div class="note-hud-snippet">“${selectedText.slice(0, 70)}…”</div>` : ''}
-      <textarea class="note-hud-textarea" placeholder="Note thoughts on ${domain}…"></textarea>
+      ${selectedText ? `<div class="note-hud-snippet" title="${selectedText}">“${selectedText.slice(0, 90)}${selectedText.length > 90 ? '…' : ''}”</div>` : ''}
+      <div class="note-hud-input-wrap">
+        <textarea class="note-hud-textarea" placeholder="drop a thought on ${domain}…" rows="2"></textarea>
+      </div>
       <div class="note-hud-footer">
-        <button class="note-hud-btn-poke">Poke</button>
-        <button class="note-hud-btn-save" style="background: ${model.accentColor};">Save Note</button>
+        <span class="note-hud-hint">↵ enter · esc</span>
+        <button class="note-hud-btn-save">save note</button>
       </div>
     `;
 
-    /** Same clamped, viewport-anchored placement as the speech bubble. */
     hud.classList.add('is-visible');
-    const margin = 8;
-    const gap = 12;
-    const w = hud.offsetWidth || 270;
-    const h = hud.offsetHeight || 200;
-    const avatarCenterX = this.x + 48;
-    const clampedCenterX = Math.max(margin + w / 2, Math.min(avatarCenterX, window.innerWidth - margin - w / 2));
-    const placeAbove = this.y - h - gap > margin;
-
-    hud.style.left = `${Math.round(clampedCenterX - w / 2)}px`;
-    hud.style.top = `${Math.round(placeAbove ? Math.max(margin, this.y - h - gap) : this.y + 96 + gap)}px`;
+    this.updateNotePosition();
 
     const textarea = hud.querySelector('.note-hud-textarea') as HTMLTextAreaElement;
-    this.ctx.setTimeout(() => textarea?.focus(), 50);
+    this.ctx.setTimeout(() => textarea?.focus(), 40);
 
-    /** Wire up the note HUD action buttons. */
-    this.noteHudEl.querySelector('.note-hud-close')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.noteHudEl.classList.remove('is-visible');
-    });
+    const closeHud = () => {
+      this.closeNoteSheet();
+    };
 
-    this.noteHudEl.querySelector('.note-hud-btn-poke')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.noteHudEl.classList.remove('is-visible');
-      this.handlePoke();
-    });
-
-    this.noteHudEl.querySelector('.note-hud-btn-save')?.addEventListener('click', async (e) => {
-      e.stopPropagation();
+    const saveNote = async () => {
       const content = textarea.value.trim();
       if (!content) return;
 
-      this.noteHudEl.classList.remove('is-visible');
+      closeHud();
       try {
         await sendMessage('createPageNote', {
           content,
@@ -354,11 +409,44 @@ export class OrganismController {
           snippet: selectedText || undefined,
         });
         if (this.soundEnabled) soundSynth.playChime('complete');
-        this.showRemark('Note saved to Daily Diary! 📝', 3000);
+        this.showRemark('Note saved to Daily Diary! 📝', 2500);
       } catch {
         /** Save failures are non-fatal; the note stays editable. */
       }
+    };
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        closeHud();
+      } else if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        void saveNote();
+      }
     });
+
+    hud.querySelector('.note-hud-close')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeHud();
+    });
+
+    hud.querySelector('.note-hud-btn-save')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void saveNote();
+    });
+
+    /** Outside click listener closes note HUD */
+    if (this.outsideNotePointerDownListener) {
+      window.removeEventListener('pointerdown', this.outsideNotePointerDownListener, { capture: true });
+    }
+    this.outsideNotePointerDownListener = (e: PointerEvent) => {
+      const path = e.composedPath();
+      if (!path.includes(hud) && !path.includes(this.rootEl)) {
+        this.closeNoteSheet();
+      }
+    };
+    window.addEventListener('pointerdown', this.outsideNotePointerDownListener, { capture: true });
   }
 
   private handlePoke() {
@@ -385,15 +473,15 @@ export class OrganismController {
   }
 
   /**
-   * Applies the current position to the avatar transform.
-   *
-   * Runs every frame and during glides/drags, keeping the avatar exactly
-   * where the effects engine expects the beam origin to be.
+   * Applies the current position to the avatar transform, and keeps the
+   * speech bubble and note card anchored in real time lockstep.
    */
   private updateTransform() {
     if (this.rootEl) {
       this.rootEl.style.transform = `translate3d(${Math.round(this.x)}px, ${Math.round(this.y)}px, 0)`;
     }
+    this.updateSpeechBubblePosition();
+    this.updateNotePosition();
   }
 
   /**
@@ -436,15 +524,18 @@ export class OrganismController {
   }
 
   /**
-   * Queues an AI remark/roast to be delivered after an in-flight intervention
-   * effect completes and the companion avatar glides back to dock.
+   * Triggers an in-place text roast replacement on the active page.
+   *
+   * @param roast Raw AI roast text.
    */
-  public queueRemark(message: string): void {
-    this.pendingRemark = message;
+  public triggerRoast(roast: string): void {
+    if (this.destroyed || !this.screenEffects || !this.effectsEnabled) return;
+    this.screenEffects.triggerRoastReplacement(this.organismId, roast);
   }
 
   /**
    * Flies the avatar back to the spot it was occupying before the heist.
+   * Docks silently — the physical effect on the page is the complete statement.
    *
    * @param durationMs Return flight time; defaults to a brisk 620ms.
    */
@@ -453,11 +544,6 @@ export class OrganismController {
     const home = this.glideReturn;
     if (!home || this.destroyed || this.isDragging) {
       this.cancelGlide();
-      if (this.pendingRemark) {
-        const msg = this.pendingRemark;
-        this.pendingRemark = null;
-        this.showRemark(msg);
-      }
       return;
     }
     const startX = this.x;
@@ -476,11 +562,6 @@ export class OrganismController {
         this.glideRafId = window.requestAnimationFrame(step);
       } else {
         this.glideRafId = 0;
-        if (this.pendingRemark) {
-          const msg = this.pendingRemark;
-          this.pendingRemark = null;
-          this.showRemark(msg);
-        }
       }
     };
     this.glideRafId = window.requestAnimationFrame(step);
@@ -523,18 +604,22 @@ export class OrganismController {
     this.rootEl.className = `organism-root state-${this.state}`;
 
     this.rootEl.innerHTML = /* html */ `
-      <div class="thought-pill pos-above"></div>
-      <div class="note-hud pos-above"></div>
       <div class="organism-avatar">
         <canvas class="organism-canvas" width="192" height="192" style="width: 96px; height: 96px;"></canvas>
       </div>
     `;
 
+    this.thoughtPill = document.createElement('div');
+    this.thoughtPill.className = 'thought-pill pos-above';
+
+    this.noteHudEl = document.createElement('div');
+    this.noteHudEl.className = 'note-hud pos-above';
+
+    this.shadowRoot.appendChild(this.thoughtPill);
+    this.shadowRoot.appendChild(this.noteHudEl);
     this.shadowRoot.appendChild(this.rootEl);
 
     this.canvasEl = this.rootEl.querySelector('.organism-canvas') as HTMLCanvasElement;
-    this.thoughtPill = this.rootEl.querySelector('.thought-pill') as HTMLDivElement;
-    this.noteHudEl = this.rootEl.querySelector('.note-hud') as HTMLDivElement;
     const avatar = this.rootEl.querySelector('.organism-avatar') as HTMLDivElement;
 
     this.spriteEngine = new SpriteEngine(this.canvasEl);
@@ -551,7 +636,10 @@ export class OrganismController {
   }
 
   private bindEvents() {
-    window.addEventListener('pointermove', this.onGlobalPointerMove, { passive: true });
+    window.addEventListener('pointermove', this.onGlobalPointerMove, { capture: true, passive: true });
+    window.addEventListener('pointerdown', this.onGlobalPointerMove, { capture: true, passive: true });
+    window.addEventListener('pointerover', this.onGlobalPointerMove, { capture: true, passive: true });
+    window.addEventListener('scroll', this.onScroll, { passive: true });
     window.addEventListener('resize', this.onWindowResize, { passive: true });
   }
 
@@ -568,6 +656,8 @@ export class OrganismController {
 
     const avatar = this.rootEl.querySelector('.organism-avatar') as HTMLDivElement;
     avatar.classList.add('is-dragging');
+    this.noteHudEl?.classList.add('is-dragging');
+    this.thoughtPill?.classList.add('is-dragging');
     avatar.setPointerCapture(e.pointerId);
 
     avatar.addEventListener('pointermove', this.onAvatarPointerMove);
@@ -580,7 +670,7 @@ export class OrganismController {
     const dx = e.clientX - this.dragStartX;
     const dy = e.clientY - this.dragStartY;
 
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
       this.hasDragged = true;
     }
 
@@ -599,6 +689,8 @@ export class OrganismController {
 
     const avatar = this.rootEl.querySelector('.organism-avatar') as HTMLDivElement;
     avatar.classList.remove('is-dragging');
+    this.noteHudEl?.classList.remove('is-dragging');
+    this.thoughtPill?.classList.remove('is-dragging');
     try {
       avatar.releasePointerCapture(e.pointerId);
     } catch {
@@ -621,8 +713,8 @@ export class OrganismController {
         });
       });
     } else {
-      /** Click without drag: open in-page note & action sheet. */
-      this.openNoteSheet();
+      /** Click without drag: toggle in-page note card. */
+      this.toggleNoteSheet();
     }
   };
 
@@ -630,6 +722,10 @@ export class OrganismController {
     this.cursorX = e.clientX;
     this.cursorY = e.clientY;
     this.screenEffects?.setCursorPoint(e.clientX, e.clientY);
+  };
+
+  private onScroll = () => {
+    this.screenEffects?.setCursorPoint(this.cursorX, this.cursorY);
   };
 
   private onWindowResize = () => {

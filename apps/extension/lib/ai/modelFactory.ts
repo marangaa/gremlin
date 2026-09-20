@@ -12,7 +12,7 @@ export function resolveLanguageModel(options: {
   model?: string;
 }): LanguageModel {
   const provider = options.provider || 'google';
-  const modelId = options.model?.trim() || SUPPORTED_PROVIDERS[provider].defaultModel;
+  const modelId = options.model?.trim() || '';
   const apiKey = options.apiKey?.trim() || '';
 
   switch (provider) {

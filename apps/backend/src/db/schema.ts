@@ -203,6 +203,26 @@ export const syncDiaries = pgTable(
   },
   (table) => [primaryKey({ columns: [table.userId, table.date] })],
 );
+
+/**
+ * Device registry — every push identifies which browser contributed it, so a
+ * Pro human can see "synced across your devices" honestly and stale devices
+ * can be pruned. Upserted (lastSeenAt) on every sync write.
+ */
+export const syncDevices = pgTable(
+  'sync_devices',
+  {
+    userId: text('userId')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    deviceId: text('deviceId').notNull(),
+    name: text('name'),
+    lastSeenAt: timestamp('lastSeenAt', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('createdAt', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.deviceId] })]
+);
+
 // ==========================================================
 // 3. Waitlist Table
 // ==========================================================

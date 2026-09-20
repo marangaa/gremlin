@@ -15,6 +15,7 @@ export interface ProtocolMap {
     message?: string;
     intensity?: number;
     triggerEffect?: boolean;
+    interventionKind?: import('@gremlin/shared').InterventionKind;
   }): void;
   startSprint(data: { goal: string; targetMinutes: number }): void;
   stopSprint(): void;

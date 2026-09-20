@@ -7,6 +7,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGroq } from '@ai-sdk/groq';
 import type { Bindings } from '../types/env';
 import type { RollingHistoryWindow, EvaluationResult, OrganismId } from '@gremlin/shared';
+import { resolveModelId } from './providers/discovery';
 
 export const AgentEvaluationSchema = z.object({
   status: z.enum([
@@ -35,7 +36,7 @@ export const AgentEvaluationSchema = z.object({
   remark: z.string().max(80).describe('Short, punchy in-character remark (under 12 words).'),
   visualEffect: z.enum(['none', 'vignette', 'screen_shake', 'confetti']).describe('Visual distraction effect to trigger on screen.'),
   soundReaction: z.enum(['none', 'chirp', 'alert', 'celebrate', 'sigh']).describe('Web audio synthesizer reaction.'),
-  intervention: z.enum(['observe', 'nudge', 'callout', 'reset']).default('nudge').describe('Chosen response. observe = deliberately stay silent (psychology: never interrupt flow).'),
+  intervention: z.enum(['observe', 'nudge', 'callout', 'reset']).default('observe').describe('Chosen response. observe = deliberately stay silent (psychology: never interrupt flow). ALWAYS choose observe if status is on_task, resting_or_idle, or goal_completed.'),
   noteForDiary: z.string().max(140).optional().describe('One-line observation worth carrying into the diary/profile.'),
   escalationDelta: z.number().min(-1).max(1).default(0).describe('Suggested escalation adjustment based on how the human responds over time.'),
   reasoning: z.string().describe('Brief agent chain-of-thought explaining why this judgment was reached from the browsing timeline.'),
@@ -110,29 +111,93 @@ Examples: "Specimen abandoned task for video of lunch.", "Avoidance ritual: nest
   },
 };
 
+export interface ByokConfig {
+  provider?: string;
+  apiKey?: string;
+  model?: string;
+  endpoint?: string;
+}
+
 /**
- * Resolves the primary available AI language model from Cloudflare Worker environment bindings.
- * Returns null when no provider key is configured.
+ * Resolves the primary available AI language model from Cloudflare Worker environment bindings
+ * or from user-supplied BYOK headers.
  */
-function resolveBackendLanguageModel(env: Bindings) {
+async function resolveBackendLanguageModel(
+  env: Bindings,
+  byok?: ByokConfig,
+): Promise<{ model: any; source: string; name: string } | null> {
+  // Priority 1: User-supplied BYOK credentials
+  if (byok?.apiKey && byok.apiKey.trim().length > 0) {
+    const provider = byok.provider || 'google';
+    const key = byok.apiKey.trim();
+    const endpoint = byok.endpoint?.trim();
+
+    const modelName = await resolveModelId(provider, {
+      apiKey: key,
+      endpoint,
+      preferredModel: byok.model,
+    });
+
+    if (provider === 'google') {
+      const google = createGoogleGenerativeAI({ apiKey: key });
+      return { model: google(modelName), source: 'BYOK (Google)', name: modelName };
+    }
+    if (provider === 'openai') {
+      const openai = createOpenAI({ apiKey: key, baseURL: endpoint || undefined });
+      return { model: openai(modelName), source: 'BYOK (OpenAI)', name: modelName };
+    }
+    if (provider === 'anthropic') {
+      const anthropic = createAnthropic({ apiKey: key, baseURL: endpoint || undefined });
+      return { model: anthropic(modelName), source: 'BYOK (Anthropic)', name: modelName };
+    }
+    if (provider === 'groq') {
+      const groq = createGroq({ apiKey: key });
+      return { model: groq(modelName), source: 'BYOK (Groq)', name: modelName };
+    }
+    if (provider === 'ollama' || provider === 'custom') {
+      const openai = createOpenAI({
+        apiKey: key || 'dummy',
+        baseURL: endpoint || 'http://localhost:11434/v1',
+      });
+      return { model: openai(modelName), source: `BYOK (${provider})`, name: modelName };
+    }
+  }
+
+  // Priority 2: Server-side environment keys (Pro pool / local development)
   if (env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    const modelName = await resolveModelId('google', {
+      apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY,
+      preferredModel: (env as any).DEFAULT_AI_MODEL,
+    });
     const google = createGoogleGenerativeAI({ apiKey: env.GOOGLE_GENERATIVE_AI_API_KEY });
-    return google('gemini-2.5-flash');
+    return { model: google(modelName), source: 'Server (Gemini Pool)', name: modelName };
   }
 
   if (env.OPENAI_API_KEY) {
+    const modelName = await resolveModelId('openai', {
+      apiKey: env.OPENAI_API_KEY,
+      preferredModel: (env as any).DEFAULT_AI_MODEL,
+    });
     const openai = createOpenAI({ apiKey: env.OPENAI_API_KEY });
-    return openai('gpt-4o-mini');
+    return { model: openai(modelName), source: 'Server (OpenAI Pool)', name: modelName };
   }
 
   if (env.GROQ_API_KEY) {
+    const modelName = await resolveModelId('groq', {
+      apiKey: env.GROQ_API_KEY,
+      preferredModel: (env as any).DEFAULT_AI_MODEL,
+    });
     const groq = createGroq({ apiKey: env.GROQ_API_KEY });
-    return groq('llama-3.3-70b-versatile');
+    return { model: groq(modelName), source: 'Server (Groq Pool)', name: modelName };
   }
 
   if (env.ANTHROPIC_API_KEY) {
+    const modelName = await resolveModelId('anthropic', {
+      apiKey: env.ANTHROPIC_API_KEY,
+      preferredModel: (env as any).DEFAULT_AI_MODEL,
+    });
     const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY });
-    return anthropic('claude-3-5-haiku-latest');
+    return { model: anthropic(modelName), source: 'Server (Anthropic Pool)', name: modelName };
   }
 
   return null;
@@ -143,26 +208,30 @@ function resolveBackendLanguageModel(env: Bindings) {
  *
  * @param window - Narrative rolling context containing current tab metadata and timeline.
  * @param env - Worker environment bindings with LLM keys.
+ * @param byok - Optional client-supplied BYOK credentials.
  * @returns Structured evaluation result generated by the AI agent.
  */
 export async function runAgentEvaluation(
   window: RollingHistoryWindow,
   env: Bindings,
+  byok?: ByokConfig,
 ): Promise<EvaluationResult> {
   const persona = AGENT_PERSONA_PROMPTS[window.companionId] || AGENT_PERSONA_PROMPTS.Sarge!;
-  const model = resolveBackendLanguageModel(env);
+  const resolved = await resolveBackendLanguageModel(env, byok);
 
-  // Zero Fallbacks: an unconfigured server must never masquerade as a real evaluation.
-  if (!model) {
+  if (!resolved) {
     throw new HTTPException(503, {
       message:
-        'Cloud AI is not configured on the server. Provide a provider API key (GOOGLE_GENERATIVE_AI_API_KEY, OPENAI_API_KEY, GROQ_API_KEY, or ANTHROPIC_API_KEY) or switch the extension to self-hosted BYOK mode.',
+        'Cloud AI is not configured. Provide an API key in Settings or upgrade to Gremlin Pro.',
     });
   }
 
+  const { model, source, name: modelName } = resolved;
+  const startTime = performance.now();
+
   try {
     const prompt = `Active Sprint Objective: "${window.sprint.status === 'active' ? window.sprint.goal : 'General deep focus'}"
-Sprint Progress: ${window.elapsedSprintMinutes.toFixed(1)} minutes elapsed of ${window.sprint.targetMinutes}m target
+Sprint Progress: ${window.elapsedSprintMinutes.toFixed(1)} minutes elapsed
 
 CURRENT ACTIVE TAB:
 - URL / Domain: ${window.currentTab.domain} (${window.currentTab.url})
@@ -185,7 +254,11 @@ ${JSON.stringify(
   2
 )}
 
-Analyze the user's browsing narrative over time against their goal. Decide their focus status, companion mood, and punchy in-character remark.`;
+Analyze the user's browsing narrative over time against their goal. Decide their focus status, companion mood, and punchy in-character remark.
+
+CRITICAL FLOW RULE:
+- If the user is on_task, resting_or_idle, goal_completed, or returning from a tangent, you MUST set intervention="observe" and divergenceScore <= 0.25. Never interrupt human flow or demand action when they are actively working on their goal.
+- Only set intervention to "nudge", "callout", or "reset" when the user is actively distracted or deep in an off-task tangent (divergenceScore >= 0.5).`;
 
     const result = await generateText({
       model,
@@ -194,12 +267,24 @@ Analyze the user's browsing narrative over time against their goal. Decide their
       prompt,
     });
 
-    return result.output;
+    const latencyMs = Math.round(performance.now() - startTime);
+    const output = result.output;
+    const focusPct = Math.round((1 - output.divergenceScore) * 100);
+
+    // Live formatted terminal telemetry in Wrangler console
+    console.log('\n[Gremlin Worker] ────────────────────────────────────────────────────────────');
+    console.log(`[Gremlin Worker] 🎯 Sprint Goal : "${window.sprint.goal || 'General Focus'}"`);
+    console.log(`[Gremlin Worker] 🌐 Active Tab   : ${window.currentTab.domain} — "${window.currentTab.title.slice(0, 48)}"`);
+    console.log(`[Gremlin Worker] 🤖 Model Engine : ${modelName} via ${source} (${latencyMs}ms)`);
+    console.log(`[Gremlin Worker] 🧠 Reasoning    : "${output.reasoning}"`);
+    console.log(`[Gremlin Worker] 📊 Decision     : ${output.status.toUpperCase()} | Focus: ${focusPct}% | Mood: ${output.mood} | Reaction: ${output.intervention}`);
+    console.log('[Gremlin Worker] ────────────────────────────────────────────────────────────\n');
+
+    return output;
   } catch (err) {
     console.error('[AI SDK Backend Agent Error]:', err);
-    // Zero Fallbacks: surface provider failures honestly instead of faking on_task.
     throw new HTTPException(503, {
-      message: 'AI evaluation failed upstream. Verify provider status or switch to BYOK mode.',
+      message: 'AI evaluation failed upstream. Verify provider status or API key.',
       cause: err,
     });
   }

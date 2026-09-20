@@ -75,7 +75,7 @@ export type OrganismState =
  */
 export interface FocusSprint {
   goal: string;
-  targetMinutes: number;
+  targetMinutes?: number;
   startedAt: number;
   status: 'idle' | 'active' | 'paused' | 'completed';
   isContinuousFlow?: boolean;

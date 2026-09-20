@@ -6,13 +6,19 @@ import type { AppType } from '@gremlin/backend';
  * defaulting to the local development server if not set.
  */
 export const API_BASE_URL =
-  import.meta.env.WXT_API_URL || 'http://localhost:8700';
+  import.meta.env.WXT_API_URL ||
+  (import.meta.env.PROD
+    ? 'https://gremlin-backend.rchdmaranga-b12.workers.dev'
+    : 'http://localhost:8700');
 
 /**
  * Resolves the frontend web app URL (e.g. for /auth, /pricing, /privacy).
  */
 export const WEB_APP_URL =
-  import.meta.env.WXT_WEB_APP_URL || 'http://localhost:5173';
+  import.meta.env.WXT_WEB_APP_URL ||
+  (import.meta.env.PROD
+    ? 'https://gremlin.fasihi.xyz'
+    : 'http://localhost:5173');
 
 /**
  * Type-safe RPC Client for the Gremlin Hono Backend.

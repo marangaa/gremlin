@@ -78,10 +78,32 @@ class EventTracker {
       });
     }
 
+    // Track window focus changes (e.g. switching between IDE and browser or across browser windows)
+    if (browser.windows) {
+      browser.windows.onFocusChanged.addListener(async (windowId) => {
+        if (windowId === browser.windows.WINDOW_ID_NONE) return;
+        await this.refreshActiveTab();
+      });
+    }
+
     // Seed initial active tab
-    void browser.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
-      if (tab) this.updateCurrentTab(tab);
-    });
+    void this.refreshActiveTab();
+  }
+
+  /**
+   * Directly and authoritatively resolves the active tab in the focused browser window.
+   * Eliminates service worker dormancy and cold-boot desyncs.
+   */
+  public async refreshActiveTab(): Promise<void> {
+    if (typeof browser === 'undefined' || !browser.tabs) return;
+    try {
+      const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+      if (tab) {
+        this.updateCurrentTab(tab);
+      }
+    } catch {
+      /** Ignore tab query failures on browser shutdown or restricted contexts */
+    }
   }
 
   private extractDomain(urlStr?: string): string {

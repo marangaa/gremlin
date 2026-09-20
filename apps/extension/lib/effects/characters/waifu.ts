@@ -87,13 +87,17 @@ function runMomoStickyPin(ctx: EffectContext, target: SentenceTarget): void {
   const targetTop = target.top;
   const hoverY = Math.max(8, targetTop - 85);
 
-  // Fetch active goal for personalized note
-  let noteBody = 'Stop reading this distraction! Finish your sprint first! (≧ロ≦)';
-  void sprintStorage.getValue().then((sprint) => {
-    if (sprint?.goal?.trim()) {
-      noteBody = `Stop reading this! Get back to: <span style="color:#db2777;font-weight:700;">${escapeHtml(sprint.goal.trim())}</span>! (≧ロ≦)`;
-    }
-  }).catch(() => {});
+  // Fetch active goal or dynamic LLM roast for personalized note
+  let noteBody = ctx.roast?.trim()
+    ? escapeHtml(ctx.roast.trim())
+    : 'Stop reading this distraction! Finish your sprint first! (≧ロ≦)';
+  if (!ctx.roast?.trim()) {
+    void sprintStorage.getValue().then((sprint) => {
+      if (sprint?.goal?.trim()) {
+        noteBody = `Stop reading this! Get back to: <span style="color:#db2777;font-weight:700;">${escapeHtml(sprint.goal.trim())}</span>! (≧ロ≦)`;
+      }
+    }).catch(() => {});
+  }
 
   glideAvatarTo(targetCenterX + 35, hoverY, FLUTTER_MS, () => {
     if (scriptCtx.isInvalid) {

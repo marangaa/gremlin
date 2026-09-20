@@ -33,9 +33,10 @@ graph TD
     Storage -->|configStorage.watch| ContentScript
     Storage -->|configStorage.watch| BackgroundSW
     
-    BackgroundSW -->|Active Sprint & Context + pageSignal| AIReasoning[AI Decision Engine: /lib/ai/engine.ts]
-    AIReasoning -->|BYOK: Direct Client Fetch| Gemini[Google AI Studio / OpenAI / Ollama]
-    AIReasoning -->|Cloud Mode: Session RPC| EdgeAPI[Backend: apps/backend]
+    BackgroundSW -->|Active Sprint & Context + pageSignal| AIReasoning[AI Dispatcher: /lib/ai/engine.ts]
+    AIReasoning -->|RPC + BYOK Headers or Pro Session| EdgeAPI[Cloudflare Worker: POST /api/sprint/evaluate]
+    EdgeAPI -->|AI SDK v4 + gemini-3.6-flash / Groq / OpenAI| AIProvider[AI Providers: Google / OpenAI / Anthropic / Groq]
+    AIReasoning -->|Live Telemetry Storage: Sparkline & Reasoning| Popup
     EdgeAPI -->|Better Auth + Polar + Neon DB| CloudDB[(Neon Serverless Postgres)]
     
     AIReasoning -->|Decision: State, Remark, Audio| BackgroundSW
@@ -56,6 +57,37 @@ graph TD
    - Content scripts use `configStorage.watch()` to reactively update the companion avatar, audio volume, and dock position in real time across **all open browser tabs** without requiring a page refresh.
 5. **Retroactive Script Injection:**
    - On install or extension reload, `browser.runtime.onInstalled` in `background.ts` queries all open HTTP/HTTPS tabs and executes `browser.scripting.executeScript` to inject `/content-scripts/content.js` dynamically.
+### Storage & Account Sync Architecture
+
+One persistent store per device (`chrome.storage.local` via WXT `storage.defineItem`), split into two
+data classes by the sync engine — never two competing stores:
+
+- **Class A (account data)** — episodes, page notes, goals, diaries, focus profile. Mirrored to Neon
+  when (and only when) the user is signed in **with an active Pro subscription**; Free tier is
+  device-local by design (matches the /pricing copy: multi-device sync is a Pro feature).
+- **Class B (device data)** — `organismConfig` (including BYOK secrets — never uploaded), `organismState`,
+  `sprint`, `userSession`, event/activity history, `deviceId`/`deviceName`. Never leaves the device.
+
+Engine: `apps/extension/lib/sync/engine.ts`.
+
+- **Push** — `schedulePush()` (alias `queueAccountSync(collection)`) after every Class-A mutation,
+  debounced 800 ms, batched full-list upserts by stable id. Never blocks UI.
+- **Pull** — `pullAndMerge()` on sign-in / popup-open / 15-min heartbeat; self-throttled (30 s).
+- **Connect** — `onAccountConnected()` pulls-then-pushes when an account attaches (fresh devices
+  seed from the account first, then contribute local state).
+- **Merge** — upsert-by-stable-id with per-record last-writer-wins; pulls never blindly overwrite
+  newer local rows (a completed goal is never resurrected; diary days merge sessions server-side,
+  killing the two-browser same-day double-write).
+
+Device identity: a random UUID persisted in `local:deviceId` plus a derived `deviceName`;
+every push carries `deviceId`/`deviceName` and the server upserts a `sync_devices` row (schema in
+`apps/backend/src/db/schema.ts` + `src/schema.sql`) so cross-device behavior is observable.
+
+Removed in this redesign: the `sync:focusProfile` `chrome.storage.sync` mirror (scoped to the Google
+profile, not the Gremlin account — a wrong-account restore hazard; account portability is the sync
+engine's job) and the dead `userSession.token` field (auth is cookie-based).
+
+
 6. **Zero-Leak Lifecycle Invalidation:**
    - Content scripts listen to `ctx.onInvalidated()`. When the extension is uninstalled or disabled in Chrome, all `requestAnimationFrame` loops, audio contexts, and injected DOM nodes are purged immediately.
    - Because WXT detects invalidation lazily (the `runtime.id` check lives inside the `ctx.isInvalid` getter) and its active events only cover reload/update, each content script runs a `ctx.setInterval` heartbeat so uninstalls also trip full teardown through the framework's abort signal.
@@ -115,25 +147,26 @@ There is no token handoff or device-code flow — one cookie domain, three consu
 
 `config.mode` answers exactly one question: **who runs the LLM** — your key locally (`self-hosted`) or server keys via proxy (`cloud`). It does NOT control syncing.
 
-Syncing is **account-scoped**: any signed-in human mirrors their episode log and focus profile to Neon, regardless of mode. Exactly one evaluation path runs per moment; memory is always recorded locally first and never pauses on network state.
+Syncing is **Pro-scoped** (`isLoggedIn && plan === 'pro'` — `isAccountSyncActive()` in the sync engine). Free tier is device-local by design, matching the /pricing copy: multi-device sync is a paid feature. Exactly one evaluation path runs per moment; memory is always recorded locally first and never pauses on network state.
 
-| Data | No account | Signed in (either mode) |
+| Data | No account / Free | Pro (signed in) |
 |---|---|---|
-| LLM judgment | local agent, your key | mode decides: your key locally, or server proxy |
-| Episodes + focus profile | device-only | ✅ mirrored to Neon |
-| Goals + milestones | device-only | ✅ mirrored (full-list upsert by id) |
-| Smart notes | device-only | ✅ mirrored |
-| Diaries | device-only | ✅ today's diary mirrored on finish/reflect |
+| LLM judgment | local agent, your key | mode decides: your key locally, or server proxy (`requirePro` gate) |
+| Episodes + focus profile | device-only | ✅ synced (debounced batched push + pull-merge) |
+| Goals + milestones | device-only | ✅ synced (upsert-by-id, LWW per record) |
+| Smart notes | device-only | ✅ synced (upsert-by-id, LWW per record) |
+| Diaries | device-only | ✅ synced — same-day sessions merged server-side |
+| Device registry | — | ✅ `sync_devices` row upserted per push (deviceId + deviceName) |
 
-Local-only without an account: everything stays on-device. Plan-tier enforcement (`free` vs `pro`) is synchronized automatically via Polar.sh customer state webhooks (`onCustomerStateChanged`).
+Local-only without Pro: everything stays on-device. Plan-tier enforcement (`free` vs `pro`) is synchronized automatically via Polar.sh customer state webhooks (`onCustomerStateChanged`) into `user.plan`.
 
-Full sync lives in `/api/memory/*` (`routes/memory.ts` for episodes/profile, `routes/memory.sync.ts` for goals/notes/diary). Push strategy is full-list upsert-by-id/date after every mutation and judged moment; boot-time pull unions missing ids/dates into local storage (server fills gaps, local wins conflicts).
+Full sync lives in `/api/memory/*` (`routes/memory.ts` for episodes/profile, `routes/memory.sync.ts` for goals/notes/diary/devices). Push strategy is debounced batched full-list upsert-by-id/date via `schedulePush()`; pulls merge by stable id with per-record last-writer-wins — pulls never blindly overwrite newer local rows, and same-day diaries merge sessions server-side (the two-browser double-write killer).
 
 ### Tech Stack
 * **Framework:** [Hono v4](https://hono.dev) deployed on **Cloudflare Workers**.
 * **Database:** [Neon Serverless Postgres](https://neon.tech) via `@neondatabase/serverless` (single memoized pool shared by Better Auth and sprint persistence).
 * **Authentication & Billing:** [Better Auth](https://better-auth.com) with email/password and session cookies configured for browser extensions (`chrome-extension://` origins via env-driven allowlists) plus the official `@polar-sh/better-auth` plugin.
-  * `session.cookieCache` (5 min signed cookie) avoids a Postgres round trip on every service-worker wake-up.
+  * `session.cookieCache` is **disabled** — a cached signed session snapshot freezes `user.plan` for its TTL, so webhook-driven tier flips (upgrade/downgrade) would not surface until expiry. Every request re-validates against Postgres instead.
   * Rate limiting persists in the `rate_limit` table (`storage: 'database'`) — in-memory counters are meaningless across isolates.
   * Client IP resolution uses `cf-connecting-ip`.
   * Plan tier (`free`/`pro`) lives on `user.additionalFields.plan` with `input: false` so it can only be mutated server-side. Integrated with `@polar-sh/better-auth` which triggers `onCustomerStateChanged` and `onOrderPaid` to keep the tier in sync.
@@ -170,15 +203,16 @@ Extension-side sync is opportunistic and local-first (`lib/api/memoryClient.ts`)
   * `GET /api/auth/customer/portal`: Generates an authenticated Polar Customer Portal session URL for subscription self-management, payment method updates, and invoices.
   * `GET /api/auth/customer/state`: Fetches cached customer subscription and entitlement state.
 * `GET /api/user/profile`: Authenticated profile incl. plan tier. `PATCH /api/user/profile`: display-name update.
-* `POST /api/sprint/evaluate`: Authenticated cloud proxy for AI reasoning (for Pro subscribers without their own API keys). Request body validated with `@hono/zod-validator`; error envelopes are typed into `hc<AppType>` responses via hono's `ApplyGlobalResponse`.
+* `GET /api/auth/session`: Session introspection incl. plan tier (pricing UI hint; authoritative plan is `/api/user/profile`).
+* `POST /api/sprint/evaluate`: Pro-gated cloud proxy for AI reasoning (for Pro subscribers without their own API keys). Free tier runs the same reasoning on-device via BYOK. `requireAuth` → `requirePro` (403 when `user.plan !== 'pro'`). Request body validated with `@hono/zod-validator`; error envelopes are typed into `hc<AppType>` responses via hono's `ApplyGlobalResponse`.
 * `POST /api/sprint/start` / `GET /api/sprint/current` / `POST /api/sprint/complete`: Cross-device sprint lifecycle persisted in Neon (`sprints` table) — state survives worker eviction, unlike the previous per-isolate in-memory Map.
 * *Note: Legacy `/api/billing` routes were completely deleted; all monetization flows are handled cleanly by Better Auth Polar primitives.*
 
 ### Origin Configuration
 CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker bindings:
-* `ALLOWED_EXTENSION_IDS` — comma-separated Chrome extension IDs (become `chrome-extension://<id>` entries). Required in production.
+* `ALLOWED_EXTENSION_IDS` — comma-separated Chrome extension IDs (become exact `chrome-extension://<id>` entries). Required in production; no `chrome-extension://*` wildcard is ever emitted because Better Auth rejects wildcards.
 * `ALLOWED_ORIGINS` — extra exact web origins.
-* Outside production (`NODE_ENV !== 'production'`), localhost any-port and a permissive `chrome-extension://*` wildcard are tolerated for local development.
+* Outside production (`NODE_ENV !== 'production'`), localhost dev origins plus any pinned extension IDs apply. CORS additionally echoes any `chrome-extension://` origin at the HTTP layer (safe — Better Auth still enforces its own exact-origin CSRF check).
 
 ---
 
@@ -193,7 +227,7 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
   - `InteractiveBento.tsx`: Mouse-spotlight interactive cards highlighting local privacy, procedural audio, and multi-device synchronization.
 * **Pages:**
   - `/`: Landing page — floating 3D hero, companion roster with voice previews, three-step walkthrough, and a closing CTA that uses lime marker-highlights on the headline instead of a full-bleed color band (keeps the accent in the system's buttons/highlights).
-  - `/pricing`: Tier breakdown (Free BYOK, $5/mo Pro, $49 Founder Pass) and FAQ.
+  - `/pricing`: Tier breakdown (Free BYOK, $5/mo Pro) and FAQ.
   - `/auth`: Sign in / sign up portal for Gremlin Cloud.
   - `/privacy` & `/terms`: Full compliance and security disclosures for Chrome Web Store review.
 * **Shared Chrome:** Floating pill navbar and a paper-brut footer (`bg-paper`, hard-shadow brand sticker, mono uppercase column heads, dashed bottom bar with back-to-top). Section eyebrows are straight-aligned label chips — no rotation — across Home, Pricing, and doc pages.
@@ -227,6 +261,9 @@ Powered by the official `@polar-sh/better-auth` integration (backed by `@polar-s
    - Initialized via `polar({ client, createCustomerOnSignUp: true, use: [checkout(...), portal(), usage(), webhooks(...)] })`.
    - Automatically provisions a Polar Customer record upon user registration (`createCustomerOnSignUp: true`).
    - Supports both `sandbox` and `production` environments via the `POLAR_ENV` configuration binding.
+   - `checkout()` success URL carries the Polar return-trip token: `` `${FRONTEND_URL}/pricing?checkout_id={CHECKOUT_ID}&success=true` ``.
+   - Billing stays disabled (auth-only) unless `POLAR_ACCESS_TOKEN` + `POLAR_PRO_PRODUCT_ID` + `POLAR_WEBHOOK_SECRET` are all present; production throws on partial config instead of registering broken checkout/webhooks.
+
 2. **Authoritative Customer State Sync (`customer.state_changed`)**:
    - Rather than juggling disjointed webhook events for renewals, cancellations, pauses, and payment failures, Polar emits a unified `customer.state_changed` event.
    - The plugin's `onCustomerStateChanged` hook checks `customer.active_subscriptions.length > 0`:
@@ -239,10 +276,12 @@ Powered by the official `@polar-sh/better-auth` integration (backed by `@polar-s
    - Users can update cards, view invoices/receipts, and cancel or resume subscriptions on Polar's hosted portal without needing custom UI in the extension.
 5. **Standard Webhook Verification**:
    - Polar webhooks are ingested at `/api/auth/polar/webhooks`.
-   - The plugin handles Standard Webhooks HMAC-SHA256 signature verification natively using `POLAR_WEBHOOK_SECRET` (`whsec_...`).
+   - Polar transitioned all new endpoints to the [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks) specification on September 8, 2026 (secret `whsec_<base64>` is decoded to 32 raw bytes for HMAC-SHA256).
+   - Because `@polar-sh/better-auth@1.8.4` depends on `@polar-sh/sdk@0.49.0` (which had a known bug re-encoding the secret into a legacy 50-byte ASCII key before Polar introduced dual-key verification in v1.0.0-alpha), the endpoint is verified directly in `apps/backend/src/routes/auth.ts` using the native Web Crypto API (`crypto.subtle`) adhering strictly to the Standard Webhooks specification.
+   - Once signature authenticity and timestamp tolerance (<5 min) are verified, `processPolarWebhookEvent()` executes the state updates (`order.paid` and `customer.state_changed`) to keep user billing tiers synchronized in Postgres.
 6. **Local Development & Sandbox Webhook Forwarding**:
    - The backend runs locally on port **`8700`** (avoiding Windows Hyper-V NAT dynamic exclusion range `8714–8813`).
-   - Webhooks can be forwarded directly from Polar Sandbox using the Polar CLI:
+   - Webhooks can be forwarded directly from Polar Sandbox using the Polar CLI or Cloudflare Tunnel:
      ```bash
      polar --sandbox webhooks listen --forward-to http://localhost:8700/api/auth/polar/webhooks
      ```

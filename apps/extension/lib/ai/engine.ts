@@ -5,6 +5,7 @@ import { type BrowserContext } from '../events/tracker';
 import {
   type FocusSprint,
   type OrganismConfig,
+  telemetryStorage,
 } from '../storage';
 import { resolveLanguageModel } from './modelFactory';
 import { type SupportedAiProvider } from './providers';
@@ -88,22 +89,48 @@ export async function decideOrganismReaction(
 }> {
   const startTime = performance.now();
 
-  // 1. CLOUD MODE: Send rolling window to Hono Backend
-  if (config.mode === 'cloud') {
-    try {
-      const workingContext = await agentOrchestrator.memoryStore.getWorkingContext(
-        buildBreadcrumb(ctx),
-        ctx.recentHistory.map((h) => ({
-          domain: h.domain,
-          title: h.title,
-          dwellSeconds: h.dwellSeconds,
-          scrollDepthPercent: 50,
-          isMediaPlaying: false,
-          timestamp: h.timestamp,
-        })),
-      );
+  // Update telemetry: evaluation in progress
+  const currentTelemetry = await telemetryStorage.getValue();
+  await telemetryStorage.setValue({
+    ...currentTelemetry,
+    isEvaluating: true,
+    nextEvaluationAt: Date.now() + 45000,
+  });
 
-      const res = await api.api.sprint.evaluate.$post({
+  try {
+    const workingContext = await agentOrchestrator.memoryStore.getWorkingContext(
+      buildBreadcrumb(ctx),
+      ctx.recentHistory.map((h) => ({
+        domain: h.domain,
+        title: h.title,
+        dwellSeconds: h.dwellSeconds,
+        scrollDepthPercent: 50,
+        isMediaPlaying: false,
+        timestamp: h.timestamp,
+      })),
+    );
+
+    // Prepare BYOK or cloud authentication headers
+    const headers: Record<string, string> = {
+      'x-requested-with': 'Gremlin-Browser-Extension',
+    };
+    const byokKey = config.byokApiKey?.trim() || config.selfHostedApiKey?.trim();
+    const byokEndpoint = config.byokEndpoint?.trim() || config.selfHostedEndpoint?.trim();
+    const byokModel = config.byokModel?.trim() || config.selfHostedModel?.trim();
+
+    if (byokKey || config.provider === 'ollama') {
+      if (byokKey) headers['x-byok-key'] = byokKey;
+      headers['x-byok-provider'] = config.provider || 'google';
+      if (byokModel) {
+        headers['x-byok-model'] = byokModel;
+      }
+      if (byokEndpoint) {
+        headers['x-byok-endpoint'] = byokEndpoint;
+      }
+    }
+
+    const res = await api.api.sprint.evaluate.$post(
+      {
         json: {
           sprint: workingContext.sprint,
           goals: workingContext.activeGoals,
@@ -115,69 +142,111 @@ export async function decideOrganismReaction(
           localTime: workingContext.localTime,
           isContinuousFlow: Boolean(sprint.isContinuousFlow),
         },
+      },
+      {
+        headers,
+      },
+    );
+
+    const latencyMs = Math.round(performance.now() - startTime);
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        const evalData: EvaluationResult = json.data;
+        const focusScore = Math.round((1 - evalData.divergenceScore) * 100);
+        const updatedHistory = [
+          ...(currentTelemetry.history || []).slice(-19),
+          {
+            timestamp: Date.now(),
+            score: focusScore,
+            status: evalData.status,
+            domain: ctx.currentDomain,
+          },
+        ];
+
+        await telemetryStorage.setValue({
+          isEvaluating: false,
+          lastEvaluatedAt: Date.now(),
+          nextEvaluationAt: Date.now() + 45000,
+          lastStatus: evalData.status,
+          lastScore: focusScore,
+          lastReasoning: evalData.reasoning,
+          lastRemark: evalData.remark ?? undefined,
+          lastDomain: ctx.currentDomain,
+          latencyMs,
+          history: updatedHistory,
+        });
+
+        const isOffTask =
+          evalData.status === 'distracted' || evalData.status === 'exploring_tangent';
+
+        return {
+          shouldReact: isOffTask && evalData.intervention !== 'observe',
+          state: evalData.mood,
+          remark: evalData.remark,
+          triggerEffect:
+            isOffTask &&
+            (evalData.visualEffect === 'vignette' || evalData.visualEffect === 'screen_shake'),
+          intensity: evalData.divergenceScore,
+          isConfigured: true,
+          status: evalData.status,
+          intervention: evalData.intervention,
+          escalationDelta: evalData.escalationDelta,
+        };
+      }
+    } else if (res.status === 403) {
+      const errorJson = (await res.json().catch(() => ({}))) as { message?: string };
+      const remark = errorJson?.message || 'Add an API key in Settings or upgrade to Gremlin Pro ($5/mo).';
+      await telemetryStorage.setValue({
+        ...currentTelemetry,
+        isEvaluating: false,
+        lastReasoning: remark,
       });
 
-      const latencyMs = Math.round(performance.now() - startTime);
+      return {
+        shouldReact: true,
+        state: 'confused',
+        remark,
+        triggerEffect: false,
+        intensity: 0,
+        isConfigured: false,
+        status: 'resting_or_idle',
+        intervention: 'nudge',
+        escalationDelta: 0,
+      };
+    } else if (res.status === 401) {
+      await telemetryStorage.setValue({
+        ...currentTelemetry,
+        isEvaluating: false,
+        lastReasoning: 'Signed out of Gremlin Cloud. Please sign in again or add an API key.',
+      });
 
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          const evalData: EvaluationResult = json.data;
-
-          return {
-            shouldReact: evalData.status !== 'on_task' || forcePoke,
-            state: evalData.mood,
-            remark: evalData.remark,
-            triggerEffect: evalData.visualEffect === 'vignette' || evalData.visualEffect === 'screen_shake',
-            intensity: evalData.divergenceScore,
-            isConfigured: true,
-            status: evalData.status,
-            intervention: evalData.intervention,
-            escalationDelta: evalData.escalationDelta,
-          };
-        }
-      }
-    } catch {
-      // Cloud unreachable
+      return {
+        shouldReact: true,
+        state: 'confused',
+        remark: 'Signed out of Gremlin Cloud. Please sign in again or add an API key.',
+        triggerEffect: false,
+        intensity: 0,
+        isConfigured: false,
+        status: 'resting_or_idle',
+        intervention: 'nudge',
+        escalationDelta: 0,
+      };
     }
+  } catch (err) {
+    console.error('[Gremlin Evaluation Engine Error]:', err);
+    await telemetryStorage.setValue({
+      ...currentTelemetry,
+      isEvaluating: false,
+    });
   }
 
-  // 2. SELF-HOSTED / BYOK MODE: FocusMonitorAgent
-  const focusAgent = await agentOrchestrator.getFocusMonitor(config.organismId);
-  const breadcrumb = buildBreadcrumb(ctx);
-
-  const timeline = ctx.recentHistory.map((h) => ({
-    domain: h.domain,
-    title: h.title,
-    dwellSeconds: h.dwellSeconds,
-    scrollDepthPercent: 50,
-    isMediaPlaying: false,
-    timestamp: h.timestamp,
-  }));
-
-  const result = await focusAgent.evaluate(breadcrumb, timeline, forcePoke);
-
-  if (result.success) {
-    const decision = result.data;
-
-    return {
-      shouldReact: decision.status !== 'on_task' || forcePoke,
-      state: decision.mood,
-      remark: decision.remark,
-      triggerEffect: decision.visualEffect === 'vignette' || decision.visualEffect === 'screen_shake',
-      intensity: decision.divergenceScore,
-      isConfigured: true,
-      status: decision.status,
-      intervention: decision.intervention,
-      escalationDelta: decision.escalationDelta,
-    };
-  }
-
-  // 3. UNCONFIGURED STATE: Honest feedback with zero fallbacks
+  // Fallback when backend is unreachable or offline
   return {
     shouldReact: forcePoke,
     state: forcePoke ? 'confused' : 'idle',
-    remark: forcePoke ? 'Add API key in Settings to activate AI tracking.' : undefined,
+    remark: forcePoke ? 'Local worker offline. Start `pnpm dev` in apps/backend.' : undefined,
     triggerEffect: false,
     intensity: 0,
     isConfigured: false,

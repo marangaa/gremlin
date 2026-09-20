@@ -29,14 +29,17 @@ const ALL_COMPANIONS: OrganismId[] = ['Sarge', 'waifu', 'sherlock', 'kuro', 'sen
 
 export const SidepanelApp: React.FC = () => {
   const [config, setConfig] = useState<OrganismConfig>({
-    mode: 'self-hosted',
+    mode: 'byok',
     organismId: 'Sarge',
     name: 'Sarge',
     enabled: true,
     provider: 'google',
+    byokEndpoint: 'http://localhost:11434/v1',
+    byokApiKey: '',
+    byokModel: '',
     selfHostedEndpoint: 'http://localhost:11434/v1',
     selfHostedApiKey: '',
-    selfHostedModel: 'gemini-2.5-flash',
+    selfHostedModel: '',
     xFrac: 0.9,
     yFrac: 0.82,
     soundEnabled: true,
