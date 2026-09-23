@@ -12,6 +12,10 @@ export interface Bindings {
   BETTER_AUTH_URL?: string;
   /** Frontend web app URL (e.g., http://localhost:5173). */
   FRONTEND_URL?: string;
+  /** Google OAuth Client ID (Web Application) for Better Auth Google social sign-in. */
+  GOOGLE_CLIENT_ID?: string;
+  /** Google OAuth Client Secret (Web Application) for Better Auth Google social sign-in. */
+  GOOGLE_CLIENT_SECRET?: string;
   /** Google Gemini API Key for server-side AI agent evaluation. */
   GOOGLE_GENERATIVE_AI_API_KEY?: string;
   /** OpenAI API Key for server-side AI agent evaluation. */

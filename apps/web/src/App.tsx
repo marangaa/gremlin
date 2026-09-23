@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { AuthProvider } from './context/AuthContext';
+import { AuthModal } from './components/AuthModal';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CleanGridBackground } from './components/CleanGridBackground';
@@ -47,26 +49,31 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between relative overflow-x-hidden">
-      {/* Clean, Minimalist Linear/Vercel-style Blueprint Grid Background */}
-      <CleanGridBackground />
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col justify-between relative overflow-x-hidden">
+        {/* Clean, Minimalist Linear/Vercel-style Blueprint Grid Background */}
+        <CleanGridBackground />
 
-      <a href="#main" className="skip-link">
-        Skip to content
-      </a>
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
 
-      {/* Floating pill navigation */}
-      <Navbar currentPath={currentPath} navigate={navigate} />
+        {/* Floating pill navigation */}
+        <Navbar currentPath={currentPath} navigate={navigate} />
 
-      <div id="main" className="flex-grow relative z-10">
-        {renderContent()}
+        <div id="main" className="flex-grow relative z-10">
+          {renderContent()}
+        </div>
+
+        <Footer navigate={navigate} />
+
+        {/* Global Auth Modal — opened anywhere without redirect */}
+        <AuthModal />
+
+        {/* Subtle organic film grain */}
+        <div className="noise-overlay" aria-hidden="true" />
       </div>
-
-      <Footer navigate={navigate} />
-
-      {/* Subtle organic film grain */}
-      <div className="noise-overlay" aria-hidden="true" />
-    </div>
+    </AuthProvider>
   );
 }
 

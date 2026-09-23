@@ -1,7 +1,7 @@
 {
   "name": "@gremlin/extension",
   "description": "Pixel companion browser extension that keeps you honest during deep work sprints.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {

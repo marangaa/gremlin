@@ -1,5 +1,6 @@
 import { createAuthClient } from 'better-auth/react';
 import { polarClient } from '@polar-sh/better-auth/client';
+import { oauthPopupClient } from 'better-auth/client/plugins';
 import { QueryClient } from '@tanstack/react-query';
 
 export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8700';
@@ -13,7 +14,7 @@ export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) || '
  */
 export const authClient = createAuthClient({
   baseURL: API_URL,
-  plugins: [polarClient()],
+  plugins: [polarClient(), oauthPopupClient()],
   fetchOptions: {
     // Web (5173 / fasihi.xyz) talks to the API cross-origin — without this
     // the session cookie is never sent and authenticated endpoints

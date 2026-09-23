@@ -16,6 +16,7 @@ web-ext.config.ts
 .env.local
 .env.*.local
 !.env.example
+client_secret*.json
 
 # Internal agent notes & devlogs
 DEVLOG.md

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Download, Menu, X } from 'lucide-react';
-
+import { Download, Menu, X, LogIn, LogOut, User, Zap } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   currentPath: string;
@@ -15,6 +15,7 @@ const LINKS: { label: string; path: string; hash?: string }[] = [
 
 export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
   const [open, setOpen] = useState(false);
+  const { user, isAuthenticated, isPro, signOut, openAuthModal } = useAuth();
 
   const go = (path: string, hash?: string) => {
     setOpen(false);
@@ -60,12 +61,43 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
 
         {/* Right controls */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/auth')}
-            className="hidden sm:inline-flex items-center px-3 py-1.5 border-2 border-transparent hover:border-coal dark:hover:border-[#3F4740] font-mono text-xs font-bold text-coal dark:text-[#C8CFC4] hover:bg-paper dark:hover:bg-[#1E2219] transition-all cursor-pointer"
-          >
-            Sign In
-          </button>
+          {isAuthenticated ? (
+            <div className="hidden sm:flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 border-2 border-coal dark:border-[#3F4740] bg-paper dark:bg-[#1E2219]">
+                <User className="w-3.5 h-3.5 text-coal dark:text-white shrink-0" />
+                <span className="font-mono text-xs font-bold text-coal dark:text-white max-w-[120px] truncate">
+                  {user?.name || user?.email?.split('@')[0] || 'User'}
+                </span>
+                {isPro ? (
+                  <span className="inline-flex items-center gap-0.5 px-1 py-0.2 bg-accent text-coal text-[9px] font-mono font-bold">
+                    <Zap className="w-2.5 h-2.5 fill-current" />
+                    PRO
+                  </span>
+                ) : (
+                  <span className="px-1 py-0.2 bg-coal/10 dark:bg-white/10 text-coal dark:text-white text-[9px] font-mono">
+                    FREE
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                title="Sign Out"
+                className="p-1.5 border-2 border-transparent hover:border-coal dark:hover:border-[#3F4740] text-coal dark:text-[#C8CFC4] hover:bg-paper dark:hover:bg-[#1E2219] transition-all cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openAuthModal}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-2 border-transparent hover:border-coal dark:hover:border-[#3F4740] font-mono text-xs font-bold text-coal dark:text-[#C8CFC4] hover:bg-paper dark:hover:bg-[#1E2219] transition-all cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Sign In
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -106,15 +138,46 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
                 {link.label}
               </button>
             ))}
-            <button
-              onClick={() => {
-                setOpen(false);
-                navigate('/auth');
-              }}
-              className="px-3 py-2 border-2 border-coal dark:border-[#3F4740] bg-paper dark:bg-[#1A1D18] text-coal dark:text-white font-mono text-xs font-bold text-left cursor-pointer shadow-[3px_3px_0_0_#12151A]"
-            >
-              Sign In / Cloud Account →
-            </button>
+
+            {isAuthenticated ? (
+              <div className="p-3 border-2 border-coal dark:border-[#3F4740] bg-paper dark:bg-[#1A1D18] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-coal dark:text-white shrink-0" />
+                  <div>
+                    <div className="font-mono text-xs font-bold text-coal dark:text-white truncate max-w-[160px]">
+                      {user?.email}
+                    </div>
+                    <div className="text-[10px] font-mono text-accent uppercase font-bold">
+                      {isPro ? 'Pro Active' : 'Free Tier'}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    void signOut();
+                  }}
+                  className="px-2.5 py-1 bg-white dark:bg-[#161914] border border-coal text-xs font-mono font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <LogOut className="w-3 h-3" />
+                  Exit
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  openAuthModal();
+                }}
+                className="px-3 py-2 border-2 border-coal dark:border-[#3F4740] bg-paper dark:bg-[#1A1D18] text-coal dark:text-white font-mono text-xs font-bold text-left cursor-pointer shadow-[3px_3px_0_0_#12151A] flex items-center gap-2"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Sign In / Cloud Account →
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setOpen(false);

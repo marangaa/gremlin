@@ -48,9 +48,11 @@ import {
   Shield,
   BookOpen,
   CheckCircle2,
+  RefreshCw,
+  LogIn,
+  Loader2,
   Eye,
   EyeOff,
-  RefreshCw,
 } from 'lucide-react';
 import './App.css';
 
@@ -119,12 +121,8 @@ export default function App() {
   const [organismState, setOrganismState] = useState<OrganismStateData>(DEFAULT_ORGANISM_STATE);
   const [hasOnboarded, setHasOnboarded] = useState<boolean>(true);
   const [session, setSession] = useState<UserSession>({ plan: 'free', isLoggedIn: false });
-  const [cloudEmail, setCloudEmail] = useState('');
-  const [cloudPassword, setCloudPassword] = useState('');
-  const [showCloudPassword, setShowCloudPassword] = useState(false);
-  const [cloudBusy, setCloudBusy] = useState(false);
-  const [cloudError, setCloudError] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [googleAuthLoading, setGoogleAuthLoading] = useState(false);
 
   const [goals, setGoals] = useState<DecomposedGoal[]>([]);
 
@@ -995,132 +993,112 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="p-3.5 bg-white border-2 border-coal space-y-3.5 shadow-brut">
-                    <div className="flex items-center justify-between pb-2 border-b-2 border-coal/10">
-                      <span className="font-display font-bold text-xs text-coal">Sign into Gremlin Cloud</span>
-                      <a
-                        href={`${WEB_APP_URL}/auth?mode=signup`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-mono text-[10px] font-bold uppercase underline underline-offset-2 text-coal hover:text-accent transition-colors"
-                      >
-                        Create account ($5/mo) →
-                      </a>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      <div>
-                        <label className="font-mono text-[10px] font-bold uppercase tracking-wider text-coal block mb-1">
-                          Email address
-                        </label>
-                        <input
-                          type="email"
-                          placeholder="you@example.com"
-                          value={cloudEmail}
-                          onChange={(e) => setCloudEmail(e.target.value)}
-                          className="w-full bg-[#FAFBF7] border-2 border-coal px-2.5 py-1.5 font-mono text-xs text-coal placeholder:text-[#8C94A0] focus:outline-none focus:bg-white focus:shadow-[2px_2px_0_0_#12151A] transition-all"
-                        />
+                    <div className="flex items-center gap-2.5 pb-2 border-b-2 border-coal/10">
+                      <div className="w-8 h-8 border-2 border-coal bg-accent flex items-center justify-center text-coal shadow-[1.5px_1.5px_0_0_#12151A] shrink-0">
+                        <Shield className="w-4 h-4" />
                       </div>
                       <div>
-                        <label className="font-mono text-[10px] font-bold uppercase tracking-wider text-coal block mb-1">
-                          Password
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showCloudPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
-                            value={cloudPassword}
-                            onChange={(e) => setCloudPassword(e.target.value)}
-                            className="w-full bg-[#FAFBF7] border-2 border-coal pl-2.5 pr-8 py-1.5 font-mono text-xs text-coal placeholder:text-[#8C94A0] focus:outline-none focus:bg-white focus:shadow-[2px_2px_0_0_#12151A] transition-all"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowCloudPassword(!showCloudPassword)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#8C94A0] hover:text-coal cursor-pointer"
-                            tabIndex={-1}
-                            title={showCloudPassword ? 'Hide password' : 'Show password'}
-                          >
-                            {showCloudPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
-                        </div>
+                        <div className="font-display font-bold text-xs text-coal">Sign into Gremlin Cloud</div>
+                        <div className="font-mono text-[9px] text-[#5D6675]">Fast cloud AI + sync across devices</div>
                       </div>
                     </div>
 
-                    {cloudError && (
-                      <p className="font-mono text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 p-2">
-                        {cloudError}
-                      </p>
-                    )}
+                    <p className="font-mono text-[10px] text-paper-muted leading-relaxed">
+                      Connect your Google account in one click. No password required.
+                    </p>
 
                     <button
                       type="button"
-                      disabled={cloudBusy || !cloudEmail.trim() || !cloudPassword}
+                      disabled={googleAuthLoading}
                       onClick={async () => {
-                        setCloudBusy(true);
-                        setCloudError(null);
+                        setGoogleAuthLoading(true);
                         try {
-                          const res = await authClient.signIn.email({ email: cloudEmail.trim(), password: cloudPassword });
-                          if (res.error) {
-                            setCloudError(res.error.message ?? 'Sign-in failed');
-                          } else {
-                            // Strict default: fresh sign-in starts `free`; the
-                            // authoritative profile fetch below upgrades to
-                            // `pro` only on server confirmation.
-                            const nextSession: UserSession = {
-                              plan: 'free',
-                              isLoggedIn: true,
-                              email: cloudEmail.trim(),
-                            };
-                            await userSessionStorage.setValue(nextSession);
-                            setSession(nextSession);
-                            const next = { ...config, mode: 'cloud' as OperatingMode };
-                            setConfig(next);
-                            await configStorage.setValue(next);
-                            setCloudPassword('');
-
-                            // Confirm the billing tier from the server before
-                            // showing any badge: GET /api/user/profile reads
-                            // the webhook-reconciled `user.plan` mirror.
-                            try {
-                              const profileRes = await fetch(`${API_BASE_URL}/api/user/profile`, {
-                                credentials: 'include',
-                                headers: { 'x-requested-with': 'Gremlin-Browser-Extension' },
-                              });
-                              if (profileRes.ok) {
-                                const profileBody = (await profileRes.json()) as {
-                                  data?: { plan?: string };
-                                };
-                                const serverPlan =
-                                  profileBody?.data?.plan === 'pro' ? 'pro' : 'free';
-                                const confirmed: UserSession = {
-                                  ...nextSession,
-                                  plan: serverPlan,
-                                };
-                                await userSessionStorage.setValue(confirmed);
-                                setSession(confirmed);
-                              }
-                            } catch {
-                              /** Offline: keep the `free` default until next open. */
-                            }
-
-                            // Account merge via the sync engine: LWW
-                            // pull-merge of goals/notes/diaries/episodes/
-                            // profile, then push local contributions.
-                            void (async () => {
-                              try {
-                                const { onAccountConnected } = await import('@/lib/sync/engine');
-                                await onAccountConnected();
-                              } catch {
-                                // Non-blocking sync error — local-first continues.
-                              }
-                            })();
+                          let authUrl: string | undefined;
+                          try {
+                            const res = await authClient.signIn.social({
+                              provider: 'google',
+                              callbackURL: `${WEB_APP_URL}/auth?connected=true`,
+                              disableRedirect: true,
+                            });
+                            authUrl = res?.data?.url;
+                          } catch {
+                            // Fallback if direct URL fetch fails
                           }
+
+                          const targetUrl = authUrl || `${WEB_APP_URL}/auth?autostart=google`;
+
+                          if (typeof browser !== 'undefined' && browser.windows?.create) {
+                            await browser.windows.create({
+                              url: targetUrl,
+                              type: 'popup',
+                              width: 500,
+                              height: 640,
+                            });
+                          } else {
+                            window.open(targetUrl, 'gremlin-google-auth', 'width=500,height=640');
+                          }
+
+                          // Poll for session establishment
+                          let attempts = 0;
+                          const interval = setInterval(async () => {
+                            attempts++;
+                            if (attempts > 80) clearInterval(interval);
+                            try {
+                              const { data } = await authClient.getSession();
+                              if (data?.user) {
+                                clearInterval(interval);
+                                const nextSession: UserSession = {
+                                  plan: (data.user as { plan?: string }).plan === 'pro' ? 'pro' : 'free',
+                                  isLoggedIn: true,
+                                  email: data.user.email,
+                                  userId: data.user.id,
+                                };
+                                await userSessionStorage.setValue(nextSession);
+                                setSession(nextSession);
+                                const next = { ...config, mode: 'cloud' as OperatingMode };
+                                setConfig(next);
+                                await configStorage.setValue(next);
+
+                                try {
+                                  const profileRes = await fetch(`${API_BASE_URL}/api/user/profile`, {
+                                    credentials: 'include',
+                                    headers: { 'x-requested-with': 'Gremlin-Browser-Extension' },
+                                  });
+                                  if (profileRes.ok) {
+                                    const profileBody = (await profileRes.json()) as { data?: { plan?: string } };
+                                    const serverPlan = profileBody?.data?.plan === 'pro' ? 'pro' : 'free';
+                                    const confirmed: UserSession = { ...nextSession, plan: serverPlan };
+                                    await userSessionStorage.setValue(confirmed);
+                                    setSession(confirmed);
+                                  }
+                                } catch {}
+
+                                void (async () => {
+                                  try {
+                                    const { onAccountConnected } = await import('@/lib/sync/engine');
+                                    await onAccountConnected();
+                                  } catch {}
+                                })();
+                              }
+                            } catch {}
+                          }, 1500);
                         } finally {
-                          setCloudBusy(false);
+                          setGoogleAuthLoading(false);
                         }
                       }}
-                      className="w-full py-2.5 bg-coal text-white font-display font-bold text-xs border-2 border-coal shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-2.5 bg-accent text-coal font-display font-bold text-xs border-2 border-coal shadow-brut transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brut-lg active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                      {cloudBusy ? 'Signing in…' : 'Sign in to Gremlin Cloud'}
+                      {googleAuthLoading ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-coal" />
+                          Connecting to Google…
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="w-3.5 h-3.5" />
+                          Continue with Google
+                        </>
+                      )}
                     </button>
                   </div>
                 )}

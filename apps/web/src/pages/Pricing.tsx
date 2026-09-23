@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, KeyRound, Zap, MessageSquare } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 import { API_URL, authClient } from '../lib/auth';
+import { useAuth } from '../context/AuthContext';
 
 /* Paper theme: the deliberate light route on the dark site. */
 /* Featured tier inverts back to dark: an island of the night mode. */
@@ -78,6 +79,7 @@ const FAQS: [string, string][] = [
 ];
 
 export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navigate }) => {
+  const { openAuthModal } = useAuth();
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const user = session?.user;
   const [profilePlan, setProfilePlan] = useState<'free' | 'pro' | null>(null);
@@ -197,11 +199,7 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
 
   const handleCheckout = async () => {
     if (!user) {
-      if (navigate) {
-        navigate('/auth');
-      } else {
-        window.location.href = '/auth';
-      }
+      openAuthModal();
       return;
     }
 

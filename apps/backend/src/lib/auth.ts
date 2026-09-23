@@ -1,4 +1,5 @@
 import { betterAuth } from 'better-auth';
+import { bearer, oauthPopup } from 'better-auth/plugins';
 import { polar, checkout, portal, usage } from '@polar-sh/better-auth';
 import { Polar } from '@polar-sh/sdk';
 import { eq, sql } from 'drizzle-orm';
@@ -36,6 +37,8 @@ function fingerprintBindings(env: Partial<Bindings>): string {
     polarSecret: env.POLAR_WEBHOOK_SECRET ?? null,
     polarProduct: env.POLAR_PRO_PRODUCT_ID ?? null,
     polarEnv: env.POLAR_ENV ?? null,
+    googleClientId: env.GOOGLE_CLIENT_ID ?? null,
+    googleClientSecret: env.GOOGLE_CLIENT_SECRET ?? null,
   });
 }
 
@@ -242,11 +245,18 @@ export function createBetterAuthInstance(env?: Partial<Bindings>) {
     basePath: '/api/auth',
     plugins: [
       ...polarPlugins,
+      bearer(),
+      oauthPopup(),
     ],
+       socialProviders: {
+      google: {
+        clientId: env?.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || '',
+        clientSecret: env?.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || '',
+        prompt: 'select_account',
+      },
+    },
     emailAndPassword: {
-      enabled: true,
-      autoSignIn: true,
-      requireEmailVerification: false,
+      enabled: false,
     },
     user: {
       additionalFields: {
