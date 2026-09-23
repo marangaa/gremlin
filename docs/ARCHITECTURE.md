@@ -11,7 +11,7 @@ Gremlin is built as a TypeScript Turborepo monorepo structured into 4 packages/a
 ```
 gremlin/
 ├── apps/
-│   ├── extension/       # Chrome Manifest V3 Extension (WXT + React 19 + Tailwind v4)
+│   ├── extension/       # Chrome Manifest V3 Extension (WXT + React 19 + Tailwind v3)
 │   ├── web/             # Marketing, Docs & Cloud Dashboard (Vite + React 19 + Tailwind + Three.js)
 │   └── backend/         # Edge REST API & AI Gateway (Hono + Better Auth + Cloudflare Workers + Neon)
 ├── packages/
@@ -35,7 +35,7 @@ graph TD
     
     BackgroundSW -->|Active Sprint & Context + pageSignal| AIReasoning[AI Dispatcher: /lib/ai/engine.ts]
     AIReasoning -->|RPC + BYOK Headers or Pro Session| EdgeAPI[Cloudflare Worker: POST /api/sprint/evaluate]
-    EdgeAPI -->|AI SDK v4 + gemini-3.6-flash / Groq / OpenAI| AIProvider[AI Providers: Google / OpenAI / Anthropic / Groq]
+    EdgeAPI -->|AI SDK v7 + dynamic model discovery (server Gemini pool default) / Groq / OpenAI| AIProvider[AI Providers: Google / OpenAI / Anthropic / Groq]
     AIReasoning -->|Live Telemetry Storage: Sparkline & Reasoning| Popup
     EdgeAPI -->|Better Auth + Polar + Neon DB| CloudDB[(Neon Serverless Postgres)]
     
@@ -133,11 +133,11 @@ The dynamic import + `import.meta.env.DEV` gate keep the package out of release 
 
 ### Auth & Sessions
 
-Better Auth (email/password) issues a session cookie scoped to the **backend domain**. Three clients talk to it:
+Better Auth (Google social sign-in via `oauthPopup` + `bearer` plugins; email/password is **disabled**) issues a session cookie scoped to the **backend domain**. Three clients talk to it:
 
 | Client | Cookie jar | Notes |
 |---|---|---|
-| Web (`gremlin.fasihi.xyz/auth`) | Browser jar for backend domain | Real `signUp.email` / `signIn.email` since the mock was removed. Account rows live in Neon. |
+| Web (`gremlin.fasihi.xyz`) | Browser jar for backend domain | Google OAuth via the global `AuthModal` (`AuthProvider` context) — one-click sign-in from any page, no redirect. Account rows live in Neon. |
 | Popup | Extension fetches share the browser cookie jar for the request URL | Inline sign-in form; also **probes `authClient.getSession()` on open** — so signing in on the website auto-signs the extension on next popup open (empirically verify SameSite behavior per Chrome version). |
 | Service worker | Same shared jar via `credentials: include` | Powers `decideOrganismReaction`'s cloud branch and memory sync; no separate login needed once any session exists. |
 
@@ -165,7 +165,7 @@ Full sync lives in `/api/memory/*` (`routes/memory.ts` for episodes/profile, `ro
 ### Tech Stack
 * **Framework:** [Hono v4](https://hono.dev) deployed on **Cloudflare Workers**.
 * **Database:** [Neon Serverless Postgres](https://neon.tech) via `@neondatabase/serverless` (single memoized pool shared by Better Auth and sprint persistence).
-* **Authentication & Billing:** [Better Auth](https://better-auth.com) with email/password and session cookies configured for browser extensions (`chrome-extension://` origins via env-driven allowlists) plus the official `@polar-sh/better-auth` plugin.
+* **Authentication & Billing:** [Better Auth](https://better-auth.com) with Google social sign-in (`signIn.social({ provider: 'google' })`, popup-window flow) and session cookies configured for browser extensions (`chrome-extension://` origins via env-driven allowlists) plus the official `@polar-sh/better-auth` plugin.
   * `session.cookieCache` is **disabled** — a cached signed session snapshot freezes `user.plan` for its TTL, so webhook-driven tier flips (upgrade/downgrade) would not surface until expiry. Every request re-validates against Postgres instead.
   * Rate limiting persists in the `rate_limit` table (`storage: 'database'`) — in-memory counters are meaningless across isolates.
   * Client IP resolution uses `cf-connecting-ip`.
@@ -187,7 +187,7 @@ The loop: `PERCEIVE → JUDGE → INTERVENE/OBSERVE → RECORD → OUTCOME → L
 
 ### Cloud Memory Sync (live)
 
-Cloud mode is fully re-enabled: sign-in lives inline in the popup's Model tab (`authClient.signIn.email`), and `mode === 'cloud'` counts toward `isConfigured`. For signed-in users, the memory loop mirrors server-side via the **`/api/memory/*`** routes (Neon tables `memory_episodes` + `focus_profiles`, schema in `schema.sql`):
+Cloud mode is fully re-enabled: sign-in lives inline in the popup's Model tab via Google OAuth (`authClient.signIn.social`, falling back to opening the web app auth page), and `mode === 'cloud'` counts toward `isConfigured`. For signed-in users, the memory loop mirrors server-side via the **`/api/memory/*`** routes (Neon tables `memory_episodes` + `focus_profiles`, schema in `schema.sql`):
 
 * `POST /api/memory/episodes` — upsert-by-id batch push
 * `GET /api/memory/episodes?since&limit` — pull for cross-device merge
@@ -219,7 +219,7 @@ CORS and Better Auth `trustedOrigins` share one allowlist builder fed by worker 
 ## 4. Web Application & Landing Page (`apps/web`)
 
 ### Tech Stack
-* **Framework:** React 19 + Vite 6 + Tailwind CSS v4.
+* **Framework:** React 19 + Vite 6 + Tailwind CSS v3.
 * **3D Mascot:** `src/three/VoxelGremlin.tsx` — a procedural voxel gremlin (no model files) that floats free in the hero on a transparent canvas: it bobs, sways toward the cursor, and blinks via instanced-mesh eye scaling. It is **route-split behind `React.lazy`** so Three.js ships as its own chunk (`VoxelGremlin-*.js`) and never blocks first paint; the 2D pixel `Sprite` renders as the Suspense fallback. Dust particles use normal blending and a coal/lime/teal palette tuned for the light paper background.
 * **Uniform Backdrop:** One global fixed backdrop (`CleanGridBackground.tsx`) — faint blueprint grid fading toward the bottom plus a soft lime top spotlight. The old dark-theme vignette is gone, so every section and page shares the same paper color end-to-end.
 * **Interactive Simulations:**
