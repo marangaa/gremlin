@@ -3,6 +3,7 @@ import { Check, KeyRound, Zap, MessageSquare } from 'lucide-react';
 import { Reveal } from '../components/Reveal';
 import { API_URL, authClient } from '../lib/auth';
 import { useAuth } from '../context/AuthContext';
+import { openCwsListing } from '../lib/links';
 
 /* Paper theme: the deliberate light route on the dark site. */
 /* Featured tier inverts back to dark: an island of the night mode. */
@@ -35,7 +36,7 @@ const TIERS: Tier[] = [
       'Context tracking, distraction intervention & procedural sound effects',
       'Digital self-awareness diary & local sprint history',
     ],
-    cta: 'Join Free Waitlist',
+    cta: 'Add to Chrome — Free',
   },
   {
     name: 'Gremlin Pro',
@@ -78,7 +79,7 @@ const FAQS: [string, string][] = [
   ],
 ];
 
-export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navigate }) => {
+export const Pricing: React.FC = () => {
   const { openAuthModal } = useAuth();
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const user = session?.user;
@@ -292,17 +293,7 @@ export const Pricing: React.FC<{ navigate?: (path: string) => void }> = ({ navig
                   {tier.price === '$0' ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (navigate) {
-                          navigate('/');
-                        } else {
-                          window.location.href = '/';
-                        }
-                        window.setTimeout(() => {
-                          document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
-                          document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth' });
-                        }, 120);
-                      }}
+                      onClick={openCwsListing}
                       className={PAPER_GHOST_BTN}
                     >
                       {tier.cta}

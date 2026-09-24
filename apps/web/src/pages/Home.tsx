@@ -4,7 +4,7 @@ import { COMPANIONS, type CompanionId, playCharacterVoice } from '../lib/compani
 import { Reveal } from '../components/Reveal';
 import { Sprite } from '../components/Sprite';
 import { CardlessHowItWorks } from '../components/CardlessHowItWorks';
-import { WaitlistForm } from '../components/WaitlistForm';
+import { InstallButton } from '../components/InstallButton';
 
 /* ------------------------------------------------------------------ */
 /* Typewriter for the live reaction                                    */
@@ -81,7 +81,7 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
 
               <Reveal delay={240}>
                 <div className="mt-8">
-                  <WaitlistForm source="hero" />
+                  <InstallButton />
                 </div>
                 <div className="mt-6 flex flex-wrap items-center gap-4">
                   <button
@@ -255,10 +255,10 @@ export const Home: React.FC<{ navigate: (path: string) => void }> = ({ navigate 
               Scroll <span className="mark-lime text-coal">less</span>.
             </h2>
             <p className="mt-6 text-[#374151] dark:text-[#D1D5DB] max-w-md mx-auto text-base sm:text-lg leading-relaxed font-medium">
-              Join the early access waitlist to get your desk companion before public Chrome Web Store release.
+              Gremlin is live on the Chrome Web Store. Install it, set a goal, and meet your companion in under a minute.
             </p>
             <div className="mt-8 flex justify-center">
-              <WaitlistForm source="final_cta" className="mx-auto" />
+              <InstallButton className="mx-auto" />
             </div>
             <div className="mt-6 flex justify-center gap-4">
               <button onClick={() => navigate('/pricing')} className="btn-ghost text-xs py-2">

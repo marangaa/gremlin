@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Menu, X, LogIn, LogOut, User, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { openCwsListing } from '../lib/links';
 
 interface NavbarProps {
   currentPath: string;
@@ -100,19 +101,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
           )}
 
           <button
-            onClick={() => {
-              if (currentPath !== '/') {
-                navigate('/');
-              }
-              window.setTimeout(() => {
-                document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
-                document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth' });
-              }, 120);
-            }}
+            onClick={openCwsListing}
             className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-accent border-2 border-coal shadow-[3px_3px_0_0_#12151A] font-display font-bold text-xs text-coal transition-all hover:-translate-y-0.5 hover:shadow-brut active:translate-y-0 active:shadow-none cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            Get Early Access
+            Get Gremlin Free
           </button>
 
           <button
@@ -181,18 +174,12 @@ export const Navbar: React.FC<NavbarProps> = ({ currentPath, navigate }) => {
             <button
               onClick={() => {
                 setOpen(false);
-                if (currentPath !== '/') {
-                  navigate('/');
-                }
-                window.setTimeout(() => {
-                  document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
-                  document.querySelector('input[type="email"]')?.scrollIntoView({ behavior: 'smooth' });
-                }, 120);
+                openCwsListing();
               }}
               className="btn-primary mt-1 flex items-center justify-center gap-2 cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              Get Early Access
+              Add to Chrome — Free
             </button>
           </nav>
         </div>

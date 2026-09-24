@@ -40,7 +40,7 @@ export function App() {
       case '/terms':
         return <Terms />;
       case '/pricing':
-        return <Pricing navigate={navigate} />;
+        return <Pricing />;
       case '/':
         return <Home navigate={navigate} />;
       default:
