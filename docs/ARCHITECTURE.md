@@ -274,11 +274,11 @@ Powered by the official `@polar-sh/better-auth` integration (backed by `@polar-s
 4. **Self-Service Customer Portal (`portal()`)**:
    - Mounted at `/api/auth/customer/portal`.
    - Users can update cards, view invoices/receipts, and cancel or resume subscriptions on Polar's hosted portal without needing custom UI in the extension.
-5. **Standard Webhook Verification**:
+5. **Standard Webhook Verification (plugin-owned, no hand-rolled crypto)**:
    - Polar webhooks are ingested at `/api/auth/polar/webhooks`.
-   - Polar transitioned all new endpoints to the [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks) specification on September 8, 2026 (secret `whsec_<base64>` is decoded to 32 raw bytes for HMAC-SHA256).
-   - Because `@polar-sh/better-auth@1.8.4` depends on `@polar-sh/sdk@0.49.0` (which had a known bug re-encoding the secret into a legacy 50-byte ASCII key before Polar introduced dual-key verification in v1.0.0-alpha), the endpoint is verified directly in `apps/backend/src/routes/auth.ts` using the native Web Crypto API (`crypto.subtle`) adhering strictly to the Standard Webhooks specification.
-   - Once signature authenticity and timestamp tolerance (<5 min) are verified, `processPolarWebhookEvent()` executes the state updates (`order.paid` and `customer.state_changed`) to keep user billing tiers synchronized in Postgres.
+   - Polar transitioned all new endpoints to the [Standard Webhooks](https://github.com/standard-webhooks/standard-webhooks) specification on September 8, 2026 (secret `whsec_<base64>`). Verification is owned entirely by the plugin's `webhooks({ secret })` config via `validateEvent()` from `@polar-sh/sdk/webhooks` (verified in the installed `@polar-sh/better-auth@1.8.4` / `@polar-sh/sdk@0.49.0` bundle — no custom HMAC code remains in our routes).
+   - The plugin routes verified events to our tier-sync handlers: `onOrderPaid` (instant Pro on checkout completion), `onCustomerStateChanged` (unified tier source of truth — pro iff `activeSubscriptions.length > 0`), plus `onPayload` as the safety net for subscription lifecycle events. Plan writes are the only thing our code owns (`user.plan` in Postgres).
+   - Historical note: we previously verified webhooks by hand in `apps/backend/src/routes/auth.ts` (Web Crypto, `webhook-id/timestamp/signature` headers) because of a suspected SDK secret-re-encoding bug. Source-verified against the installed packages: the SDK passes the secret straight to the `standardwebhooks` `Webhook` verifier and Better Auth calls `validateEvent(buf, headers, secret)` before routing — so the hand-rolled path was redundant, and its route registration risked shadowing the plugin endpoint. Deleted.
 6. **Local Development & Sandbox Webhook Forwarding**:
    - The backend runs locally on port **`8700`** (avoiding Windows Hyper-V NAT dynamic exclusion range `8714–8813`).
    - Webhooks can be forwarded directly from Polar Sandbox using the Polar CLI or Cloudflare Tunnel:

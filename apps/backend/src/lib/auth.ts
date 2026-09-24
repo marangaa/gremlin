@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { bearer, oauthPopup } from 'better-auth/plugins';
-import { polar, checkout, portal, usage } from '@polar-sh/better-auth';
+import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth';
 import { Polar } from '@polar-sh/sdk';
 import { eq, sql } from 'drizzle-orm';
 import type { Bindings } from '../types/env';
@@ -168,6 +168,12 @@ async function setUserPlan(
 
 /**
  * Handles verified Polar webhook events to sync user billing tiers.
+ *
+ * NOTE: these run inside the `@polar-sh/better-auth` `webhooks()` plugin
+ * (registered in `createBetterAuthInstance`). The plugin owns signature
+ * verification and endpoint routing at `POST /api/auth/polar/webhooks`
+ * via `validateEvent()` from `@polar-sh/sdk/webhooks` — validated payloads
+ * arrive here already camelCased (e.g. `externalId`, `activeSubscriptions`).
  */
 export async function processPolarWebhookEvent(
   env: Partial<Bindings> | undefined,
@@ -175,35 +181,98 @@ export async function processPolarWebhookEvent(
 ): Promise<void> {
   const type = event?.type;
   if (type === 'order.paid') {
-    const customer = event?.data?.customer;
-    const externalId = resolveCustomerUserId(customer);
-    const email = resolveCustomerEmail(customer);
-
-    if (externalId) {
-      await setUserPlan(env, { id: externalId }, 'pro');
-      logger.info(`Order paid: user ${externalId} upgraded to Pro`);
-    } else if (email) {
-      await setUserPlan(env, { email }, 'pro');
-      logger.info(`Order paid: user ${email} upgraded to Pro`);
-    } else {
-      logger.warn('Order paid webhook arrived without external_id or email; plan unchanged.');
-    }
-  } else if (type === 'customer.state_changed') {
-    const customerState = event?.data;
-    const userId = resolveCustomerUserId(customerState);
-    const email = resolveCustomerEmail(customerState);
-    const plan = hasActiveSubscription(customerState) ? 'pro' : 'free';
-
-    if (userId) {
-      await setUserPlan(env, { id: userId }, plan);
-      logger.info(`Customer state synced: user ${userId} plan set to ${plan}`);
-    } else if (email) {
-      await setUserPlan(env, { email }, plan);
-      logger.info(`Customer state synced: user ${email} plan set to ${plan}`);
-    } else {
-      logger.warn('Customer state webhook arrived without external_id or email; plan unchanged.');
-    }
+    await handleOrderPaid(env, event);
+  } else {
+    await handlePolarPayload(env, event);
   }
+}
+
+/**
+ * order.paid payloads (validated by the plugin) carry `data.customer`
+ * (camelCased by the SDK's inbound schemas) with `externalId` (our user id)
+ * or `email` as the fallback identity.
+ */
+export async function handleOrderPaid(env: Partial<Bindings> | undefined, event: any): Promise<void> {
+  const customer = event?.data?.customer;
+  const externalId = resolveCustomerUserId(customer);
+  const email = resolveCustomerEmail(customer);
+
+  if (externalId) {
+    await setUserPlan(env, { id: externalId }, 'pro');
+    logger.info(`Order paid: user ${externalId} upgraded to Pro`);
+  } else if (email) {
+    await setUserPlan(env, { email }, 'pro');
+    logger.info(`Order paid: user ${email} upgraded to Pro`);
+  } else {
+    logger.warn('Order paid webhook arrived without external_id or email; plan unchanged.');
+  }
+}
+
+/**
+ * customer.state_changed payloads carry the full `CustomerState` in `data`
+ * (camelCased by the SDK: `externalId`, `activeSubscriptions`). This is the
+ * unified source of truth for tier flips — cancel, expire, past_due, renew.
+ * Also doubles as the catch-all tier sync for any other customer event.
+ */
+export async function handleCustomerStateChanged(
+  env: Partial<Bindings> | undefined,
+  event: any,
+): Promise<void> {
+  const customerState = event?.data;
+  const userId = resolveCustomerUserId(customerState);
+  const email = resolveCustomerEmail(customerState);
+  const plan = hasActiveSubscription(customerState) ? 'pro' : 'free';
+
+  if (userId) {
+    await setUserPlan(env, { id: userId }, plan);
+    logger.info(`Customer state synced: user ${userId} plan set to ${plan}`);
+  } else if (email) {
+    await setUserPlan(env, { email }, plan);
+    logger.info(`Customer state synced: user ${email} plan set to ${plan}`);
+  } else {
+    logger.warn('Customer state webhook arrived without external_id or email; plan unchanged.');
+  }
+}
+
+/**
+ * Safety net for every Polar event the plugin routes here: if a payload
+ * carries customer identity plus a subscription signal, keep the tier in
+ * sync rather than silently dropping it.
+ */
+export async function handlePolarPayload(env: Partial<Bindings> | undefined, event: any): Promise<void> {
+  const type = event?.type;
+  if (type === 'customer.state_changed') {
+    await handleCustomerStateChanged(env, event);
+    return;
+  }
+
+  // subscription.* lifecycle events carry `data.customer` (or the customer
+  // directly in `data`) — terminate/expire/revoke hints a downgrade check.
+  if (typeof type === 'string' && type.startsWith('subscription.')) {
+    const customer = event?.data?.customer ?? event?.data;
+    const userId = resolveCustomerUserId(customer);
+    const email = resolveCustomerEmail(customer);
+    if (type === 'subscription.canceled' || type === 'subscription.revoked' || type === 'subscription.past_due') {
+      if (userId) {
+        await setUserPlan(env, { id: userId }, 'free');
+        logger.info(`Subscription ${type}: user ${userId} reverted to free`);
+      } else if (email) {
+        await setUserPlan(env, { email }, 'free');
+        logger.info(`Subscription ${type}: user ${email} reverted to free`);
+      }
+    } else if (type === 'subscription.active' || type === 'subscription.uncanceled') {
+      if (userId) {
+        await setUserPlan(env, { id: userId }, 'pro');
+        logger.info(`Subscription ${type}: user ${userId} upgraded to Pro`);
+      } else if (email) {
+        await setUserPlan(env, { email }, 'pro');
+        logger.info(`Subscription ${type}: user ${email} upgraded to Pro`);
+      }
+    }
+    return;
+  }
+
+  logger.info(`Polar webhook received (no tier action): ${type ?? 'unknown'}`);
 }
 
 export function createBetterAuthInstance(env?: Partial<Bindings>) {
@@ -233,6 +302,23 @@ export function createBetterAuthInstance(env?: Partial<Bindings>) {
             }),
             portal(),
             usage(),
+            // Canonical receiver: the plugin owns POST /api/auth/polar/webhooks
+            // (signature verification via validateEvent() + routing). Our
+            // handlers only sync the `user.plan` tier in Postgres. Handlers are
+            // env-bound here (closures) because the plugin's `webhooks()` config
+            // is created inside createBetterAuthInstance where env is in scope.
+            webhooks({
+              secret: polarConfig.webhookSecret,
+              // order.paid: instant Pro entitlement the moment checkout completes.
+              onOrderPaid: (payload) => handleOrderPaid(env, payload),
+              // customer.state_changed: unified source of truth for tier flips
+              // (cancel / expire / past_due / renew). Reverts to free when no
+              // active subscriptions remain.
+              onCustomerStateChanged: (payload) => handleCustomerStateChanged(env, payload),
+              // Safety net: any event the plugin doesn't route granularly still
+              // flows through our handlers so no tier change slips through.
+              onPayload: (payload) => handlePolarPayload(env, payload),
+            }),
           ],
         }),
       ]
